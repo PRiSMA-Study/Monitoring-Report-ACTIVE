@@ -1,0 +1,1068 @@
+---
+title: "<span style='font-size: 20px'> PRiSMA & ReMAPP Monitoring Report"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: 4
+  word_document:
+    toc: yes
+    toc_depth: '4'
+  pdf_document:
+    toc: yes
+    toc_depth: '4'
+---
+  
+```{css, echo=FALSE}
+.table caption {
+  color: black;
+  font-weight: bold;
+}
+```
+
+&nbsp;
+&nbsp;
+
+<!-- \newpage -->
+<center>
+### PRiSMA MNH and ReMAPP Monitoring Report {.unlisted .unnumbered}
+</center>
+
+<!-- blank -->
+&nbsp;
+&nbsp;
+
+#### **PRiSMA MNH:** Pregnancy Risk Stratification Innovation and Measurement Alliance (PRiSMA) Maternal and Newborn Health (MNH) Study: A multi-center, prospective cohort study of maternal, newborn, and infant health {.unlisted .unnumbered}
+
+<!-- blank -->
+&nbsp;
+
+#### **ReMAPP:** Redefining Anemia in Pregnancy and Postpartum {.unlisted .unnumbered}
+
+<!-- blank -->
+&nbsp;
+
+#### **Date report issued: ** `r Sys.Date()` {.unlisted .unnumbered}
+
+<!-- blank -->
+&nbsp;
+
+#### Includes data from synapse last updated: {.unlisted .unnumbered}
+#### Pakistan : 2023-01-06 {.unlisted .unnumbered}
+#### Kenya : 2022-12-22 {.unlisted .unnumbered}
+
+
+<!-- blank -->
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+library(knitr)
+library(tidyverse)
+library(reshape2)
+library(lubridate)
+library(kableExtra)
+library(emo)
+library(naniar)
+load("derived_data/matData.rda")
+load("derived_data/matOutcome.rda")
+load("derived_data/statusOutcome.rda")
+load("derived_data/healthyOutcome.rda")
+```
+
+
+<!-- Table 1a -->
+<!-- blank -->
+<!-- blank -->
+
+
+<!-- blank -->
+&nbsp;
+```{r, results='hide'}
+#check last day of screening and enrollment
+lastday <- matData %>%
+  select(M00_SCRN_OBSSTDAT, M02_SCRN_OBSSTDAT, SITE) %>%
+  group_by(SITE) %>%
+  mutate(
+    last_screen = max(dmy(M00_SCRN_OBSSTDAT), na.rm = TRUE),
+    last_enroll = max(dmy(M02_SCRN_OBSSTDAT), na.rm = TRUE)
+  ) %>% ungroup()
+table(lastday$SITE, lastday$last_screen)
+table(lastday$SITE, lastday$last_enroll)
+```
+
+```{r}
+##new 
+
+tb_prescreen_new <- statusOutcome %>% 
+  filter(
+    SITE == "Pakistan" & (dmy(M00_SCRN_OBSSTDAT) > dmy("23-12-2022")) |
+    SITE == "Kenya" & (dmy(M00_SCRN_OBSSTDAT) > dmy("14-12-2022")) 
+  ) %>% 
+  group_by(SITE) %>% 
+  summarise("Pre-screened for PRiSMA, n (MNH00)" = sum(PRESCREEN == 1),
+            "Eligible based on pre-screening, n" = sum(PRESCR_ELIGIBLE == 1), 
+            # "Not exclude from study but didn't provide consent info , n" = sum(GAP_CONSENT == 1, na.rm = TRUE),
+            "No clinical signs of pregnancy" = paste0(sum(PRESCR_PREGSIGN == 0), 
+                                        " (", format(sum(PRESCR_PREGSIGN == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Viable pregnancy with GA>=25 weeks" = paste0(sum(PRESCR_GA25 == 0), 
+                                        " (", format(sum(PRESCR_GA25 == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not meet age requirement" = paste0(sum(PRESCR_AGE == 0), 
+                                        " (", format(sum(PRESCR_AGE == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Outside catchment area" = paste0(sum(PRESCR_CATCHAREA == 0), 
+                                        " (", format(sum(PRESCR_CATCHAREA == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Other reason" = paste0(sum(PRESCR_OTHER == 0), 
+                                        " (", format(sum(PRESCR_OTHER == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not consent" = paste0(sum(PRESCR_CONSENT== 0), 
+                                        " (", format(sum(PRESCR_CONSENT == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")")
+) %>% 
+  t() %>% as.data.frame() %>% 
+  `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+  add_column(
+    .before = 1,
+    "All sites" = statusOutcome %>% 
+  #suppose use START_DATE_MOM, but M00 is not in good shape for PA
+  filter(
+    SITE == "Pakistan" & (dmy(M00_SCRN_OBSSTDAT) > dmy("23-12-2022")) |
+    SITE == "Kenya" & (dmy(M00_SCRN_OBSSTDAT) > dmy("14-12-2022")) 
+  ) %>% 
+  summarise("Pre-screened for PRiSMA, n (MNH00)" = sum(PRESCREEN == 1),
+            "Eligible based on pre-screening, n" = sum(PRESCR_ELIGIBLE == 1), 
+            # "Not exclude from study but didn't provide consent info , n" = sum(GAP_CONSENT == 1, na.rm = TRUE),
+            "No clinical signs of pregnancy" = paste0(sum(PRESCR_PREGSIGN == 0), 
+                                        " (", format(sum(PRESCR_PREGSIGN == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Viable pregnancy with GA>=25 weeks" = paste0(sum(PRESCR_GA25 == 0), 
+                                        " (", format(sum(PRESCR_GA25 == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not meet age requirement" = paste0(sum(PRESCR_AGE == 0), 
+                                        " (", format(sum(PRESCR_AGE == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Outside catchment area" = paste0(sum(PRESCR_CATCHAREA == 0), 
+                                        " (", format(sum(PRESCR_CATCHAREA == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Other reason" = paste0(sum(PRESCR_OTHER == 0), 
+                                        " (", format(sum(PRESCR_OTHER == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not consent" = paste0(sum(PRESCR_CONSENT== 0), 
+                                        " (", format(sum(PRESCR_CONSENT == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")")
+) %>% 
+      t() %>% unlist()
+  ) 
+
+```
+
+&nbsp;
+&nbsp;
+
+\newpage
+### **1. PRiSMA**
+
+&nbsp;
+&nbsp;
+
+#### `r emo::ji("pushpin")` Table 1a: Pre-screening numbers for PRiSMA MNH Study for the most recent <span style="text-decoration:underline">one week</span> 
+*Value: This will provide a snapshot of weekly pre-screening progress, including reasons for ineligibility.* 
+
+&hairsp;
+
+```{r}
+bind_rows(tb_prescreen_new
+          ) %>% 
+  kbl(caption = "") %>%
+  kable_paper(bootstrap_options = "striped", 
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = "hold_position") %>% 
+  footnote(alphabet = c("Denominator is pre- screened (MNH00 completed)")) %>% 
+  pack_rows("Pre-screening", 1, 2, label_row_css = "color: steelblue;")  %>% 
+  pack_rows("Reason for exclusion in pre-screening, n(%)^a^", 3, 8, label_row_css = "color: steelblue;") 
+```
+
+<!-- Table 1b -->
+<!-- blank -->
+<!-- blank -->
+
+&nbsp;
+&nbsp;
+
+#### `r emo::ji("pushpin")` Table 1b: <span style="text-decoration:underline">Cumulative</span>  pre-screening numbers for PRiSMA MNH Study 
+*Value: look at cumulative pre-screening distributions since the start of relaunch. If ineligible, distributions by exclusion criteria are listed below.*
+
+&hairsp;
+  
+```{r}
+##all
+tb_prescreen_all <- statusOutcome %>% 
+  group_by(SITE) %>% 
+  summarise("Pre-screened for PRiSMA, n (MNH00)" = sum(PRESCREEN == 1),
+            "Eligible based on pre-screening, n" = sum(PRESCR_ELIGIBLE == 1), 
+            "No clinical signs of pregnancy" = paste0(sum(PRESCR_PREGSIGN == 0), 
+                                        " (", format(sum(PRESCR_PREGSIGN == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Viable pregnancy with GA>=25 weeks" = paste0(sum(PRESCR_GA25 == 0), 
+                                        " (", format(sum(PRESCR_GA25 == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not meet age requirement" = paste0(sum(PRESCR_AGE == 0), 
+                                        " (", format(sum(PRESCR_AGE == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Outside catchment area" = paste0(sum(PRESCR_CATCHAREA == 0), 
+                                        " (", format(sum(PRESCR_CATCHAREA == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Other reason" = paste0(sum(PRESCR_OTHER == 0), 
+                                        " (", format(sum(PRESCR_OTHER == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not consent" = paste0(sum(PRESCR_CONSENT== 0), 
+                                        " (", format(sum(PRESCR_CONSENT == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")")
+) %>% 
+  t() %>% as.data.frame() %>% 
+  `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+  add_column(
+    .before = 1,
+    "All sites" = statusOutcome %>% 
+  summarise("Pre-screened for PRiSMA, n (MNH00)" = sum(PRESCREEN == 1),
+            "Eligible based on pre-screening, n" = sum(PRESCR_ELIGIBLE == 1),
+            "No clinical signs of pregnancy" = paste0(sum(PRESCR_PREGSIGN == 0), 
+                                        " (", format(sum(PRESCR_PREGSIGN == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Viable pregnancy with GA>=25 weeks" = paste0(sum(PRESCR_GA25 == 0), 
+                                        " (", format(sum(PRESCR_GA25 == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not meet age requirement" = paste0(sum(PRESCR_AGE == 0), 
+                                        " (", format(sum(PRESCR_AGE == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Outside catchment area" = paste0(sum(PRESCR_CATCHAREA == 0), 
+                                        " (", format(sum(PRESCR_CATCHAREA == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Other reason" = paste0(sum(PRESCR_OTHER == 0), 
+                                        " (", format(sum(PRESCR_OTHER == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not consent" = paste0(sum(PRESCR_CONSENT== 0), 
+                                        " (", format(sum(PRESCR_CONSENT == 0)/sum(PRESCREEN == 1)*100, digits = 2, nsmall=2), ")")
+) %>% 
+      t() %>% unlist()
+  ) 
+```
+
+
+```{r}
+bind_rows(tb_prescreen_all
+          ) %>% 
+  kbl(caption = "") %>%
+  kable_paper(bootstrap_options = "striped", 
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = "hold_position") %>% 
+  footnote(alphabet = c("Denominator is pre- screened (MNH00 completed)")) %>% 
+  pack_rows("Pre-screening", 1, 2, label_row_css = "color: steelblue;")  %>% 
+  pack_rows("Reason for exclusion in pre-screening, n(%)^a^", 3, 8, label_row_css = "color: steelblue;") 
+```
+
+<!-- blank -->
+<!-- blank -->
+<!-- Table 2a -->
+<!-- blank -->
+<!-- blank -->
+
+&nbsp;
+&nbsp;
+
+#### `r emo::ji("pushpin")` Table 2a: Enrollment numbers for PRiSMA MNH Study for the most recent <span style="text-decoration:underline">one week</span> 
+*Value: This will provide a snapshot of enrollment distributions on a weekly basis, including reasons for ineligibility.*
+
+&nbsp;
+&nbsp;
+
+```{r}
+##new 
+tb_enroll_new <- statusOutcome %>% 
+  filter(
+    SITE == "Pakistan" & (dmy(M02_SCRN_OBSSTDAT) > dmy("23-12-2022")) |
+    SITE == "Kenya" & (dmy(M02_SCRN_OBSSTDAT) > dmy("14-12-2022")) 
+  ) %>% 
+  group_by(SITE) %>% 
+  summarise("Screened for PRiSMA (MNH02), n" = sum(SCREEN == 1),
+            "Enrolled in PRiSMA (MNH02), n(%) ^a^" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
+                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN == 1, na.rm=TRUE)*100, digits = 2, nsmall=2), ")"),
+            "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
+                             " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Viable pregnancy with GA>=20 weeks by US" = paste0(sum(GA20 == 0, na.rm=TRUE),
+                                " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
+                                   " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not consent" = paste0(sum(CONSENT == 0, na.rm=TRUE),
+                                  " (", format(sum(CONSENT == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")")
+  ) %>% 
+    t() %>% as.data.frame() %>% 
+  `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+  add_column(
+    .before = 1,
+    "All sites" = statusOutcome %>% 
+  filter(
+    SITE == "Pakistan" & (dmy(M02_SCRN_OBSSTDAT) > dmy("23-12-2022")) |
+    SITE == "Kenya" & (dmy(M02_SCRN_OBSSTDAT) > dmy("14-12-2022")) 
+  ) %>% 
+  summarise("Screened for PRiSMA (MNH02), n" = sum(SCREEN == 1),
+            "Enrolled in PRiSMA (MNH02), n(%) ^a^" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
+                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN == 1, na.rm=TRUE)*100, digits = 2, nsmall=2), ")"),
+            "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
+                             " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Viable pregnancy with GA>=20 weeks by US" = paste0(sum(GA20 == 0, na.rm=TRUE),
+                                " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
+                                   " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not consent" = paste0(sum(CONSENT == 0, na.rm=TRUE),
+                                  " (", format(sum(CONSENT == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")")
+      ) %>% 
+      t() %>% unlist()
+  ) 
+```
+
+
+```{r}
+bind_rows(tb_enroll_new#,
+          # tb_status
+          ) %>% 
+  kbl(caption = "") %>%
+  kable_paper(bootstrap_options = "striped", 
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = "hold_position") %>% 
+  footnote(alphabet = c("denominator is n screened (MNH02 completed)"
+                        )) %>% 
+  pack_rows("Enrollment", 1, 2, label_row_css = "color: steelblue;")  %>% 
+  pack_rows("Reason not enrolled, n(%)^a^", 3, 6, label_row_css = "color: steelblue;") 
+```
+
+<!-- blank -->
+<!-- blank -->
+<!-- Table 2b -->
+<!-- blank -->
+<!-- blank -->
+
+&nbsp;
+&nbsp;
+
+#### `r emo::ji("pushpin")` Table 2b: <span style="text-decoration:underline">Cumulative</span> enrollment numbers for PRiSMA MNH Study 
+*Value: look at cumulative enrollment and study progress distributions since the start of relaunch. If ineligible, distributions by exclusion criteria are listed below. .*
+
+&nbsp;
+&nbsp;
+
+```{r}
+##culmulative
+tb_enroll <- statusOutcome %>% 
+  group_by(SITE) %>% 
+  summarise("Screened for PRiSMA (MNH02), n" = sum(SCREEN == 1),
+            "Enrolled in PRiSMA (MNH02), n(%) ^a^" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
+                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN == 1, na.rm=TRUE)*100, digits = 2, nsmall=2), ")"),
+            "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
+                             " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Viable pregnancy with GA>=20 weeks by US" = paste0(sum(GA20 == 0, na.rm=TRUE),
+                                " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
+                                   " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not consent" = paste0(sum(CONSENT == 0, na.rm=TRUE),
+                                  " (", format(sum(CONSENT == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")")
+  ) %>% 
+    t() %>% as.data.frame() %>% 
+  `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+  add_column(
+    .before = 1,
+    "All sites" = statusOutcome %>% 
+  summarise("Screened for PRiSMA (MNH02), n" = sum(SCREEN == 1),
+            "Enrolled in PRiSMA (MNH02), n(%) ^a^" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
+                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN == 1, na.rm=TRUE)*100, digits = 2, nsmall=2), ")"),
+            "Viable pregnancy with GA>=20 weeks by US" = paste0(sum(AGE == 0, na.rm=TRUE),
+                             " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "GA >= 20 wks by US" = paste0(sum(GA20 == 0, na.rm=TRUE),
+                                " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
+                                   " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")"),
+            "Did not consent" = paste0(sum(CONSENT == 0, na.rm=TRUE),
+                                  " (", format(sum(CONSENT == 0, na.rm=TRUE)/sum(SCREEN == 1)*100, digits = 2, nsmall=2), ")")
+      ) %>% 
+      t() %>% unlist()
+  ) 
+```
+
+
+
+```{r}
+bind_rows(tb_enroll#,
+          # tb_status
+          ) %>% 
+  kbl(caption = "") %>%
+  kable_paper(bootstrap_options = "striped", 
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = "hold_position") %>% 
+  footnote(alphabet = c("denominator is n screened (MNH02 completed)"
+          ) ) %>% 
+  pack_rows("Enrollment", 1, 2, label_row_css = "color: steelblue;")  %>% 
+  pack_rows("Reason not enrolled, n(%)^a^", 3, 6, label_row_css = "color: steelblue;") 
+```
+
+<!-- blank -->
+<!-- blank -->
+<!-- Table 3 -->
+
+&nbsp;
+&nbsp;
+
+#### `r emo::ji("pushpin")` Table 3: Study Status for PRiSMA MNH Study 
+*Value: Value: look at current status of enrolled women*
+
+&nbsp;
+&nbsp;
+
+
+```{r}
+#MNH23
+tb_status <- matData %>% 
+  left_join(statusOutcome %>% 
+              select(SCRNID, MOMID, PREGID, ENROLL), by = c("SCRNID", "MOMID", "PREGID")) %>%
+  mutate(M23_CLOSE_DSDECOD = NA) %>% #remove this after we have data
+  filter(ENROLL == 1) %>% 
+  group_by(SITE) %>% 
+  summarise(
+    " " = paste0("(n=", n(), ")"),
+    "Ongoing participants" = paste0(sum(is.na(M23_CLOSE_DSDECOD)), 
+                                        " (", format(sum(is.na(M23_CLOSE_DSDECOD))/n()*100, digits = 2, nsmall=2), ")"),
+    "Completed 1-year follow-up after live birth or stillbirth" = paste0(sum(M23_CLOSE_DSDECOD == 1, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 1, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")"),
+    "Completed 42-day follow-up after spontaneous abortion (miscarriage) or induced abortion" = paste0(sum(M23_CLOSE_DSDECOD == 2, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 2, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")"),
+    "Mother died before completion" = paste0(sum(M23_CLOSE_DSDECOD == 3, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 3, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")"),
+    "Withdrew study" = paste0(sum(M23_CLOSE_DSDECOD == 4, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 4, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")"),
+    "Terminated from study" = paste0(sum(M23_CLOSE_DSDECOD == 5, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 5, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")"),
+    "Lost to follow-up" = paste0(sum(M23_CLOSE_DSDECOD == 6, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 6, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")")
+  ) %>% 
+    t() %>% as.data.frame() %>% 
+  `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+  add_column(
+    .before = 1,
+    "All sites" = matData %>% 
+  left_join(statusOutcome %>% 
+              select(SCRNID, MOMID, PREGID, ENROLL), by = c("SCRNID", "MOMID", "PREGID")) %>%
+      mutate(M23_CLOSE_DSDECOD = NA) %>% #remove this after we have data
+      filter(ENROLL == 1) %>% 
+  summarise(
+    " " = paste0("(n=", n(), ")"),
+    "Ongoing participants" = paste0(sum(is.na(M23_CLOSE_DSDECOD)), 
+                                        " (", format(sum(is.na(M23_CLOSE_DSDECOD))/n()*100, digits = 2, nsmall=2), ")"),
+    "Completed 1-year follow-up after live birth or stillbirth" = paste0(sum(M23_CLOSE_DSDECOD == 1, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 1, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")"),
+    "Completed 42-day follow-up after spontaneous abortion (miscarriage) or induced abortion" = paste0(sum(M23_CLOSE_DSDECOD == 2, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 2, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")"),
+    "Mother died before completion" = paste0(sum(M23_CLOSE_DSDECOD == 3, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 3, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")"),
+    "Withdrew study" = paste0(sum(M23_CLOSE_DSDECOD == 4, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 4, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")"),
+    "Terminated from study" = paste0(sum(M23_CLOSE_DSDECOD == 5, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 5, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")"),
+    "Lost to follow-up" = paste0(sum(M23_CLOSE_DSDECOD == 6, na.rm=TRUE), 
+                                        " (", format(sum(M23_CLOSE_DSDECOD == 6, na.rm=TRUE)/n()*100, digits = 2, nsmall=2), ")")
+      ) %>% 
+      t() %>% unlist()
+  ) 
+```
+
+```{r}
+tb_status %>% 
+  kbl(caption = "") %>%
+  kable_paper(bootstrap_options = "striped", 
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = "hold_position") %>% 
+  row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
+  row_spec(0:1, extra_css = "padding: 0px") %>% 
+  footnote(alphabet = c("denominator is n enrolled"
+          ) ) %>% 
+  pack_rows("Study status, n (%)^a^", 2, 8, label_row_css = "color: steelblue;") 
+```
+
+\newpage
+<!-- Figure 1a -->
+<!-- blank -->
+<!-- blank -->
+
+&nbsp;
+&nbsp;
+
+#### `r emo::ji("pushpin")` Figure 1a: Cumulative Enrollment by Site and Week
+*Value: Illustrate cumulative enrollment status by site over time*
+
+```{r, echo=FALSE, figure.align='center', out.width="60%"}
+enroll_cum <- statusOutcome %>% 
+  arrange("", by_group=START_DATE_MOM_WK) %>% 
+  filter(ENROLL == 1 & !is.na(START_DATE_MOM_WK), 
+         START_DATE_MOM_WK > dmy("21/09/2022")) %>% 
+  group_by(SITE, START_DATE_MOM_WK) %>% 
+  summarise(n = n()) %>% 
+  mutate(cum_n = cumsum(n)) %>% 
+  ungroup() 
+
+enroll_cum %>% 
+  ggplot(aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE)) +
+  geom_point(shape = 15) +
+  geom_line() +
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), dmy("27-12-2022"))) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position="bottom",
+        panel.grid.minor = element_blank()) +
+  xlab("Enrollment Week") +
+  ylab("Site Participant Enrolled") +
+  ggtitle("")
+
+```
+
+
+<!-- \newpage -->
+<!-- Figure 1b -->
+<!-- blank -->
+<!-- blank -->
+
+&nbsp;
+&nbsp;
+
+#### `r emo::ji("pushpin")` Figure 1b: Cumulative Enrollment by Week for Each Site
+*Value: Compare expected and actual enrollment for each site over time*
+
+&nbsp;
+&nbsp;
+
+```{r, figure-side, fig.show='hold', out.width="50%"}
+enroll_cum_PA <- statusOutcome %>% 
+  arrange("", by_group=START_DATE_MOM_WK) %>% 
+  filter(SCREEN == 1 & SITE == "Pakistan" & !is.na(START_DATE_MOM_WK), 
+         START_DATE_MOM_WK > dmy("21/09/2022")) %>% 
+  group_by(START_DATE_MOM_WK) %>% 
+  summarise(enroll_n=sum(ENROLL),
+            expect_n=mean(EXPECT)) %>% 
+  mutate(
+  gap = as.numeric(ymd(START_DATE_MOM_WK)-lag(ymd(START_DATE_MOM_WK))),
+  expect_n = case_when(
+    gap <= 1 ~ expect_n,
+    gap > 1 ~ expect_n*gap,
+    is.na(gap) ~ expect_n
+  )) %>% 
+  mutate(expect_cum=cumsum(expect_n),
+         enroll_cum=cumsum(enroll_n))%>% 
+  ungroup() 
+
+enroll_cum_PA %>% 
+  ggplot(aes(x = START_DATE_MOM_WK)) +
+  geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
+  geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
+  geom_line(aes(y = expect_cum, color = "Expected")) +
+  geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  scale_color_manual("",
+                     breaks=c("Expected","Enrolled"),
+                     values = c("orange", "royalblue1")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position="bottom",
+        panel.grid.minor = element_blank()) +
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), dmy("27-12-2022"))) +
+  xlab("Enrollment Week") +
+  ylab("Site Participant Expected and Enrolled") +
+  ggtitle("Pakistan") 
+
+enroll_cum_KE <- statusOutcome %>% 
+  arrange("", by_group=START_DATE_MOM_WK) %>% 
+  filter(SCREEN == 1 & SITE == "Kenya" & !is.na(START_DATE_MOM_WK), 
+         START_DATE_MOM_WK > dmy("20/11/2022")) %>% 
+  group_by(START_DATE_MOM_WK) %>% 
+  summarise(enroll_n=sum(ENROLL),
+            expect_n=mean(EXPECT)) %>% 
+  mutate(
+  gap = as.numeric(ymd(START_DATE_MOM_WK)-lag(ymd(START_DATE_MOM_WK))),
+  expect_n = case_when(
+    gap <= 1 ~ expect_n,
+    gap > 1 ~ expect_n*gap,
+    is.na(gap) ~ expect_n
+  )) %>% 
+  mutate(expect_cum=cumsum(expect_n),
+         enroll_cum=cumsum(enroll_n))%>% 
+  ungroup() 
+
+enroll_cum_KE %>% 
+  ggplot(aes(x = START_DATE_MOM_WK)) +
+  geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
+  geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
+  geom_line(aes(y = expect_cum, color = "Expected")) +
+  geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  scale_color_manual("",
+                     breaks=c("Expected","Enrolled"),
+                     values = c("orange", "royalblue1")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position="bottom",
+        panel.grid.minor = element_blank()) +
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("20-11-2022"), dmy("20-12-2022"))) +
+  xlab("Enrollment Week") +
+  ylab("Site Participant Expected and Enrolled") +
+  ggtitle("Kenya") 
+
+```
+
+<!-- Table 3 -->
+<!-- blank -->
+<!-- blank -->
+
+&nbsp;
+&nbsp;
+
+#### `r emo::ji("pushpin")` Table 4: ANC study visit & procedure completion metrics
+*Value: Key metrics such as gestational age and percentage of women who have received an ultrasound at enrollment and 32 weeks are listed. Additionally, percent of all expected forms (late visit window has passed) that are filled out for each ANC visit are listed below. This will help us identify any gaps in visit completion or missing forms.*
+
+&nbsp;
+&nbsp;
+
+```{r}
+# MNH01 Ultrasound !!! Revise if we have ANC 32 visit
+ga_tb <- matOutcome %>% 
+  left_join(statusOutcome %>% 
+              select(SCRNID, MOMID, PREGID, ENROLL), by = c("SCRNID", "MOMID", "PREGID")) %>% 
+  left_join(matData %>% 
+              select(SCRNID, MOMID, PREGID, M01_VISIT_TYPE_V4), by = c("SCRNID", "MOMID", "PREGID")) %>% 
+  filter(ENROLL == 1) %>% 
+  group_by(SITE) %>% 
+  summarise(
+  "total enrolled" = paste0(
+    "(n=",
+    n(),
+    ")"
+  ),
+  "Gestational Age at Enrollment, mean ± SD" = paste0(
+    format(round(mean(GA_ENROLL_WKS, na.rm = TRUE),2), nsmall=2, ndigits=2),
+    " (",
+    format(round(sd(GA_ENROLL_WKS, na.rm = TRUE),2), nsmall=2, ndigits=2),
+    ")"
+  ), 
+  "First trimester (<14 wks), n(%)^a^" = paste0(
+    sum(GA_ENROLL_WKS < 14, na.rm = TRUE),
+    " (",
+    format(round(sum(GA_ENROLL_WKS < 14, na.rm = TRUE)/n()*100, 2), nsmall = 2, ndigits = 2),
+    ")"
+  ),
+  "Ultrasound image at enrollment, n(%)^a^" = paste0( "0 (0.00)"),# revise once we have data
+  "Ultrasound at ANC-32, n(%)^a^" = paste0(   
+    sum(M01_VISIT_TYPE_V4 == 4, na.rm = TRUE),
+    " (",
+    format(round(sum(M01_VISIT_TYPE_V4 == 4, na.rm = TRUE)/n()*100, 2), nsmall = 2, ndigits = 2),
+    ")"
+  )
+  ) %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+  add_column(
+    .before = 1,
+    "All sites" = matOutcome %>% 
+      left_join(statusOutcome %>% 
+                  select(SCRNID, MOMID, PREGID, ENROLL), by = c("SCRNID", "MOMID", "PREGID")) %>% 
+  left_join(matData %>% 
+              select(SCRNID, MOMID, PREGID, M01_VISIT_TYPE_V4), by = c("SCRNID", "MOMID", "PREGID")) %>% 
+      filter(ENROLL == 1) %>% 
+ summarise(
+     "total enrolled" = paste0(
+    "(n=",
+    n(),
+    ")"
+  ),
+  "Gestational Age at Enrollment, mean ± SD" = paste0(
+    format(round(mean(GA_ENROLL_WKS, na.rm = TRUE),2), nsmall=2, ndigits=2),
+    " (",
+    format(round(sd(GA_ENROLL_WKS, na.rm = TRUE),2), nsmall=2, ndigits=2),
+    ")"
+  ), 
+  "First trimester (<14 wks), n(%)^a^" = paste0(
+    sum(GA_ENROLL_WKS < 14, na.rm = TRUE),
+    " (",
+    format(round(sum(GA_ENROLL_WKS < 14, na.rm = TRUE)/n()*100, 2), nsmall = 2, ndigits = 2),
+    ")"
+  ),
+  "Ultrasound image at enrollment, n(%)^a^" = paste0( "0 (0.00)"),
+  "Ultrasound at ANC-32, n(%)^a^" = paste0(
+    sum(M01_VISIT_TYPE_V4 == 4, na.rm = TRUE),
+    " (",
+    format(round(sum(M01_VISIT_TYPE_V4 == 4, na.rm = TRUE)/n()*100, 2), nsmall = 2, ndigits = 2),
+    ")"
+  )
+  )  %>% 
+      t() %>% as.data.frame() %>% unlist()
+  ) 
+```
+
+```{r}
+source("report_helpers_xh.R")
+# variables about visit information
+visitData <- matData %>% 
+  left_join(statusOutcome %>% 
+              select(SCRNID, MOMID, PREGID, ENROLL), by = c("SCRNID", "MOMID", "PREGID")) %>%
+  distinct() %>% 
+  left_join(matOutcome %>% 
+              select(SCRNID, MOMID, PREGID, BESTEDD), by = c("SCRNID", "MOMID", "PREGID")) %>% 
+  distinct() %>% 
+  filter(ENROLL == 1) 
+
+# visit in M02
+M02 <- visitData %>% 
+  select(MOMID, PREGID, SITE, BESTEDD, M02_SCRN_OBSSTDAT) %>% 
+  mutate(
+         ANCLESS20 = ifelse(!is.na(M02_SCRN_OBSSTDAT), 1, 0)) %>%
+  group_by(SITE) %>% 
+  summarise("ANC < 20" = paste0(
+    format(sum(ANCLESS20 == 1, na.rm = TRUE), nsmall = 2, ndigits = 2),
+    " (",
+    format(round(sum(ANCLESS20 == 1, na.rm = TRUE)/n()*100, 2), nsmall = 2, ndigits = 2),
+    ")")) %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+  add_column(
+    .before = 1,
+    "All sites" =  visitData %>% 
+      select(MOMID, PREGID, SITE, BESTEDD, M02_SCRN_OBSSTDAT) %>% 
+  mutate(
+         ANCLESS20 = ifelse(!is.na(M02_SCRN_OBSSTDAT), 1, 0)) %>%
+      summarise("ANC < 20" = paste0(
+        format(sum(ANCLESS20 == 1, na.rm = TRUE), nsmall = 2, ndigits = 2),
+        " (",
+        format(round(sum(ANCLESS20 == 1, na.rm = TRUE)/n()*100, 2), nsmall = 2, ndigits = 2),
+        ")")) %>% 
+      t() %>% as.data.frame() %>% unlist()
+      )
+
+# visit in M03
+M03 <- visitData %>% 
+  select(MOMID, PREGID, SITE, BESTEDD, M03_SD_OBSSTDAT) %>% 
+  mutate(
+         ANCLESS20 = ifelse(!is.na(M03_SD_OBSSTDAT), 1, 0)) %>% 
+  group_by(SITE) %>% 
+  summarise("ANC < 20" = paste0(
+    format(sum(ANCLESS20 == 1, na.rm = TRUE), nsmall = 2, ndigits = 2),
+    " (",
+    format(round(sum(ANCLESS20 == 1, na.rm = TRUE)/n()*100, 2), nsmall = 2, ndigits = 2),
+    ")")) %>% 
+  t() %>% 
+  as.data.frame() %>% 
+  `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+  add_column(
+    .before = 1,
+    "All sites" =  visitData %>% 
+      select(MOMID, PREGID, SITE, BESTEDD, M03_SD_OBSSTDAT) %>% 
+  mutate(
+         ANCLESS20 = ifelse(!is.na(M03_SD_OBSSTDAT), 1, 0)) %>% 
+      summarise("ANC < 20" = paste0(
+        format(sum(ANCLESS20 == 1, na.rm = TRUE), nsmall = 2, ndigits = 2),
+        " (",
+        format(round(sum(ANCLESS20 == 1, na.rm = TRUE)/n()*100, 2), nsmall = 2, ndigits = 2),
+        ")")) %>% 
+      t() %>% as.data.frame() %>% unlist()
+      )
+
+#visit in M04
+M04 <- visit_func(data = visitData, 
+                  varDates = "^M04_ANC_OBSSTDAT_V\\d+", 
+                  varDate = "ANC_OBSSTDAT",
+                  varVisits = "M04_VISIT") %>% 
+  replace_with_na(replace = list(Kenya = c("0 (NaN)")))
+
+#visit in M05
+M05 <- visit_func(data = visitData,
+                  varDates = "^M05_ANT_PEDAT_V\\d+", 
+                  varDate = "ANT_PEDAT",
+                  varVisits = "M05_VISIT") %>% 
+  replace_with_na(replace = list(Kenya = c("0 (NaN)")))
+
+#visit in M06
+M06 <- visit_func(data = visitData,
+                  varDates = "^M06_DIAG_VSDAT_V\\d+",
+                  varDate = "DIAG_VSDAT",
+                  varVisits = "M06_VISIT") %>% 
+  replace_with_na(replace = list(Kenya = c("0 (NaN)")))
+
+#visit in M07
+M07 <- visit_func(data = visitData,
+                  varDates = "^M07_MAT_SPEC_COLLECT_DAT_V\\d+",
+                  varDate = "MAT_SPEC_COLLECT_DAT",
+                  varVisits = "M07_VISIT")
+
+#visit in M08
+M08 <- visit_func(data = visitData,
+                  varDates = "^M08_LBSTDAT_V\\d+",
+                  varDate = "LBSTDAT",
+                  varVisits = "M08_VISIT")
+
+#visit in M25
+M25 <- visit_func(data = visitData,
+                  varDates = "^M25_OBSSTDAT_V\\d+",
+                  varDate = "OBSSTDAT",
+                  varVisits = "M25_VISIT")
+
+#visit in M26
+M26 <- visit_func(data = visitData,
+                  varDates = "^M26_FTGE_OBSTDAT_V\\d+",
+                  varDate = "FTGE_OBSTDAT",
+                  varVisits = "M26_VISIT")
+
+
+```
+
+
+```{r}
+options(knitr.kable.NA = '0 (0.00)')
+
+bind_rows(ga_tb, 
+          M02,M03,M04[1,],M05[1,],M06[1,],M07[1,],M08[1,],
+          M04[2,],M05[2,],M06[2,],M07[2,],M08[2,],M25[2,],
+          M04[3,],M05[3,],M06[3,],M25[3,],M26[3,],
+          M04[4,],M05[4,],M06[4,]
+          ) %>% 
+  `rownames<-`(c(" ",
+                 "Gestational Age at Enrollment, mean ± SD",
+                 "First trimester (<14 wks), n(%)^a^",
+                 "Ultrasound image at enrollment, n(%)^a^",
+                 "Ultrasound at ANC-32, n(%)^a^",
+                 "MNH02 Enrollment Status", 
+                 "MNH03 Sociodemographic", 
+                 "MNH04 ANC Clinical Status",
+                 "MNH05 Maternal Anthropometry",
+                 "MNH06 Maternal POC",
+                 "MNH07 Maternal Specimen",
+                 "MNH08 Maternal Lab",
+                 "MNH04 ANC Clinical Status ",
+                 "MNH05 Maternal Anthropometry ",
+                 "MNH06 Maternal POC ",
+                 "MNH07 Maternal Specimen ",
+                 "MNH08 Maternal Lab ",
+                 "MNH25 Maternal Depression ",
+                 "MNH04 ANC Clinical Status  ",
+                 "MNH05 Maternal Anthropometry  ",
+                 "MNH06 Maternal POC  ",
+                 "MNH25 Maternal Depression  ",
+                 "MNH26 Maternal Fatigue  ",
+                 "MNH04 ANC Clinical Status   ",
+                 "MNH05 Maternal Anthropometry   ",
+                 "MNH06 Maternal POC   "
+                 )
+               )  %>% 
+  kbl(caption = "") %>%
+  kable_paper(bootstrap_options = "striped", 
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = "hold_position") %>% 
+  row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
+  row_spec(0:1, extra_css = "padding: 0px") %>% 
+  footnote(alphabet = c("denominator is n enrolled", 
+                      "denominator is n completed ANC20 visit and missed on-time window with >22 weeks gestation",
+                      "denominator is n completed ANC28 visit and missed on-time window with >30 weeks gestation",
+                      "denominator is n completed ANC32 visit and missed on-time window with >33 weeks gestation"
+                      )) %>% 
+  pack_rows("MNH01 Ultrasound", 2, 5, label_row_css = "color: steelblue;") %>% 
+  pack_rows("ANC < 20, n(%)^a^", 6, 12, label_row_css = "color: steelblue;") %>% 
+  pack_rows("ANC = 20, n(%)^b^", 13, 18, label_row_css = "color: steelblue;") %>% 
+  pack_rows("ANC = 28, n(%)^c^", 19, 23, label_row_css = "color: steelblue;") %>% 
+  pack_rows("ANC = 32, n(%)^d^", 24, 26, label_row_css = "color: steelblue;") 
+```
+
+<!-- Table  -->
+<!-- blank -->
+<!-- blank -->
+&nbsp;
+
+### **2. ReMAPP**
+
+&nbsp;
+
+<!-- Table 2a -->
+<!-- blank -->
+<!-- blank -->
+
+&nbsp;
+&nbsp;
+
+#### `r emo::ji("pushpin")` Table 1: ReMAPP healthy cohort eligibility
+*Value: This table will be updated as lab measurements are updated and reported. Those who are unknown may move into eligible or ineligible categories based on updated lab reports.*
+
+&nbsp;
+
+```{r}
+options(knitr.kable.NA = '0 (0.00)')
+
+healthy_enroll <- statusOutcome %>% 
+  select(SCRNID, MOMID, PREGID, SITE, ENROLL) %>% 
+  left_join(healthyOutcome, by=c("SCRNID", "MOMID", "PREGID", "SITE")) %>% 
+  filter(ENROLL == 1) %>% 
+  group_by(SITE) %>% 
+  summarise(" " = paste0("(n=", n(), ")"), 
+            "Total enrolled in ReMAPP" = sum(HEALTHY_ELIGIBLE == 1, na.rm=TRUE),
+            "Eligible , n(%)" = paste0(sum(HEALTHY_ELIGIBLE == 1, na.rm=TRUE),
+                                        " (", format(sum(HEALTHY_ELIGIBLE == 1, na.rm=TRUE)/sum(n())*100, digits = 2, nsmall=2), ")"),
+            "Ineligible, n(%)" = paste0(sum(HEALTHY_ELIGIBLE == 0, na.rm=TRUE),
+                             " (", format(sum(HEALTHY_ELIGIBLE == 0, na.rm=TRUE)/sum(ENROLL == 1)*100, digits = 2, nsmall=2), ")"),
+            "Pending, n(%)" = paste0(sum(HEALTHY_ELIGIBLE == 3, na.rm=TRUE),
+                                " (", format(sum(HEALTHY_ELIGIBLE == 3, na.rm=TRUE)/sum(ENROLL == 1)*100, digits = 2, nsmall=2), ")")
+  ) %>% 
+    t() %>% as.data.frame() %>% 
+  `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+  add_column(
+    .before = 1,
+    "All sites" = statusOutcome %>% 
+  select(SCRNID, MOMID, PREGID, SITE, ENROLL) %>% 
+  left_join(healthyOutcome, by=c("SCRNID", "MOMID", "PREGID", "SITE")) %>% 
+  filter(ENROLL == 1) %>% 
+  summarise(" " = paste0("(n=", n(), ")"), 
+            "Total enrolled in ReMAPP" = sum(HEALTHY_ELIGIBLE == 1, na.rm=TRUE),
+            "Eligible , n(%)" = paste0(sum(HEALTHY_ELIGIBLE == 1, na.rm=TRUE),
+                                        " (", format(sum(HEALTHY_ELIGIBLE == 1, na.rm=TRUE)/sum(n())*100, digits = 2, nsmall=2), ")"),
+            "Ineligible, n(%)" = paste0(sum(HEALTHY_ELIGIBLE == 0, na.rm=TRUE),
+                             " (", format(sum(HEALTHY_ELIGIBLE == 0, na.rm=TRUE)/sum(ENROLL == 1)*100, digits = 2, nsmall=2), ")"),
+            "Pending, n(%)" = paste0(sum(HEALTHY_ELIGIBLE == 3, na.rm=TRUE),
+                                " (", format(sum(HEALTHY_ELIGIBLE == 3, na.rm=TRUE)/sum(ENROLL == 1)*100, digits = 2, nsmall=2), ")")
+  ) %>% 
+      t() %>% unlist()
+  ) 
+
+```
+
+
+```{r}
+bind_rows(healthy_enroll) %>% 
+  kbl(caption = "") %>%
+  kable_paper(bootstrap_options = "striped", 
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = "hold_position") %>% 
+  row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
+  row_spec(0:1, extra_css = "padding: 0px") %>% 
+  footnote(alphabet = c("denominator is n enrolled in PRiSMA")) 
+
+```
+
+<!-- Table 2 -->
+<!-- blank -->
+<!-- blank -->
+
+&nbsp;
+&nbsp;
+
+#### `r emo::ji("pushpin")` Table 2: Proportion of women eligible for ReMAPP healthy cohort by eligibility criteria. 
+*Value: This table will show the eligible number and percentage of all ReMAPP enrolled women for each criteria at baseline*
+&nbsp;
+&nbsp;
+
+```{r}
+criteria_cols = c('CRIT_AGE', 'CRIT_GA',
+                  'CRIT_BMI', 'CRIT_MUAC',
+                  'CRIT_HEIGHT', 'CRIT_SINGLEPREG',
+                  'CRIT_BP', 'CRIT_PREV_MISCARR',
+                  'CRIT_PREV_PRETERM_LBW', 'CRIT_PREV_NEODEATH',
+                  'CRIT_COMPLICATION', 'CRIT_SMOKE',
+                  'CRIT_DRINK', 'CRIT_CHRONIC', 
+                  'CRIT_HIV', 'CRIT_MALARIA',
+                  'CRIT_HEPATITISB','CRIT_HEPATITISC',
+                  'CRIT_HEMOGLOBINOPATHIES', 'CRIT_IRON',
+                  'CRIT_INFLAM'
+ )
+
+criteria_names <- c('Aged 18 to 34 years',
+                    'Gestational age <14 weeks at enrollment',
+                    'BMI at baseline of >18.5 and <30 kg/m2',
+                    'Mid-upper arm circumference (MUAC) > 23cm',
+                    'Height >153 cm',
+                    'Singleton pregnancy',
+                    'Systolic blood pressure <140 mmHg and diastolic blood pressure <90 mmHg',
+                    '<= 1 miscarriage in two consecutive pregnancies',
+                    'No previous preterm or low birth weight delivery',
+                    'No previous neonatal or fetal death',
+                    'No history of pregnancy complications',
+                    'Non-cigarette smoking, tobacco chewing, or betel nut use',
+                    'No reported alcohol consumption during pregnancy',
+                    'No known history or current chronic disease including cancer, kidney disease, and cardiac conditions',
+                    'No known history or current HIV',
+                    'No current malaria infection (per RDT) at baseline',
+                    'No Hepatitis B virus infection',
+                    'No Hepatitis C virus infection',
+                    'No hemoglobinopathiesb',
+                    'Not iron deficient (serum ferritin >15 mcg/L– adjusted for inflammation)',
+                    'No subclinical inflammation (CRP > 5 mg/L and/or AGP > 1 g/L)'
+                    )
+
+healthy_tb <- map_dfc(c("Pakistan","Kenya"), function(site){ 
+    healthyOutcome %>%
+    left_join(statusOutcome %>% 
+                select(SCRNID, MOMID, PREGID, ENROLL), by = c("SCRNID", "MOMID", "PREGID")) %>% 
+    distinct() %>% 
+    filter(ENROLL == 1) %>% 
+    filter(SITE == {{site}}) %>% 
+    select(starts_with("CRIT_")) %>%
+    pivot_longer(everything()) %>%
+    group_by(name, value) %>%
+    summarize(n = n(), .groups = "drop_last") %>%
+    mutate(p = paste0(n, " (", format(round(n/sum(n, na.rm = TRUE)*100,2), digits=2, nsmall=2), ")")) %>%
+    select(-n) %>%
+    pivot_wider(names_from = value, values_from = p, values_fill = "0 (0.00)") %>%
+    ungroup() %>% arrange(match(name, criteria_cols)) %>%
+    select(-name) %>%
+    mutate(criteria = criteria_names, .before  = 1) %>% 
+    select(`1`) %>% 
+  `colnames<-`(c(site))
+}) %>% 
+  as.data.frame() %>% 
+  `rownames<-`(criteria_names) %>% 
+  add_column(
+    .before = 1,
+    "All sites" = 
+    healthyOutcome %>%
+    left_join(statusOutcome %>% 
+                select(SCRNID, MOMID, PREGID, ENROLL), by = c("SCRNID", "MOMID", "PREGID")) %>% 
+    distinct() %>% 
+    filter(ENROLL == 1) %>% 
+    select(starts_with("CRIT_")) %>%
+    pivot_longer(everything()) %>%
+    group_by(name, value) %>%
+    summarize(n = n(), .groups = "drop_last") %>%
+    mutate(p = paste0(n, " (", format(round(n/sum(n)*100,2), digits=2, nsmall=2), ")")) %>%
+    select(-n) %>%
+    pivot_wider(names_from = value, values_from = p, values_fill = "0 (0.00)") %>%
+    ungroup() %>% arrange(match(name, criteria_cols)) %>%
+    select(-name) %>%
+    mutate(criteria = criteria_names, .before  = 1) %>% 
+    select(`1`) %>% 
+    unlist()
+    )
+healthy_tb$Pakistan[13] = "NA"
+
+enroll_tb <- statusOutcome %>% 
+  group_by(SITE) %>% 
+  filter(ENROLL ==1 ) %>% 
+  summarise(" " = paste0("(n=", sum(ENROLL == 1), ")")#,
+            ) %>% 
+  t() %>% as.data.frame() %>% 
+    `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+  add_column(
+    .before = 1,
+    "All sites" = statusOutcome %>% 
+  left_join(healthyOutcome %>% 
+               select(SCRNID, MOMID, PREGID, HEALTHY_ELIGIBLE), by = c("SCRNID", "MOMID", "PREGID")) %>%       
+  filter(ENROLL ==1 ) %>% 
+  summarise(" " = paste0("(n=", sum(ENROLL == 1), ")")
+            ) %>% 
+  t() %>% as.data.frame() %>% unlist()
+  ) 
+```
+
+```{r}
+enroll_tb %>% 
+  bind_rows(healthy_tb) %>% 
+  kbl(caption = "") %>%
+  kable_paper(bootstrap_options = c("striped", "hover"), 
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_option = "hold position") %>% 
+    row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
+  row_spec(0:1, extra_css = "padding: 0px") %>% 
+  pack_rows("Eligible for ReMAPP Aim 1 enrollment, n(%)^a^", 2, 15, label_row_css = "color: steelblue;") %>%
+  pack_rows("Lab Values, n(%)^a^", 16, 22, label_row_css = "color: steelblue;") %>% 
+  column_spec(1, width = "36em") %>% 
+    footnote(alphabet = c("denominator is enrolled in PRiSMA")) 
+
+```
+
