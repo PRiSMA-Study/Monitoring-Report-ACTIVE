@@ -3,7 +3,7 @@
 #*Output: statusOutcome.rda
 #*include: screen vars, enroll vars
 #**************************************************************************************
-rm(list = ls())
+# rm(list = ls())
 library(tidyverse)
 library(lubridate)
 load("derived_data/dataMerged.rda")
@@ -17,13 +17,13 @@ load("derived_data/matOutcome.rda")
 study_date <- matData %>% 
     select(SCRNID,MOMID, PREGID, SITE,
            M00_SCRN_OBSSTDAT,
-           M00_CON_DSSTDAT, 
-           M00_CON_LAR_SIGNDAT, 
-           M00_CON_WITNESS_SIGNDAT, 
-           M00_ASSNT_DSSTDAT, 
+           M00_CON_DSSTDAT, # Date consent signed
+           M00_CON_LAR_SIGNDAT, # Date that legal representative signed consent
+           M00_CON_WITNESS_SIGNDAT, # Date that witness signed consent
+           M00_ASSNT_DSSTDAT, # ASSNT Date
            M00_FORMCOMPLDAT_MNH00,
            M01_US_OHOSTDAT_V1,
-           M01_FORMCOMPLDAT_MNH01_V1, M01_FORMCOMPLDAT_MNH01_V2,
+           M01_FORMCOMPLDAT_MNH01_V1, M01_FORMCOMPLDAT_MNH01_V1,
            M02_SCRN_OBSSTDAT, 
            M02_FORMCOMPLDAT_MNH02
     ) %>% 
@@ -49,7 +49,6 @@ study_date <- matData %>%
 #**************************************************************************************
 #*Pre-screening, screen and enrollment info
 #**************************************************************************************
-#pre-screening, screen, enroll total
 vars_enroll <- matData %>% 
   select(SCRNID, MOMID, PREGID, SITE,
          M00_SCRN_OBSSTDAT,
@@ -88,15 +87,20 @@ vars_enroll <- matData %>%
   mutate(
     # participant consent
     PRESCR_CONSENT = case_when(
+      # ??? what's the consent criteria for Kenya/Ghana/Pakistan/Zambia/India ???
       CONSENT_PART == 0 | ASSNT_PART == 0 | CONSENT_LAR == 0 | CONSENT_WITNESS == 0 ~ 0,
       CONSENT_PART == 1 & (CONSENT_LAR == 1 | CONSENT_LAR == 77) & 
         (ASSNT_PART == 1 | ASSNT_PART == 77) & 
         (CONSENT_WITNESS == 1 | CONSENT_WITNESS == 77)  ~ 1,
+      # DK
       TRUE ~ 99
     ),
     # screen status (M00 pre-screen is completed)
-    PRESCREEN = case_when(!is.na(M00_FORMCOMPLDAT_MNH00) ~ 1, 
-                       TRUE ~ 0),
+    PRESCREEN = case_when(
+      !is.na(M00_SCRN_OBSSTDAT) & M00_SCRN_OBSSTDAT != "N/A" ~ 1, 
+                       TRUE ~ 0
+      ),
+    #gap between no other reason to exclude and provide consent info
     GAP_CONSENT = ifelse(M00_OTHR_IEORRES == 0 & M00_CON_YN_DSDECOD == 77, 1, 0),
     # expected enrollment
     EXPECT = case_when(
@@ -112,6 +116,7 @@ vars_enroll <- matData %>%
     #screened (M02 enrollment)
     SCREEN = case_when(!is.na(M02_FORMCOMPLDAT_MNH02) ~ 1, 
                        TRUE ~ 0),
+    # eligible 
     ELIGIBLE = case_when(M02_AGE_IEORRES == 1 & M02_PC_IEORRES == 1 & M02_CATCHMENT_IEORRES == 1 &
                            M02_CATCH_REMAIN_IEORRES == 1  ~ 1,
                          M02_AGE_IEORRES == 0 | M02_PC_IEORRES == 0 | M02_CATCHMENT_IEORRES == 0 |
@@ -126,10 +131,9 @@ vars_enroll <- matData %>%
   select(SCRNID, MOMID, PREGID, SITE, PRESCREEN, SCREEN, EXPECT, PRESCR_ELIGIBLE, 
          ELIGIBLE, PRESCR_CONSENT, CONSENT, ENROLL, GAP_CONSENT) 
 
-#Reasons for exclusion 
+#******Reasons for exclusion (check if cases match within mnh00 and 02)
 vars_exrs <- matData %>% 
     left_join(vars_enroll,by = c("SCRNID", "MOMID", "PREGID", "SITE")) %>% 
-    # distinct(SCRNID, MOMID, PREGID, SITE, .keep_all = TRUE) %>% 
     distinct() %>% 
   #reason for exclusion in pre-screen
   mutate(
@@ -178,6 +182,7 @@ vars_exrs <- matData %>%
   ) %>% 
     select(SCRNID, MOMID, PREGID, SITE, AGE, GA20, CATCHAREA, PRESCR_PREGSIGN, PRESCR_GA25, PRESCR_AGE, PRESCR_CATCHAREA, PRESCR_OTHER)  
 
+
 #**************************************************************************************
 #*Merge and save data
 #**************************************************************************************
@@ -187,3 +192,12 @@ statusOutcome <- study_date %>%
   distinct() 
 
 save(statusOutcome, file = "derived_data/statusOutcome.rda")
+saveRDS(statusOutcome, file = "derived_data/statusOutcome.rds", version = 2)
+
+load("derived_data/healthyOutcome.rda")
+enrollOutcome <- healthyOutcome %>%
+  left_join(statusOutcome, by = c("SCRNID", "MOMID", "PREGID", "SITE")) %>% 
+  distinct()
+save(enrollOutcome, file = "derived_data/enrollOutcome.rda")
+saveRDS(enrollOutcome, file = "derived_data/enrollOutcome.rds")
+
