@@ -1,4 +1,5 @@
-## PRiSMA & ReMAPP Monitoring Report (tentative plan)
+## PRISMA & ReMAPP Monitoring Report
+#### Last Updated: 17 April 2023
 
 
 ### Overview
@@ -30,13 +31,12 @@ In the ultimate output report, the following contents are included:
 Data input: sites data will be uploaded and stored in synapse for now and in AWS later. 
    - notes: :heavy_exclamation_mark: data not included; ask for permission for synapse access and data use.
 
-
 Data output: will update based on monitoring report updates and uploaed data by site
 
-- matData.rda
-- matOutcome.rda
+- MatData_Wide.rda
+- InfData_Wide.rda
 - healthyOutcome.rda
-- statusOutcome.rda
+- MatData_ANC_Visit.rda
 - Monitor_Report.Rmd
 
 ### File Structure
