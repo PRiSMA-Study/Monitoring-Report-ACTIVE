@@ -845,9 +845,6 @@ for (x in site_vec) {
   }
 }
 
-## Pakistan HAS MISSING DATES -- REMOVE 
-# m09 = m09[names(m09) != "mnh09_Pakistan"]
-
 if (exists("m09") == TRUE) {
   # create a list of data frame names as string
   m09_names = as.vector(names(m09))
