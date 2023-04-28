@@ -24,8 +24,6 @@ In the ultimate output report, the following contents are included:
 - ANC hemoglobin values by trimester for participants enrolled in ReMAPP
 - Potential risk factors for anemia among women enrolled in PRiSMA MNH study
 
-
-
 ### Data Input and Output
 
 Data input: sites data will be uploaded and stored in synapse for now and in AWS later. 
@@ -33,42 +31,44 @@ Data input: sites data will be uploaded and stored in synapse for now and in AWS
 
 Data output: will update based on monitoring report updates and uploaed data by site
 
-- MatData_Wide.rda
-- InfData_Wide.rda
-- healthyOutcome.rda
-- MatData_Screen_Enroll. rda
-- MatData_Anc_Visit.rda
-- MatData_Pnc_Visits. rda
-- MatData_Hb_GA_Visit.rda
-- InfData_Pnc_Visits. rda
-- Monitor_Report.Rmd
-
 ### File Structure
 
-1. `data_import.R` imports data from synapse.
-   - input: data uploaded by sites in synapse.
-   - output: `mnh00.csv-mnh26.csv` stored in directory `/cleaned_data/`.
+1. `1. Data_Import.R` imports raw data from network drive/synapse.
+   - input: raw data uploaded by sites
+   - output: `mnh00_merged.csv-mnh26_merged.csv` stored in directory `/merged_data/[folder named with upload date]`.
    
-2. `data_merge.R` extracts key variables from each of the 27 MNH forms, merge extracted variables across the forms.
-   - input: `mnh00.csv-mnh26.csv` stored in directory `/cleaned_data/`.
-   - output: `derived_data/matData.rda`
-   - notes: :heavy_exclamation_mark: we only have `matData.rda` so far;
-   `varNames_sheet.xlsx` lists all the key variable names, only update the names here.
+2. `2. Maternal_Data_Merge_Wide.R` merges all maternal forms and transforms them into wide format. 
+   - input: `mnh00.csv-mnh26.csv` stored in directory `/cleaned_data/[folder named with upload date]`.
+   - output: `MatData_Wide.Rdata` & `MatData_Wide_Visit.Rdata`
+   - notes: MatData_Wide is a wide dataset with one row for each woman. MatData_Wide_Visit is a wide data with one row for each woman at each visit.
    
-3. `data_materanl.R` generates the core maternal outcomes.
-   - input: `derived_data/matData.rda` 
-   - output: `derived_data/matOutcome.rda`
-   - notes: :heavy_exclamation_mark: double check the algorithm is consistent with the definition; 
+3. `Infant_Data_Merge_Wide.R` merges all infant forms and transforms them into wide format. 
+   - input: `mnh00.csv-mnh26.csv` stored in directory `/cleaned_data/[folder named with upload date]`.
+   - output: `InfData_Wide.Rdata` & `InfData_Wide_Visit.Rdata`
+   - notes: InfData_Wide is a wide dataset with one row for each infant. InfData_Wide_Visit is a wide data with one row for each infant at each visit.
 
-4. `data_healthy.R` generates the criteria variables of healthy cohort.
-   - input: `derived_data/matData.rda`, `derived_data/matOutcome.rda`
-   - output: `derived_data/healthyOutcome.rda`
-   - notes: :heavy_exclamation_mark: current code only considers data collected at the enrollment/first ANC visit.
-   - notes: :heavy_exclamation_mark: double check the algorithm is consistent with the definition; 
-   
-5. `data_dashboard.R` generates the monitoring variables (pre-screening, enrollment, study status, etc.).
-   - input: `derived_data/matData.rda`, `derived_data/matOutcome.rda`
-   - output: `derived_data/statusOutcome.rda`.
-   - notes: :heavy_exclamation_mark: double check the algorithm is consistent with the definition; 
-   
-6. `Monitor_Report.Rmd` is the final report in R markdown and is in .html output format. `report_helpers.R` includes helper functions of the report.
+4. `3. Report_Setup.R` generates all the variables needed for the monitoring report. 
+   - input: `Maternal_Data_Merge_Wide`, `Infant_Data_Merge_Wide`
+   - output:
+     - `MatData_Report.RData`
+         - Only includes a subset of variables from the maternal wide dataset to be used for report purposes.
+     - `InfData_Report.Rdata`: 
+         - only includes a subset of variables from the infant wide dataset to be used for report purposes. 
+     - `MatData_Screen_Enroll.RData`: 
+         - Includes all women screen and enrolled. Includes constructed variables on enrollment and screening status.
+     - `MatData_Anc_Visit.RData`: 
+         - Includes all women who are enrolled. Includes constructed variables relevant to ANC. 
+     - `MatData_Pnc_Visits.RData`:
+         - Includes all women who are enrolled who have entered the PNC period. Includes constructed variables relevant to PNC.
+     - `InfData_Pnc_Visits.RData`: 
+         - Includes all infants. Includes constructed variables relevant to PNC period.
+     - `MatData_Hb_Visit.RData`: 
+         - Includes relevant constructed variables for ReMAPP tables looking at testing completion for Hb at each visit. (ReMAPP Table 3) 
+     - `MatData_Hb_GA_Visit.RData`: 
+         - Includes relevant constructed variables for ReMAPP tables looking at Hb test outcomes by gestational age. (ReMAPP Figure 2)
+     - `healthyOutcome.RData`: 
+         - Includes relevant constructed variables for ReMAPP healthy criteria.
+
+6. `Monitoring_Report.Rmd` is the final report in R markdown and is in .html output format.;
+`varNames_sheet.xlsx` lists all the key variable names, only update the names here.
+
