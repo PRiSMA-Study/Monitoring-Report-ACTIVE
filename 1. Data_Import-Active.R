@@ -1,0 +1,2145 @@
+#*****************************************************************************
+#*Function: Read in raw data and merged all sites data by form 
+#*Input: Raw .csvs for each site 
+#*Output: .RData file for each form that is merged for all sites 
+#* Last updated: 17 April 2023
+
+
+## STEPS ## 
+#*1. Import data from each site 
+#*2  Import data dictionary        ## this will be used to inform field types 
+#*3. Merge all site data together by each form 
+      ## a. For each form, compile all site data into list 
+      ## b. Assign field types (Numeric, Date)
+      ## c. Remove duplicate IDs 
+      ## d. Add form number prefix to each variable name (ex. "MNH00_")
+      ## e. Add "SITE" variable to the beginning of data
+      ## f. Merge all site forms together 
+      ## g. Export data in .RData format
+
+#* 4. Extract missing varnames from site data (by form)
+
+## LINES TO UPDATE EACH RUN: 
+# LINE 44 - set upload date
+# LINE 48 - set vector of all sites with data in that upload 
+#*****************************************************************************
+
+rm(list = ls())
+library(tidyverse)
+library(readr)
+library(dplyr)
+library(data.table)
+library(stringr)
+library(lubridate)
+library(naniar)
+library(readxl)
+
+# UPDATE EACH RUN # 
+# set upload date 
+UploadDate = "2023-04-20"
+
+# UPDATE EACH RUN # 
+# create vector of all sites with data in the upload 
+site_vec <- c("Pakistan", "Kenya", "Ghana")
+
+## import data dictionary -- this will be used to pull field types for each variable  
+data_dict <- read_excel("~/PRiSMAv2Data/Queries/PRiSMA-MNH-Data-Dictionary-Repository-V.2.2-FEB012023_Queries.xlsx")
+data_dict <- data_dict %>% 
+  select(Form,`Variable Name`, `Field Type (Date, Time, Number, Text)`) %>% 
+  rename("FieldType" = `Field Type (Date, Time, Number, Text)`)
+data_dict$`Variable Name` <- toupper(data_dict$`Variable Name`)
+
+#*****************************************************************************
+#*Will need to set directory and read data for each country 
+#*****************************************************************************
+# set working directory to network drive 
+site = "Pakistan"
+setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+
+## import raw .CSVs in wide format 
+temp = list.files(pattern="*.csv")
+myfiles = lapply(temp, read.csv)
+
+#  ## make sure all column names are uppercase 
+myfiles <- lapply(myfiles, function (x){
+  upper <- toupper(names(x))
+  setnames(x, upper)
+})
+
+## convert to individual dataframes 
+names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+list2env(myfiles, globalenv())
+
+## fix pakistan infant id naming 
+mnh09_Pakistan <- mnh09_Pakistan %>%  rename(INFANTID_INF1 = INFANTID,
+                                             INFANTID_INF2 = INFANTID.1,
+                                             INFANTID_INF3 = INFANTID.2,
+                                             INFANTID_INF4 = INFANTID.3)
+
+## Update mnh12 because the visit type variable naming is different -- to remove once we send out CRFs
+mnh12_Pakistan$PNC_N_VISIT <- ifelse(mnh12_Pakistan$PNC_N_VISIT==1, 8,
+                                      ifelse(mnh12_Pakistan$PNC_N_VISIT==2, 9,
+                                             ifelse(mnh12_Pakistan$PNC_N_VISIT==3, 10,
+                                                    ifelse(mnh12_Pakistan$PNC_N_VISIT==4, 11,
+                                                           ifelse(mnh12_Pakistan$PNC_N_VISIT==5,  12,
+                                                                  ifelse(mnh12_Pakistan$PNC_N_VISIT==6, 13, NA))))))
+
+## Update mnh13 because the visit type variable naming is different -- to remove once we send out CRFs
+mnh13_Pakistan$PNC_N_VISIT <- ifelse(mnh13_Pakistan$PNC_N_VISIT==1, 7,
+                                     ifelse(mnh13_Pakistan$PNC_N_VISIT==2, 8,
+                                            ifelse(mnh13_Pakistan$PNC_N_VISIT==3, 9,
+                                                   ifelse(mnh13_Pakistan$PNC_N_VISIT==4, 10,
+                                                          ifelse(mnh13_Pakistan$PNC_N_VISIT==5,  11,
+                                                                 ifelse(mnh13_Pakistan$PNC_N_VISIT==6, 12, 
+                                                                        ifelse(mnh13_Pakistan$PNC_N_VISIT == 77, 13, NA)))))))
+## Update mnh13 because the visit type variable naming is different -- to remove once we send out CRFs
+mnh15_Pakistan$OBSTERM <- ifelse(mnh15_Pakistan$OBSTERM==1, 7,
+                                     ifelse(mnh15_Pakistan$OBSTERM==2, 8,
+                                            ifelse(mnh15_Pakistan$OBSTERM==3, 9,
+                                                   ifelse(mnh15_Pakistan$OBSTERM==4, 10,
+                                                          ifelse(mnh15_Pakistan$OBSTERM==5,  11,
+                                                                 ifelse(mnh15_Pakistan$OBSTERM==6, 12,  NA))))))
+## Update mnh13 because the visit type variable naming is different -- to remove once we send out CRFs
+mnh25_Pakistan <- mnh25_Pakistan %>% rename("TYPE_VISIT" = "ANC_VISIT_N") %>% 
+  mutate(TYPE_VISIT = ifelse(TYPE_VISIT == 1, 2, 
+                             ifelse(TYPE_VISIT == 2, 3, 
+                                    ifelse(TYPE_VISIT == 3, 4, 
+                                           ifelse(TYPE_VISIT == 4, 5, 
+                                                  ifelse(TYPE_VISIT == 5, 13,
+                                                         ifelse(TYPE_VISIT == 6, 8, 
+                                                                ifelse(TYPE_VISIT == 7,9, 
+                                                                       ifelse(TYPE_VISIT == 8, 10, 
+                                                                              ifelse(TYPE_VISIT == 9, 11, 
+                                                                                     ifelse(TYPE_VISIT == 10, 12, NA)))))))))))
+
+
+
+#************************Kenya************************
+site = "Kenya"
+setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+
+## import raw .CSVs in wide format 
+temp = list.files(pattern="*.csv")
+myfiles = lapply(temp, read.csv)
+
+#  ## make sure all column names are uppercase 
+myfiles <- lapply(myfiles, function (x){
+  upper <- toupper(names(x))
+  setnames(x, upper)
+})
+
+## convert to individual dataframes 
+names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+list2env(myfiles, globalenv())
+
+
+## rename type visit variables in kenya data -- to remove once we send out CRFs
+mnh13_Kenya <- mnh13_Kenya %>% rename("PNC_N_VISIT" = "TYPE_VISIT")
+mnh14_Kenya <- mnh14_Kenya %>% rename("POC_VISIT" = "TYPE_VISIT")
+mnh15_Kenya <- mnh15_Kenya %>% rename("OBSTERM" = "TYPE_VISIT")
+mnh25_Kenya <- mnh25_Kenya %>% rename("TYPE_VISIT" = "ANC_VISIT_N")
+
+#************************Zambia************************
+# site = "Zambia"
+# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+# 
+# ## import raw .CSVs in wide format
+# temp = list.files(pattern="*.csv")
+# myfiles = lapply(temp, read.csv)
+# 
+# #  ## make sure all column names are uppercase
+# myfiles <- lapply(myfiles, function (x){
+#   upper <- toupper(names(x))
+#   setnames(x, upper)
+# })
+# 
+# ## convert to individual dataframes
+# names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+# list2env(myfiles, globalenv())
+
+#************************Ghana************************
+site = "Ghana"
+setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+
+#setwd("D:/Users/stacie.loisate/Documents/ghana_418")
+
+## import raw .CSVs in wide format 
+temp = list.files(pattern="*.csv")
+myfiles = lapply(temp, read.csv)
+
+#  ## make sure all column names are uppercase 
+myfiles <- lapply(myfiles, function (x){
+  upper <- toupper(names(x))
+  setnames(x, upper)
+})
+
+## convert to individual dataframes 
+names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+list2env(myfiles, globalenv())
+
+
+#*************************************************
+#* Merge all data by form and site 
+#*************************************************
+
+#******M00
+
+# Compile all site MNH00 data into list  
+for (x in site_vec) {
+  if (exists(paste("mnh00_", x, sep = ""))==TRUE){
+  
+  m00 <- mget(ls(pattern = "mnh00_.*"))
+  
+  }
+}
+
+if (exists("m00") == TRUE) {
+  
+      # Assign field types (Numeric, Date)
+        # From data dictionary, extract all MNH00 variables for both Numeric and Date field types 
+      data_dict_m00 <- data_dict %>% filter(Form == "MNH00") %>% select(`Variable Name`, FieldType)
+
+      numeric <- lapply(m00, function(df) {
+        m00_dd_numeric <- data_dict_m00 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+        num <- colnames(df) %in% m00_dd_numeric
+        df[num] <- lapply(df[num], as.numeric)
+        df
+      })
+      
+      date <- lapply(numeric, function(df) {
+        m00_dd_date <- data_dict_m00 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+        date <- colnames(df) %in% m00_dd_date
+        df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+        df[date] <- lapply(df[date], ymd)
+        df
+      })
+      
+      m00 = date
+      
+    # Remove duplicate IDs 
+    # Add form number prefix to each variable (ex. "MNH00_")
+    m00_rbind <- lapply(m00, function(x) x %>% 
+      select(SCRNID, MOMID, PREGID, everything()) %>% 
+      rename_with( ~ paste0("M00_", .), -c(1:3)) %>% 
+      replace_with_na(replace = list(MOMID = c("n/a"),
+                                     PREGID = c("n/a"))) %>% 
+      group_by(SCRNID) %>%  
+      arrange(desc(M00_SCRN_OBSSTDAT)) %>% 
+      slice(1) %>% 
+      ungroup() %>% 
+      distinct() ## don't pull any duplicate rows -- will need to check to make sure this isn't pulling any duplicate IDs 
+    
+      )
+
+    # Add "SITE" variable to the beginning of data
+    for(i in names(m00_rbind)){
+      m00_rbind[[i]]$SITE <- paste(gsub("mnh00_","",i))
+    }
+    
+    # Extract list of all variable names (will use this to match the order of varnames in each dataset)
+    allNms <- unique(unlist(lapply(m00_rbind, names)))
+    
+    # Merge all MNH00 forms together 
+    m00_merged <- do.call(rbind,c(lapply(m00_rbind,function(x) 
+      data.frame(c(x, sapply(setdiff(allNms, names(x)),     ## this function will make the order of varnames consistent between dataframes
+                             function(y) NA)))), make.row.names=FALSE))
+    
+    # Make SITE the first variable 
+    m00_merged <- m00_merged %>% relocate(SITE)
+    
+    # Extract missing varnames from site data
+    m00_missing <- lapply(m00_rbind, function(x) setdiff(allNms, colnames(x)))
+    
+    # Export data in .RData format
+    setwd("~/Monitoring Report/data/merged")
+    save(m00_merged, file= paste("m00_merged",".RData",sep = ""))
+
+}
+
+#******M01
+# Compile all site MNH00 data into list  
+for (x in site_vec) {
+  if (exists(paste("mnh01_", x, sep = ""))==TRUE){
+    
+    m01 <- mget(ls(pattern = "mnh01_.*"))
+    
+  }
+}
+
+if (exists("m01") == TRUE) {
+
+  # Assign field types (Numeric, Date)
+      # From data dictionary, extract all MNH00 variables for both Numeric and Date field types 
+  data_dict_m01 <- data_dict %>% filter(Form == "MNH01") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m01, function(df) {
+    m01_dd_numeric <- data_dict_m01 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m01_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  })
+  
+  date <- lapply(numeric, function(df) {
+    m01_dd_date <- data_dict_m01 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m01_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+
+  m01 = date
+  
+  # Remove duplicate IDs 
+  # Add form number prefix to each variable (ex. "MNH00_")
+  m01_rbind <- lapply(m01, function(x) x %>% 
+                        #add  "M##_"
+                        select(SCRNID, MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M01_", .), -c(1:3)) %>% 
+                        replace_with_na(replace = list(MOMID = c("n/a"),
+                                                       PREGID = c("n/a"))) %>% 
+                        group_by(SCRNID, MOMID, PREGID, M01_US_VISIT) %>%  
+                        arrange(desc(M01_US_OHOSTDAT)) %>% 
+                        slice(1) %>% 
+                        ungroup() %>% 
+                        distinct()
+  )
+  
+  # Add "SITE" variable to the beginning of data
+  for(i in names(m01_rbind)){
+    m01_rbind[[i]]$SITE <- paste(gsub("mnh01_","",i))
+  }
+  
+  # Extract list of all variable names (will use this to match the order of varnames in each dataset)
+  allNms <- unique(unlist(lapply(m01_rbind, names)))
+  
+  # Merge all MNH01 forms together 
+  m01_merged <- do.call(rbind,c(lapply(m01_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # Make SITE the first variable 
+  m01_merged <- m01_merged %>% relocate(SITE)
+  
+  # Extract missing varnames from site data
+  m01_missing <- lapply(m01_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Export data in .RData format
+  setwd("~/Monitoring Report/data/merged")
+  save(m01_merged, file= paste("m01_merged",".RData",sep = ""))
+  
+}
+
+#******M02 
+
+# Compile all site MNH02 data into list 
+for (x in site_vec) {
+  if (exists(paste("mnh02_", x, sep = ""))==TRUE){
+    
+    m02 <- mget(ls(pattern = "mnh02_.*"))
+    
+  }
+}
+
+if (exists("m02") == TRUE) {
+  # Assign field types (Numeric, Date)
+    # From data dictionary, extract all MNH00 variables for both Numeric and Date field types
+  m02_names = as.vector(names(m02))
+  
+  # assign field types
+  data_dict_m02 <- data_dict %>% filter(Form == "MNH02") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m02, function(df) {
+    m02_dd_numeric <- data_dict_m02 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m02_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  })
+  
+  date <- lapply(numeric, function(df) {
+    m02_dd_date <- data_dict_m02 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m02_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+  m02 = date
+
+  # Add form number prefix to each variable (ex. "MNH00_")  
+  m02_rbind <- lapply(m02, function(x) x %>% 
+                        #add  "M##_"
+                        select(SCRNID, MOMID, PREGID, everything()) %>% 
+                        relocate(c(MOMID,PREGID), .after = SCRNID) %>% 
+                        rename_with( ~ paste0("M02_", .), -c(1:3)) %>% 
+                        replace_with_na(replace = list(MOMID = c("n/a"),
+                                                       PREGID = c("n/a"))) %>% 
+                        group_by(SCRNID, MOMID, PREGID) %>% 
+                        arrange(desc(M02_SCRN_OBSSTDAT)) %>% 
+                        slice(1) %>% 
+                        ungroup() %>% 
+                        distinct()
+  )
+   
+  # Add "SITE" variable to the beginning of data 
+  for(i in names(m02_rbind)){
+    m02_rbind[[i]]$SITE <- paste(gsub("mnh02_","",i))
+  }
+  # Extract list of all variable names (will use this to match the order of varnames in each dataset)
+  allNms <- unique(unlist(lapply(m02_rbind, names)))
+  
+  # Merge all MNH02 forms together 
+  m02_merged <- do.call(rbind,c(lapply(m02_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # Make SITE the first variable 
+  m02_merged <- m02_merged %>% relocate(SITE)
+  
+  # Extract missing varnames from site data
+  m02_missing <- lapply(m02_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Export data in .RData format
+  setwd("~/Monitoring Report/data/merged")
+  save(m02_merged, file= paste("m02_merged",".RData",sep = ""))
+  
+}
+
+#******M03 
+
+# get list of all the MNH03 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh03_", x, sep = ""))==TRUE){
+    
+    m03 <- mget(ls(pattern = "mnh03_.*"))
+    
+  }
+}
+
+if (exists("m03") == TRUE) {
+  # create a list of data frame names as string
+  m03_names = as.vector(names(m03))
+
+  # assign field types
+  data_dict_m03 <- data_dict %>% filter(Form == "MNH03") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m03, function(df) {
+    m03_dd_numeric <- data_dict_m03 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m03_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  })
+  
+  date <- lapply(numeric, function(df) {
+    m03_dd_date <- data_dict_m03 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m03_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+  m03 = date
+  
+  # remove duplicates and add prefix  
+  m03_rbind <- lapply(m03, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M03_", .), -c(1:2)) %>% 
+                        #remove previous case for duplicates
+                        group_by(MOMID, PREGID) %>% 
+                        arrange(desc(M03_SD_OBSSTDAT)) %>% 
+                        slice(1) %>% 
+                        ungroup() %>% 
+                        distinct() 
+  )
+  
+  # add in site variable 
+  for(i in names(m03_rbind)){
+    m03_rbind[[i]]$SITE <- paste(gsub("mnh03_","",i))
+  }
+  # get all variable names
+  allNms <- unique(unlist(lapply(m03_rbind, names)))
+  
+  # merge all MNH03 forms together 
+  m03_merged <- do.call(rbind,c(lapply(m03_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m03_merged <- m03_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m03_missing <- lapply(m03_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m03_merged, file= paste("m03_merged",".RData",sep = ""))
+  
+}
+
+#******M04 
+
+# get list of all the MNH04 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh04_", x, sep = ""))==TRUE){
+    
+    m04 <- mget(ls(pattern = "mnh04_.*"))
+    
+  }
+}
+
+if (exists("m04") == TRUE) {
+  # create a list of data frame names as string
+  m04_names = as.vector(names(m04))
+
+  # assign field types
+  data_dict_m04 <- data_dict %>% filter(Form == "MNH04") %>% select(`Variable Name`, FieldType)
+
+  numeric <- lapply(m04, function(df) {
+    m04_dd_numeric <- data_dict_m04 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m04_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  ## pakistan had weird dates for tetanus -- remove columns 
+  numeric <- lapply(numeric, function(x) { x["TETANUS_CMSTDAT"] <- NULL; x })
+  
+  date <- lapply(numeric, function(df) {
+    m04_dd_date <- data_dict_m04 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m04_dd_date
+    #date <- lapply(df, function(x) x %>% select(matches(str_c(paste("^",m04_dd_date,"$", sep = "")))))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+
+  m04 = date
+  
+  
+  # remove duplicates and add prefix  
+  m04_rbind <- lapply(m04, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M04_", .), -c(1:2)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m04_rbind)){
+    m04_rbind[[i]]$SITE <- paste(gsub("mnh04_","",i))
+    
+  }
+  # get all variable names
+  allNms <- unique(unlist(lapply(m04_rbind, names)))
+    
+    # merge all MNH04 forms together 
+    m04_merged <- do.call(rbind,c(lapply(m04_rbind,function(x) 
+      data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                             function(y) NA)))), make.row.names=FALSE))
+    
+    # make site the first variable 
+    m04_merged <- m04_merged %>% relocate(SITE)
+    
+    ## get the variables that are missing from sites
+    m04_missing <- lapply(m04_rbind, function(x) setdiff(allNms, colnames(x)))
+    
+    ## export data 
+    setwd("~/Monitoring Report/data/merged")
+    save(m04_merged, file= paste("m04_merged",".RData",sep = ""))
+    
+  }
+  
+#******M05 
+
+# get list of all the MNH05 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh05_", x, sep = ""))==TRUE){
+    
+    m05 <- mget(ls(pattern = "mnh05_.*"))
+    
+  }
+}
+
+if (exists("m05") == TRUE) {
+  # create a list of data frame names as string
+  m05_names = as.vector(names(m05))
+  
+  # assign field types
+  data_dict_m05 <- data_dict %>% filter(Form == "MNH05") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m05, function(df) {
+    m05_dd_numeric <- data_dict_m05 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m05_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+
+  date <- lapply(numeric, function(df) {
+    m05_dd_date <- data_dict_m05 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m05_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+
+  m05 = date
+  
+  # remove duplicates and add prefix  
+  m05_rbind <- lapply(m05, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M05_", .), -c(1:2)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m05_rbind)){
+    m05_rbind[[i]]$SITE <- paste(gsub("mnh05_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m05_rbind, names)))
+  
+  # merge all MNH05 forms together 
+  m05_merged <- do.call(rbind,c(lapply(m05_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m05_merged <- m05_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m05_missing <- lapply(m05_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m05_merged, file= paste("m05_merged",".RData",sep = ""))
+  
+}
+
+
+#******M06 
+
+# get list of all the MNH06 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh06_", x, sep = ""))==TRUE){
+    
+    m06 <- mget(ls(pattern = "mnh06_.*"))
+    
+  }
+}
+
+if (exists("m06") == TRUE) {
+  # create a list of data frame names as string
+  m06_names = as.vector(names(m06))
+
+  # assign field types
+  data_dict_m06 <- data_dict %>% filter(Form == "MNH06") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m06, function(df) {
+    m06_dd_numeric <- data_dict_m06 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m06_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m06_dd_date <- data_dict_m06 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m06_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+  m06 = date
+  
+  # remove duplicates and add prefix  
+  m06_rbind <- lapply(m06, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M06_", .), -c(1:2)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m06_rbind)){
+    m06_rbind[[i]]$SITE <- paste(gsub("mnh06_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m06_rbind, names)))
+  
+  # merge all MNH06 forms together 
+  m06_merged <- do.call(rbind,c(lapply(m06_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m06_merged <- m06_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m06_missing <- lapply(m06_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m06_merged, file= paste("m06_merged",".RData",sep = ""))
+  
+}
+
+#******M07 
+
+# get list of all the MNH07 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh07_", x, sep = ""))==TRUE){
+    
+    m07 <- mget(ls(pattern = "mnh07_.*"))
+    
+  }
+}
+
+
+if (exists("m07") == TRUE) {
+  # create a list of data frame names as string
+  m07_names = as.vector(names(m07))
+  
+  # assign field types
+  data_dict_m07 <- data_dict %>% filter(Form == "MNH07") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m07, function(df) {
+    m07_dd_numeric <- data_dict_m07 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m07_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m07_dd_date <- data_dict_m07 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m07_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+  m07 = date
+  
+  # remove duplicates and add prefix  
+  m07_rbind <- lapply(m07, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M07_", .), -c(1:2)) %>% 
+                        #remove previous case for duplicates
+                        group_by(MOMID, PREGID, M07_MAT_SPEC_COLLECT_VISIT) %>% 
+                        arrange(desc(M07_MAT_SPEC_COLLECT_DAT)) %>% 
+                        slice(1) %>% 
+                        ungroup() %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m07_rbind)){
+    m07_rbind[[i]]$SITE <- paste(gsub("mnh07_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m07_rbind, names)))
+  
+  # merge all MNH07 forms together 
+  m07_merged <- do.call(rbind,c(lapply(m07_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m07_merged <- m07_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m07_missing <- lapply(m07_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m07_merged, file= paste("m07_merged",".RData",sep = ""))
+  
+}
+
+#******M08 
+
+# get list of all the MNH08 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh08_", x, sep = ""))==TRUE){
+    
+    m08 <- mget(ls(pattern = "mnh08_.*"))
+    
+  }
+}
+
+if (exists("m08") == TRUE) {
+  # create a list of data frame names as string
+  m08_names = as.vector(names(m08))
+  
+  # assign field types
+  data_dict_m08 <- data_dict %>% filter(Form == "MNH08") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m08, function(df) {
+    m08_dd_numeric <- data_dict_m08 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m08_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m08_dd_date <- data_dict_m08 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m08_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+
+  m08 = date
+  
+  # remove duplicates and add prefix  
+  m08_rbind <- lapply(m08, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M08_", .), -c(1:2)) %>% 
+                        #remove previous case for duplicates
+                        group_by(MOMID, PREGID, M08_VISIT_LBSTDAT) %>% 
+                        arrange(desc(M08_LBSTDAT)) %>% 
+                        slice(1) %>% 
+                        ungroup() %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m08_rbind)){
+    m08_rbind[[i]]$SITE <- paste(gsub("mnh08_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m08_rbind, names)))
+  
+  # merge all MNH08 forms together 
+  m08_merged <- do.call(rbind,c(lapply(m08_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m08_merged <- m08_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m08_missing <- lapply(m08_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m08_merged, file= paste("m08_merged",".RData",sep = ""))
+  
+}
+
+#******M09 
+# get list of all the MNH09 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh09_", x, sep = ""))==TRUE){
+    
+    m09 <- mget(ls(pattern = "mnh09_.*"))
+    
+  }
+}
+
+## Pakistan HAS MISSING DATES -- REMOVE 
+# m09 = m09[names(m09) != "mnh09_Pakistan"]
+
+if (exists("m09") == TRUE) {
+  # create a list of data frame names as string
+  m09_names = as.vector(names(m09))
+
+  # assign field types
+  data_dict_m09 <- data_dict %>% filter(Form == "MNH09") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m09, function(df) {
+    m09_dd_numeric <- data_dict_m09 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m09_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m09_dd_date <- data_dict_m09 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m09_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+
+  m09 = date
+
+  # remove duplicates and add prefix  
+  m09_rbind <- lapply(m09, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M09_", .), -c(1:2)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m09_rbind)){
+    m09_rbind[[i]]$SITE <- paste(gsub("mnh09_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m09_rbind, names)))
+  
+  # merge all MNH09 forms together 
+  m09_merged <- do.call(rbind,c(lapply(m09_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable
+  m09_merged <- m09_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m09_missing <- lapply(m09_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m09_merged, file= paste("m09_merged",".RData",sep = ""))
+  
+}
+
+#******M10 
+
+# get list of all the MNH10 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh10_", x, sep = ""))==TRUE){
+    
+    m10 <- mget(ls(pattern = "mnh10_.*"))
+    
+  }
+}
+
+if (exists("m10") == TRUE) {
+  # create a list of data frame names as string
+  m10_names = as.vector(names(m10))
+  
+  ## get list of data that have duplicates in m10 
+  dup_m10 <- lapply(m10, function(x) x[duplicated(x[c("MOMID","PREGID", "FORMCOMPLDAT_MNH10")]),] )
+
+  # assign field types
+  data_dict_m10 <- data_dict %>% filter(Form == "MNH10") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m10, function(df) {
+    m10_dd_numeric <- data_dict_m10 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m10_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m10_dd_date <- data_dict_m10 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m10_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+
+  m10 = date
+  
+  # remove duplicates and add prefix  
+  m10_rbind <- lapply(m10, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M10_", .), -c(1:2)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m10_rbind)){
+    m10_rbind[[i]]$SITE <- paste(gsub("mnh10_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m10_rbind, names)))
+  
+  # merge all MNH10 forms together 
+  m10_merged <- do.call(rbind,c(lapply(m10_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m10_merged <- m10_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m10_missing <- lapply(m10_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m10_merged, file= paste("m10_merged",".RData",sep = ""))
+  
+}
+
+#******M11 
+
+# get list of all the MNH11 forms 
+
+## rename infant id column for pakistan 
+mnh11_Pakistan <- mnh11_Pakistan %>% rename(INFANTID = "INFANT_ID")
+
+for (x in site_vec) {
+  if (exists(paste("mnh11_", x, sep = ""))==TRUE){
+    
+    m11 <- mget(ls(pattern = "mnh11_.*"))
+    
+  }
+}
+
+if (exists("m11") == TRUE) {
+  # create a list of data frame names as string
+  m11_names = as.vector(names(m11))
+  
+  # assign field types
+  data_dict_m11 <- data_dict %>% filter(Form == "MNH11") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m11, function(df) {
+    m11_dd_numeric <- data_dict_m11 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m11_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m11_dd_date <- data_dict_m11 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m11_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+
+  m11 = date
+  
+  # remove duplicates and add prefix  
+  m11_rbind <- lapply(m11, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, INFANTID, everything()) %>% 
+                        rename_with( ~ paste0("M11_", .), -c(1:3)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m11_rbind)){
+    m11_rbind[[i]]$SITE <- paste(gsub("mnh11_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m11_rbind, names)))
+  
+  # merge all MNH11 forms together 
+  m11_merged <- do.call(rbind,c(lapply(m11_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m11_merged <- m11_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m11_missing <- lapply(m11_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m11_merged, file= paste("m11_merged",".RData",sep = ""))
+  
+}
+
+#******M12 
+
+# get list of all the MNH12 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh12_", x, sep = ""))==TRUE){
+    
+    m12 <- mget(ls(pattern = "mnh12_.*"))
+    
+  }
+}
+
+if (exists("m12") == TRUE) {
+  # create a list of data frame names as string
+  m12_names = as.vector(names(m12))
+
+  # assign field types
+  data_dict_m12 <- data_dict %>% filter(Form == "MNH12") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m12, function(df) {
+    m12_dd_numeric <- data_dict_m12 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m12_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m12_dd_date <- data_dict_m12 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m12_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+
+  
+  m12 = date
+  
+  # remove duplicates and add prefix  
+  m12_rbind <- lapply(m12, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M12_", .), -c(1:2)) %>% 
+                        distinct()
+                        # group_by(MOMID, PREGID, M12_PNC_N_VISIT) %>% 
+                        # arrange(desc(M12_VISIT_OBSSTDAT)) %>% 
+                        # slice(1) %>% 
+                        # ungroup() %>% 
+                        # distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m12_rbind)){
+    m12_rbind[[i]]$SITE <- paste(gsub("mnh12_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m12_rbind, names)))
+  
+  # merge all MNH12 forms together 
+  m12_merged <- do.call(rbind,c(lapply(m12_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m12_merged <- m12_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m12_missing <- lapply(m12_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m12_merged, file= paste("m12_merged",".RData",sep = ""))
+  
+}
+
+#******M13
+#* INFANT FORM - INFANTID
+
+# get list of all the MNH13 forms
+for (x in site_vec) {
+  if (exists(paste("mnh13_", x, sep = ""))==TRUE){
+
+    m13 <- mget(ls(pattern = "mnh13_.*"))
+
+  }
+}
+
+if (exists("m13") == TRUE) {
+  # create a list of data frame names as string
+  m13_names = as.vector(names(m13))
+
+  # assign field types
+  data_dict_m13 <- data_dict %>% filter(Form == "MNH13") %>% select(`Variable Name`, FieldType)
+
+  numeric <- lapply(m13, function(df) {
+    m13_dd_numeric <- data_dict_m13 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m13_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  })
+
+  date <- lapply(numeric, function(df) {
+    m13_dd_date <- data_dict_m13 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m13_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+
+
+  m13 = date
+
+  # remove duplicates and add prefix
+  m13_rbind <- lapply(m13, function(x) x %>%
+                        #add  "M##_"
+                        select(MOMID, PREGID, INFANTID, everything()) %>%
+                        rename_with( ~ paste0("M13_", .), -c(1:3)) %>%
+                        group_by(MOMID, PREGID, INFANTID, M13_PNC_N_VISIT) %>%
+                        arrange(desc(M13_VISIT_OBSSTDAT)) %>%
+                        slice(1) %>%
+                        ungroup() %>%
+                        distinct()
+  )
+
+  # add in site variable
+  for(i in names(m13_rbind)){
+    m13_rbind[[i]]$SITE <- paste(gsub("mnh13_","",i))
+  }
+
+  # get all variable names
+  allNms <- unique(unlist(lapply(m13_rbind, names)))
+
+  # merge all MNH13 forms together
+  m13_merged <- do.call(rbind,c(lapply(m13_rbind,function(x)
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+
+  # make site the first variable
+  m13_infantmerged <- m13_merged %>% relocate(SITE)
+
+  ## get the variables that are missing from sites
+  m13_missing <- lapply(m13_rbind, function(x) setdiff(allNms, colnames(x)))
+
+  ## export data
+  setwd("~/Monitoring Report/data/merged")
+  save(m13_infantmerged, file= paste("m13_infantmerged",".RData",sep = ""))
+
+}
+
+
+#******M14
+#* INFANT FORM - INFANTID
+
+# get list of all the MNH14 forms
+for (x in site_vec) {
+  if (exists(paste("mnh14_", x, sep = ""))==TRUE){
+
+    m14 <- mget(ls(pattern = "mnh14_.*"))
+
+  }
+}
+
+if (exists("m14") == TRUE) {
+  # create a list of data frame names as string
+  m14_names = as.vector(names(m14))
+
+  # assign field types
+  data_dict_m14 <- data_dict %>% filter(Form == "MNH14") %>% select(`Variable Name`, FieldType)
+
+  numeric <- lapply(m14, function(df) {
+    m14_dd_numeric <- data_dict_m14 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m14_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  })
+
+  date <- lapply(numeric, function(df) {
+    m14_dd_date <- data_dict_m14 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m14_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+
+
+  m14 = date
+
+  # remove duplicates and add prefix
+  m14_rbind <- lapply(m14, function(x) x %>%
+                        #add  "M##_"
+                        select(MOMID, PREGID,INFANTID, everything()) %>%
+                        rename_with( ~ paste0("M14_", .), -c(1:3)) %>%
+                        group_by(MOMID, PREGID,INFANTID, M14_POC_VISIT) %>%
+                        arrange(desc(M14_VISIT_OBSSTDAT)) %>%
+                        slice(1) %>%
+                        ungroup() %>%
+                        distinct()
+  )
+
+  # add in site variable
+  for(i in names(m14_rbind)){
+    m14_rbind[[i]]$SITE <- paste(gsub("mnh14_","",i))
+  }
+
+  # get all variable names
+  allNms <- unique(unlist(lapply(m14_rbind, names)))
+
+  # merge all MNH14 forms together
+  m14_merged <- do.call(rbind,c(lapply(m14_rbind,function(x)
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+
+  # make site the first variable
+  m14_infantmerged <- m14_merged %>% relocate(SITE)
+
+  ## get the variables that are missing from sites
+  m14_missing <- lapply(m14_rbind, function(x) setdiff(allNms, colnames(x)))
+
+  ## export data
+  setwd("~/Monitoring Report/data/merged")
+  save(m14_infantmerged, file= paste("m14_infantmerged",".RData",sep = ""))
+
+}
+
+#******M15
+#* INFANT FORM - INFANTID
+
+# get list of all the MNH15 forms
+for (x in site_vec) {
+  if (exists(paste("mnh15_", x, sep = ""))==TRUE){
+
+    m15 <- mget(ls(pattern = "mnh15_.*"))
+
+  }
+}
+
+if (exists("m15") == TRUE) {
+  # create a list of data frame names as string
+  m15_names = as.vector(names(m15))
+
+  # assign field types
+  data_dict_m15 <- data_dict %>% filter(Form == "MNH15") %>% select(`Variable Name`, FieldType)
+
+  numeric <- lapply(m15, function(df) {
+    m15_dd_numeric <- data_dict_m15 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m15_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  })
+
+  date <- lapply(numeric, function(df) {
+    m15_dd_date <- data_dict_m15 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m15_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+
+
+  m15 = date
+
+  # remove duplicates and add prefix
+  m15_rbind <- lapply(m15, function(x) x %>%
+                        #add  "M##_"
+                        select(MOMID, PREGID,INFANTID, everything()) %>%
+                        rename_with( ~ paste0("M15_", .), -c(1:3)) %>%
+                        group_by(MOMID, PREGID,INFANTID, M15_OBSTERM) %>%
+                        arrange(desc(M15_OBSSTDAT)) %>%
+                        slice(1) %>%
+                        ungroup() %>%
+                        distinct()
+  )
+
+  # add in site variable
+  for(i in names(m15_rbind)){
+    m15_rbind[[i]]$SITE <- paste(gsub("mnh15_","",i))
+  }
+
+  # get all variable names
+  allNms <- unique(unlist(lapply(m15_rbind, names)))
+
+  # merge all MNH15 forms together
+  m15_merged <- do.call(rbind,c(lapply(m15_rbind,function(x)
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+
+  # make site the first variable
+  m15_infantmerged <- m15_merged %>% relocate(SITE)
+
+  ## get the variables that are missing from sites
+  m15_missing <- lapply(m15_rbind, function(x) setdiff(allNms, colnames(x)))
+
+  ## export data
+  setwd("~/Monitoring Report/data/merged")
+  save(m15_infantmerged, file= paste("m15_infantmerged",".RData",sep = ""))
+
+}
+
+#******M16
+
+# get list of all the MNH16 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh16_", x, sep = ""))==TRUE){
+    
+    m16 <- mget(ls(pattern = "mnh16_.*"))
+    
+  }
+}
+
+if (exists("m16") == TRUE) {
+  # create a list of data frame names as string
+  m16_names = as.vector(names(m16))
+
+  # assign field types
+  data_dict_m16 <- data_dict %>% filter(Form == "MNH16") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m16, function(df) {
+    m16_dd_numeric <- data_dict_m16 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m16_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m16_dd_date <- data_dict_m16 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m16_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+  m16 = date
+  
+  # remove duplicates and add prefix  
+  m16_rbind <- lapply(m16, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M16_", .), -c(1:2)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m16_rbind)){
+    m16_rbind[[i]]$SITE <- paste(gsub("mnh16_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m16_rbind, names)))
+  
+  # merge all MNH16 forms together 
+  m16_merged <- do.call(rbind,c(lapply(m16_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m16_merged <- m16_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m16_missing <- lapply(m16_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m16_merged, file= paste("m16_merged",".RData",sep = ""))
+  
+}
+
+#******M17
+
+# get list of all the MNH17 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh17_", x, sep = ""))==TRUE){
+    
+    m17 <- mget(ls(pattern = "mnh17_.*"))
+    
+  }
+}
+
+if (exists("m17") == TRUE) {
+  # create a list of data frame names as string
+  m17_names = as.vector(names(m17))
+  
+  # assign field types
+  data_dict_m17 <- data_dict %>% filter(Form == "MNH17") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m17, function(df) {
+    m17_dd_numeric <- data_dict_m17 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m17_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m17_dd_date <- data_dict_m17 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m17_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+  m17 = date
+  
+  # remove duplicates and add prefix  
+  m17_rbind <- lapply(m17, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M17_", .), -c(1:2)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m17_rbind)){
+    m17_rbind[[i]]$SITE <- paste(gsub("mnh17_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m17_rbind, names)))
+  
+  # merge all MNH17 forms together 
+  m17_merged <- do.call(rbind,c(lapply(m17_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m17_merged <- m17_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m17_missing <- lapply(m17_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m17_merged, file= paste("m17_merged",".RData",sep = ""))
+  
+}
+
+
+#******M18
+
+# get list of all the MNH18 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh18_", x, sep = ""))==TRUE){
+    
+    m18 <- mget(ls(pattern = "mnh18_.*"))
+    
+  }
+}
+
+if (exists("m18") == TRUE) {
+  # create a list of data frame names as string
+  m18_names = as.vector(names(m18))
+
+  # assign field types
+  data_dict_m18 <- data_dict %>% filter(Form == "MNH18") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m18, function(df) {
+    m18_dd_numeric <- data_dict_m18 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m18_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m18_dd_date <- data_dict_m18 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m18_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+  m18 = date
+  
+  # remove duplicates and add prefix  
+  m18_rbind <- lapply(m18, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M18_", .), -c(1:2)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m18_rbind)){
+    m18_rbind[[i]]$SITE <- paste(gsub("mnh18_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m18_rbind, names)))
+  
+  # merge all MNH18 forms together 
+  m18_merged <- do.call(rbind,c(lapply(m18_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m18_merged <- m18_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m18_missing <- lapply(m18_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m18_merged, file= paste("m18_merged",".RData",sep = ""))
+  
+}
+
+
+#******M19
+
+# get list of all the MNH19 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh19_", x, sep = ""))==TRUE){
+    
+    m19 <- mget(ls(pattern = "mnh19_.*"))
+    
+  }
+}
+
+if (exists("m19") == TRUE) {
+  # create a list of data frame names as string
+  m19_names = as.vector(names(m19))
+
+  # assign field types
+  data_dict_m19 <- data_dict %>% filter(Form == "MNH19") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m19, function(df) {
+    m19_dd_numeric <- data_dict_m19 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m19_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m19_dd_date <- data_dict_m19 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m19_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+  
+  m19 = date
+  
+  # remove duplicates and add prefix  
+  m19_rbind <- lapply(m19, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M19_", .), -c(1:2)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m19_rbind)){
+    m19_rbind[[i]]$SITE <- paste(gsub("mnh19_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m19_rbind, names)))
+  
+  # merge all MNH19 forms together 
+  m19_merged <- do.call(rbind,c(lapply(m19_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m19_merged <- m19_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m19_missing <- lapply(m19_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m19_merged, file= paste("m19_merged",".RData",sep = ""))
+  
+}
+
+#******M20
+#* INFANT FORM - INFANTID
+
+# # get list of all the MNH20 forms 
+# for (x in site_vec) {
+#   if (exists(paste("mnh20_", x, sep = ""))==TRUE){
+#     
+#     m20 <- mget(ls(pattern = "mnh20_.*"))
+#     
+#   }
+# }
+# 
+# if (exists("m20") == TRUE) {
+#   # create a list of data frame names as string
+#   m20_names = as.vector(names(m20))
+#   
+#   # assign field types
+#   data_dict_m20 <- data_dict %>% filter(Form == "MNH20") %>% select(`Variable Name`, FieldType)
+#   
+#   numeric <- lapply(m20, function(df) {
+#     m20_dd_numeric <- data_dict_m20 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+#     num <- colnames(df) %in% m20_dd_numeric
+#     df[num] <- lapply(df[num], as.numeric)
+#     df
+#   }) 
+#   
+#   date <- lapply(numeric, function(df) {
+#     m20_dd_date <- data_dict_m20 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+#     date <- colnames(df) %in% m20_dd_date
+#     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+#     df[date] <- lapply(df[date], ymd)
+#     df
+#   })
+#   
+#   
+#   m20 = date
+#   
+#   # remove duplicates and add prefix  
+#   m20_rbind <- lapply(m20, function(x) x %>% 
+#                         #add  "M##_"
+#                         select(INFANTID, everything()) %>% 
+#                         rename_with( ~ paste0("M20_", .), -c(1:2)) %>% 
+#                         group_by(INFANTID) %>% 
+#                         arrange(desc(M20_OBSSTDAT)) %>% 
+#                         slice(1) %>% 
+#                         ungroup() %>% 
+#                         distinct()
+#   )
+#   
+#   # add in site variable 
+#   for(i in names(m20_rbind)){
+#     m20_rbind[[i]]$SITE <- paste(gsub("mnh20_","",i))
+#   }
+#   
+#   # get all variable names
+#   allNms <- unique(unlist(lapply(m20_rbind, names)))
+#   
+#   # merge all MNH20 forms together 
+#   m20_merged <- do.call(rbind,c(lapply(m20_rbind,function(x) 
+#     data.frame(c(x, sapply(setdiff(allNms, names(x)),
+#                            function(y) NA)))), make.row.names=FALSE))
+#   
+#   # make site the first variable 
+#   m20_infantmerged <- m20_merged %>% relocate(SITE)
+#   
+#   ## get the variables that are missing from sites
+#   m20_missing <- lapply(m20_rbind, function(x) setdiff(allNms, colnames(x)))
+#   
+#   ## export data 
+#   setwd("~/Monitoring Report/data/merged")
+#   save(m20_infantmerged, file= paste("m20_infantmerged",".RData",sep = ""))
+#   
+# }
+
+
+
+
+#******M21
+# get list of all the MNH21 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh21_", x, sep = ""))==TRUE){
+    
+    m21 <- mget(ls(pattern = "mnh21_.*"))
+    
+  }
+}
+
+if (exists("m21") == TRUE) {
+  # create a list of data frame names as string
+  m21_names = as.vector(names(m21))
+  
+  # assign field types
+  data_dict_m21 <- data_dict %>% filter(Form == "MNH21") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m21, function(df) {
+    m21_dd_numeric <- data_dict_m21 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m21_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m21_dd_date <- data_dict_m21 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m21_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+  
+  m21 = date
+  
+  # remove duplicates and add prefix  
+  m21_rbind <- lapply(m21, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M21_", .), -c(1:3)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m21_rbind)){
+    m21_rbind[[i]]$SITE <- paste(gsub("mnh21_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m21_rbind, names)))
+  
+  # merge all MNH21 forms together 
+  m21_merged <- do.call(rbind,c(lapply(m21_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m21_merged <- m21_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m21_missing <- lapply(m21_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m21_merged, file= paste("m21_merged",".RData",sep = ""))
+  
+}
+
+#******M22
+#* INFANT FORM - INFANTID
+
+# get list of all the MNH22 forms
+for (x in site_vec) {
+  if (exists(paste("mnh22_", x, sep = ""))==TRUE){
+
+    m22 <- mget(ls(pattern = "mnh22_.*"))
+
+  }
+}
+
+if (exists("m22") == TRUE) {
+  # create a list of data frame names as string
+  m22_names = as.vector(names(m22))
+
+  # assign field types
+  data_dict_m22 <- data_dict %>% filter(Form == "MNH22") %>% select(`Variable Name`, FieldType)
+
+  numeric <- lapply(m22, function(df) {
+    m22_dd_numeric <- data_dict_m22 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m22_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  })
+
+  date <- lapply(numeric, function(df) {
+    m22_dd_date <- data_dict_m22 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m22_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+
+
+  m22 = date
+
+  # remove duplicates and add prefix
+  m22_rbind <- lapply(m22, function(x) x %>%
+                        #add  "M##_"
+                        select(INFANTID, everything()) %>%
+                        rename_with( ~ paste0("M22_", .), -c(1:2)) %>%
+                        group_by(INFANTID) %>%
+                        arrange(desc(M22_DVSTDAT)) %>%
+                        slice(1) %>%
+                        ungroup() %>%
+                        distinct()
+  )
+
+  # add in site variable
+  for(i in names(m22_rbind)){
+    m22_rbind[[i]]$SITE <- paste(gsub("mnh22_","",i))
+  }
+
+  # get all variable names
+  allNms <- unique(unlist(lapply(m22_rbind, names)))
+
+  # merge all MNH22 forms together
+  m22_merged <- do.call(rbind,c(lapply(m22_rbind,function(x)
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+
+  # make site the first variable
+  m22_infantmerged <- m22_merged %>% relocate(SITE)
+
+  ## get the variables that are missing from sites
+  m22_missing <- lapply(m22_rbind, function(x) setdiff(allNms, colnames(x)))
+
+  ## export data
+  setwd("~/Monitoring Report/data/merged")
+  save(m22_infantmerged, file= paste("m22_infantmerged",".RData",sep = ""))
+
+}
+
+#******M23
+# get list of all the MNH23 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh23_", x, sep = ""))==TRUE){
+    
+    m23 <- mget(ls(pattern = "mnh23_.*"))
+    
+  }
+}
+
+if (exists("m23") == TRUE) {
+  # create a list of data frame names as string
+  m23_names = as.vector(names(m23))
+  
+  # assign field types
+  data_dict_m23 <- data_dict %>% filter(Form == "MNH23") %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m23, function(df) {
+    m23_dd_numeric <- data_dict_m23 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m23_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m23_dd_date <- data_dict_m23 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m23_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+  
+  m23 = date
+  
+  # remove duplicates and add prefix  
+  m23_rbind <- lapply(m23, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M23_", .), -c(1:2)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m23_rbind)){
+    m23_rbind[[i]]$SITE <- paste(gsub("mnh23_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m23_rbind, names)))
+  
+  # merge all MNH23 forms together 
+  m23_merged <- do.call(rbind,c(lapply(m23_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m23_merged <- m23_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m23_missing <- lapply(m23_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m23_merged, file= paste("m23_merged",".RData",sep = ""))
+  
+}
+
+#******M24
+# #* INFANT FORM - INFANTID
+# get list of all the MNH24 forms
+for (x in site_vec) {
+  if (exists(paste("mnh24_", x, sep = ""))==TRUE){
+
+    m24 <- mget(ls(pattern = "mnh24_.*"))
+
+  }
+}
+
+if (exists("m24") == TRUE) {
+  # create a list of data frame names as string
+  m24_names = as.vector(names(m24))
+
+  # assign field types
+  data_dict_m24 <- data_dict %>% filter(Form == "MNH24") %>% select(`Variable Name`, FieldType)
+
+  numeric <- lapply(m24, function(df) {
+    m24_dd_numeric <- data_dict_m24 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m24_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  })
+
+  date <- lapply(numeric, function(df) {
+    m24_dd_date <- data_dict_m24 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m24_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+
+
+  m24 = date
+
+  # remove duplicates and add prefix
+  m24_rbind <- lapply(m24, function(x) x %>%
+                        #add  "M##_"
+                        select(INFANTID, everything()) %>%
+                        rename_with( ~ paste0("M24_", .), -c(1:3)) %>%
+                        group_by(INFANTID) %>%
+                        arrange(desc(M24_CLOSE_DSSTDAT)) %>%
+                        slice(1) %>%
+                        ungroup() %>%
+                        distinct()
+  )
+
+  # add in site variable
+  for(i in names(m24_rbind)){
+    m24_rbind[[i]]$SITE <- paste(gsub("mnh24_","",i))
+  }
+
+  # get all variable names
+  allNms <- unique(unlist(lapply(m24_rbind, names)))
+
+  # merge all MNH24 forms together
+  m24_merged <- do.call(rbind,c(lapply(m24_rbind,function(x)
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+
+  # make site the first variable
+  m24_infantmerged <- m24_merged %>% relocate(SITE)
+
+  ## get the variables that are missing from sites
+  m24_missing <- lapply(m24_rbind, function(x) setdiff(allNms, colnames(x)))
+
+  ## export data
+  setwd("~/Monitoring Report/data/merged")
+  save(m24_infantmerged, file= paste("m24_infantmerged",".RData",sep = ""))
+
+}
+
+#******M25
+# get list of all the MNH25 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh25_", x, sep = ""))==TRUE){
+    
+    m25 <- mget(ls(pattern = "mnh25_.*"))
+    
+  }
+}
+
+if (exists("m25") == TRUE) {
+  # create a list of data frame names as string
+  m25_names = as.vector(names(m25))
+  
+  # assign field types
+  MNH25_forms = c("MNH25_Ghana", "MNH25_Kenya", "MNH25_Pakistan", "MNH25_India","MNH25_Zambia")
+  data_dict_m25 <- data_dict %>% filter(Form %in% MNH25_forms) %>% select(`Variable Name`, FieldType)
+  
+  numeric <- lapply(m25, function(df) {
+    m25_dd_numeric <- data_dict_m25 %>% filter(FieldType == "Number") %>% distinct(`Variable Name`) %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m25_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  }) 
+  
+  date <- lapply(numeric, function(df) {
+    m25_dd_date <- data_dict_m25 %>% filter(FieldType == "Date")%>% distinct(`Variable Name`) %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m25_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+  
+  m25 = date
+  
+  # remove duplicates and add prefix  
+  m25_rbind <- lapply(m25, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M25_", .), -c(1:2)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m25_rbind)){
+    m25_rbind[[i]]$SITE <- paste(gsub("mnh25_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m25_rbind, names)))
+  
+  # merge all MNH25 forms together 
+  m25_merged <- do.call(rbind,c(lapply(m25_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m25_merged <- m25_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m25_missing <- lapply(m25_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m25_merged, file= paste("m25_merged",".RData",sep = ""))
+  
+}
+
+
+
+#******M26
+# get list of all the MNH26 forms 
+for (x in site_vec) {
+  if (exists(paste("mnh26_", x, sep = ""))==TRUE){
+    
+    m26 <- mget(ls(pattern = "mnh26_.*"))
+    
+  }
+}
+
+if (exists("m26") == TRUE) {
+  # create a list of data frame names as string
+  m26_names = as.vector(names(m26))
+  
+  # assign field types
+  #MNH26_forms = c("MNH26_Ghana", "MNH26_Kenya", "MNH26_Pakistan", "MNH26_India","MNH26_Zambia")
+  #data_dict_m26 <- data_dict %>% filter(Form %in% MNH26_forms) %>% select(`Variable Name`, FieldType)
+  # 
+  # numeric <- lapply(m26, function(df) {
+  #   m26_dd_numeric <- data_dict_m26 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+  #   num <- colnames(df) %in% m26_dd_numeric
+  #   df[num] <- lapply(df[num], as.numeric)
+  #   df
+  # }) 
+  
+  # date <- lapply(numeric, function(df) {
+  #   m26_dd_date <- data_dict_m26 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+  #   date <- colnames(df) %in% m26_dd_date
+  #   df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+  #   df[date] <- lapply(df[date], ymd)
+  #   df
+  # })
+  # 
+  m26 = m26 ## to fix 
+  
+  # remove duplicates and add prefix  
+  m26_rbind <- lapply(m26, function(x) x %>% 
+                        #add  "M##_"
+                        select(MOMID, PREGID, everything()) %>% 
+                        rename_with( ~ paste0("M26_", .), -c(1:3)) %>% 
+                        distinct()
+  )
+  
+  # add in site variable 
+  for(i in names(m26_rbind)){
+    m26_rbind[[i]]$SITE <- paste(gsub("mnh26_","",i))
+  }
+  
+  # get all variable names
+  allNms <- unique(unlist(lapply(m26_rbind, names)))
+  
+  # merge all MNH26 forms together 
+  m26_merged <- do.call(rbind,c(lapply(m26_rbind,function(x) 
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+  
+  # make site the first variable 
+  m26_merged <- m26_merged %>% relocate(SITE)
+  
+  ## get the variables that are missing from sites
+  m26_missing <- lapply(m26_rbind, function(x) setdiff(allNms, colnames(x)))
+
+  ## export data 
+  setwd("~/Monitoring Report/data/merged")
+  save(m26_merged, file= paste("m26_merged",".RData",sep = ""))
+  
+}
+
+
+## get table by form - this will show which sites have imported each form 
+form_site <- mget(ls(pattern = "_names*"))
+#View(form_site)
+
+# get list of all missing variables - this will show all the missing variables by form and site 
+varname_missing <- mget(ls(pattern = "._missing*"))
+#View(varname_missing)
+
+# get list of all merged data 
+mat_data_merged <- mget(ls(pattern = "._merged*")) 
+inf_data_merged <- mget(ls(pattern = "._infantmerged*")) 
+
+## look at all ANC visits by site 
+table(m04_merged$SITE, m04_merged$M04_TYPE_VISIT)
+
+## look at all PNC visits by site 
+table(m12_merged$SITE, m12_merged$M12_PNC_N_VISIT)
+
+## look at all PNC visits by site 
+table(m13_merged$SITE, m13_merged$M13_PNC_N_VISIT)
+
+
