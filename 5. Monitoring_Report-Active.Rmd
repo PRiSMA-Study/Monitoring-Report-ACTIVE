@@ -28,6 +28,12 @@ always_allow_html: true
 #### PRISMA MNH and ReMAPP Monitoring Report {.unlisted .unnumbered}
 </center>
 
+```{r setup, include=FALSE}
+  # Last Updated: May 01, 2023
+      # Combined tables 1a and 2a to include only 1 table that provides a snapshot of prescreening/enrollment in the most recent 1 week. 
+      # renamed the remaining tables to account for changes in tables 1-2
+  
+```
 &nbsp;
 
 ##### **PRISMA MNH:** Pregnancy Risk and Infant Surveillance and Measurement Alliance Maternal and Newborn Health (PRISMA MNH) Study: A multi-center, prospective cohort study of maternal, newborn, and infant health {.unlisted .unnumbered}
