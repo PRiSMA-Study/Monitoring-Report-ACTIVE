@@ -15,6 +15,13 @@ output:
 always_allow_html: true
 ---
   
+```{r setup, include=FALSE}
+  # Last Updated: May 01, 2023
+      # Combined tables 1a and 2a to include only 1 table that provides a snapshot of prescreening/enrollment in the most recent 1 week. 
+      # renamed the remaining tables to account for changes in tables 1-2
+  
+```
+
 ```{css, echo=FALSE}
 .table caption {
   color: black;
@@ -28,12 +35,6 @@ always_allow_html: true
 #### PRISMA MNH and ReMAPP Monitoring Report {.unlisted .unnumbered}
 </center>
 
-```{r setup, include=FALSE}
-  # Last Updated: May 01, 2023
-      # Combined tables 1a and 2a to include only 1 table that provides a snapshot of prescreening/enrollment in the most recent 1 week. 
-      # renamed the remaining tables to account for changes in tables 1-2
-  
-```
 &nbsp;
 
 ##### **PRISMA MNH:** Pregnancy Risk and Infant Surveillance and Measurement Alliance Maternal and Newborn Health (PRISMA MNH) Study: A multi-center, prospective cohort study of maternal, newborn, and infant health {.unlisted .unnumbered}
@@ -49,9 +50,10 @@ always_allow_html: true
 &nbsp;
 
 ##### **Includes data from synapse last updated:** {.unlisted .unnumbered}
-##### Kenya : 2023-04-21 {.unlisted .unnumbered}
-##### Pakistan : 2023-04-14 {.unlisted .unnumbered}
-##### Ghana : 2023-04-21 {.unlisted .unnumbered}
+##### Kenya : 2023-04-28 {.unlisted .unnumbered}
+##### Pakistan : 2023-04-28 {.unlisted .unnumbered}
+##### Ghana : 2023-04-28 {.unlisted .unnumbered}
+##### Zambia : 2023-04-28 {.unlisted .unnumbered}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
@@ -66,7 +68,7 @@ library(naniar)
 #library(dplyr)
 library(RColorBrewer)
 
-UploadDate = "2023-04-21" 
+UploadDate = "2023-04-28" 
 
 load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "MatData_Report_", UploadDate, ".RData"))
 load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "MatData_Screen_Enroll_", UploadDate, ".RData"))
@@ -77,6 +79,7 @@ load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "MatData_Hb_GA_
 load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "healthyOutcome_", UploadDate, ".RData"))
 load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "InfData_Pnc_Visits_", UploadDate, ".RData"))
 
+table(MatData_Pnc_Visits$M26_VISIT_COMPLETE_10)
 ## LINES UPDATE EACH RUN: 
 # Line 45-48: Date of last synapse upload
 # Line 110-112: Date of Last enrollment 
@@ -102,46 +105,41 @@ lastenroll <- MatData_Screen_Enroll %>%
   mutate(last_enroll = max((M02_SCRN_OBSSTDAT_1), na.rm = TRUE)) %>% 
   ungroup()
 
-# table(lastscreen$SITE, lastscreen$last_screen)
+ table(lastscreen$last_screen, lastscreen$SITE)
  table(lastenroll$last_enroll, lastenroll$SITE)
 ## 
 
 ##new 
 date_last_enrll_pak <- lastenroll %>% filter(SITE == "Pakistan") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_ke <- lastenroll %>% filter(SITE == "Kenya") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
-date_last_enrll_ga <- lastenroll %>% filter(SITE == "Ghana") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
+date_last_enrll_ga <- lastenroll %>% filter(SITE == "Ghana") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-14) %>% pull()
+date_last_enrll_za <- lastenroll %>% filter(SITE == "Zambia") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 
 ```
 ##### **Last Enrollment Date: ** 
-##### Kenya : 2023-04-20 {.unlisted .unnumbered}
-##### Pakistan : 2023-04-07 {.unlisted .unnumbered}
-##### Ghana : 2023-04-14 {.unlisted .unnumbered}
+##### Kenya : 2023-04-28 {.unlisted .unnumbered}
+##### Pakistan : 2023-04-19 {.unlisted .unnumbered}
+##### Ghana : 2023-04-27 {.unlisted .unnumbered}
+##### Zambia : 2023-03-30 {.unlisted .unnumbered}
 
-```{r Table1a}
-## Prescreening criteria in the most recent one week 
+```{r Table1}
+## Prescreening and enrollment in the most recent one week 
 # denominator: a = n all pre-screened 
 
-tb_prescreen_new <- MatData_Screen_Enroll %>% 
+tb_prescreen_enroll <- MatData_Screen_Enroll %>% 
   filter(
     SITE == "Pakistan" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_pak) |
     SITE == "Kenya" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ke) | 
-    SITE == "Ghana" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ga) 
+    SITE == "Ghana" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ga) |
+    SITE == "Zambia" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_za) 
   ) %>% 
   group_by(SITE) %>% 
-  summarise("Pre-screened for PRISMA, n (MNH00)" = sum(PRESCREEN == 1),
-            "Eligible based on pre-screening, n" = sum(PRESCR_ELIGIBLE == 1), 
-            "No clinical signs of pregnancy" = paste0(sum(PRESCR_PREGSIGN == 0), 
-                                        " (", format(sum(PRESCR_PREGSIGN == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Viable pregnancy with GA>25 weeks" = paste0(sum(PRESCR_GA25 == 0), 
-                                        " (", format(sum(PRESCR_GA25 == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Did not meet age requirement" = paste0(sum(PRESCR_AGE == 0), 
-                                        " (", format(sum(PRESCR_AGE == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Outside catchment area" = paste0(sum(PRESCR_CATCHAREA == 0), 
-                                        " (", format(sum(PRESCR_CATCHAREA == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Other reason^1^" = paste0(sum(PRESCR_OTHER == 0), 
-                                        " (", format(sum(PRESCR_OTHER == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Did not consent" = paste0(sum(PRESCR_CONSENT== 0), 
-                                        " (", format(sum(PRESCR_CONSENT == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")")
+  summarise("Pre-screened for PRISMA, n" = sum(PRESCREEN == 1),
+            "Eligible based on pre-screening, n" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE), 
+                                        " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE)/sum(a == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+            "Screened for PRISMA, n" = sum(SCREEN == 1),
+            "Enrolled in PRISMA, n(%)" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
+                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(b == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
 ) %>% 
   t() %>% as.data.frame() %>% 
   `colnames<-`(c(.[1,])) %>% 
@@ -149,27 +147,20 @@ tb_prescreen_new <- MatData_Screen_Enroll %>%
   add_column(
     .before = 1,
     "All sites" = MatData_Screen_Enroll %>% 
-  #suppose use START_DATE_MOM, but M00 is not in good shape for PA
   filter(
     SITE == "Pakistan" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_pak) |
     SITE == "Kenya" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ke) | 
-    SITE == "Ghana" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ga) 
+    SITE == "Ghana" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ga) |
+    SITE == "Zambia" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_za) 
+
   ) %>% 
-  plyr::summarise("Pre-screened for PRISMA, n (MNH00)" = sum(PRESCREEN == 1),
-            "Eligible based on pre-screening, n" = sum(PRESCR_ELIGIBLE == 1), 
-            # "Not exclude from study but didn't provide consent info , n" = sum(GAP_CONSENT == 1, na.rm = TRUE),
-            "No clinical signs of pregnancy" = paste0(sum(PRESCR_PREGSIGN == 0), 
-                                        " (", format(sum(PRESCR_PREGSIGN == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Viable pregnancy with GA>=25 weeks" = paste0(sum(PRESCR_GA25 == 0), 
-                                        " (", format(sum(PRESCR_GA25 == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Did not meet age requirement" = paste0(sum(PRESCR_AGE == 0), 
-                                        " (", format(sum(PRESCR_AGE == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Outside catchment area" = paste0(sum(PRESCR_CATCHAREA == 0), 
-                                        " (", format(sum(PRESCR_CATCHAREA == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Other reason^1^" = paste0(sum(PRESCR_OTHER == 0), 
-                                        " (", format(sum(PRESCR_OTHER == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Did not consent" = paste0(sum(PRESCR_CONSENT== 0), 
-                                        " (", format(sum(PRESCR_CONSENT == 0)/sum(a == 1)*100, digits = 2, nsmall=0), ")")
+  plyr::summarise("Pre-screened for PRISMA, n" = sum(PRESCREEN == 1),
+            "Eligible based on pre-screening, n" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE), 
+                                        " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE)/sum(a == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+            "Screened for PRISMA, n" = sum(SCREEN == 1),
+            "Enrolled in PRISMA, n(%) ^a^" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
+                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(b == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
+
 ) %>% 
       t() %>% unlist()
   ) 
@@ -183,33 +174,39 @@ tb_prescreen_new <- MatData_Screen_Enroll %>%
 &nbsp;
 &nbsp;
 
-#### `r emo::ji("pushpin")` Table 1a: Pre-screening numbers for PRISMA MNH Study for the most recent <span style="text-decoration:underline">one week</span> 
-*Value: This will provide a snapshot of weekly pre-screening progress, including reasons for ineligibility.* 
+#### `r emo::ji("pushpin")` Table 1: Pre-screening and Enrollment numbers for PRISMA MNH Study for the most recent <span style="text-decoration:underline">one week</span> 
+*Value: This will provide a snapshot of weekly pre-screening and enrollment progress.* 
 
 <!-- &nbsp; -->
 
 ```{r Table1aOut}
 
-bind_rows(tb_prescreen_new
-          ) %>% 
+bind_rows(tb_prescreen_enroll) %>% 
+    `rownames<-`(c("Pre-screened for PRISMA, n",
+                  "Eligible based on pre-screening, n(%)  ^a^",
+                  "Screened for PRISMA, n",
+                  "Enrolled in PRISMA, n(%) ^b^"
+                 )
+               ) %>%  
   kbl(caption = "") %>%
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = "hold_position") %>% 
-  footnote(alphabet = c("Denominator is pre- screened (MNH00 completed)"),
-           number = c("Other reasons for exclusion include: not feasible to collect the minimal required dataset, medical contraindication, comes from outside the study area, refusal to be screened, not interested, deferred, needs to seek spousal consent, or does not have time to proceed with enrollment process"),
-          footnote_order = c( "number", "alphabet"))  %>% 
-  pack_rows("Pre-screening", 1, 2, label_row_css = "color: steelblue;")  %>% 
-  pack_rows("Reason for exclusion in pre-screening, n(%)^a^", 3, 8, label_row_css = "color: steelblue;") 
+  footnote(alphabet = c("Denominator is pre-screened (MNH00 completed)",
+                        "denominator is n screened (MNH02 completed)"))  %>% 
+  pack_rows("Pre-screening (MNH00)", 1, 2, label_row_css = "color: steelblue;")  %>% 
+  pack_rows("Enrollment (MNH02)", 3, 4, label_row_css = "color: steelblue;") 
+
+
 ```
 
 &nbsp;
 &nbsp;
 
-#### `r emo::ji("pushpin")` Table 1b: <span style="text-decoration:underline">Cumulative</span>  pre-screening numbers for PRISMA MNH Study 
+#### `r emo::ji("pushpin")` Table 2: <span style="text-decoration:underline">Cumulative</span>  pre-screening numbers for PRISMA MNH Study 
 *Value: look at cumulative pre-screening distributions since the start of relaunch. If ineligible, distributions by exclusion criteria are listed below.*
 
-```{r Table1b}
+```{r Table2}
 ## Cumulative Prescreening criteria 
 # denominator: a = n all pre-screened 
 
@@ -260,7 +257,7 @@ tb_prescreen_all <- MatData_Screen_Enroll %>%
 ```
 
 
-```{r Table1bOut}
+```{r Table2out}
 bind_rows(tb_prescreen_all
           ) %>% 
   kbl(caption = "") %>%
@@ -277,86 +274,11 @@ bind_rows(tb_prescreen_all
 &nbsp;
 &nbsp;
 
-#### `r emo::ji("pushpin")` Table 2a: Enrollment numbers for PRISMA MNH Study for the most recent <span style="text-decoration:underline">one week</span> 
-*Value: This will provide a snapshot of enrollment distributions on a weekly basis, including reasons for ineligibility.*
 
-```{r Table2a}
-## Enrollment in the most recent one week 
-# denominator: a = n all screened 
-
-tb_enroll_new <- MatData_Screen_Enroll %>% 
-  filter(SCREEN == 1) %>% 
-  ## change this to a hardcoded var of last upload date
-  filter(
-    SITE == "Pakistan" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_pak) |
-    SITE == "Kenya" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ke) | 
-    SITE == "Ghana" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ga) 
-
-  ) %>% 
-  group_by(SITE) %>% 
-  summarise("Screened for PRISMA (MNH02), n" = sum(SCREEN == 1),
-            "Enrolled in PRISMA (MNH02), n(%) ^a^" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
-                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(b == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
-                             " (", format(sum(AGE == 0, na.rm=TRUE)/sum(b == 1)*100, digits = 2, nsmall=0), ")"),
-            "Viable pregnancy with GA>=20 weeks by US" = paste0(sum(GA20 == 0, na.rm=TRUE),
-                                " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(b == 1)*100, digits = 2, nsmall=0), ")"),
-            "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
-                                   " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(b == 1)*100, digits = 2, nsmall=0), ")"),
-            "Did not consent" = paste0(sum(CONSENT == 0, na.rm=TRUE),
-                                  " (", format(sum(CONSENT == 0, na.rm=TRUE)/sum(b == 1)*100, digits = 2, nsmall=0), ")")
-  ) %>% 
-    t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  ungroup() %>% 
-  add_column(
-    .before = 1,
-    "All sites" = MatData_Screen_Enroll %>% 
-  filter(
-    SITE == "Pakistan" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_pak) |
-    SITE == "Kenya" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ke) | 
-    SITE == "Ghana" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ga) 
-
-  ) %>% 
-  plyr::summarise("Screened for PRISMA (MNH02), n" = sum(SCREEN == 1),
-            "Enrolled in PRISMA (MNH02), n(%) ^a^" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
-                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(b == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
-                             " (", format(sum(AGE == 0, na.rm=TRUE)/sum(b == 1)*100, digits = 2, nsmall=0), ")"),
-            "Viable pregnancy with GA>=20 weeks by US" = paste0(sum(GA20 == 0, na.rm=TRUE),
-                                " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(b == 1)*100, digits = 2, nsmall=0), ")"),
-            "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
-                                   " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(b == 1)*100, digits = 2, nsmall=0), ")"),
-            "Did not consent" = paste0(sum(CONSENT == 0, na.rm=TRUE),
-                                  " (", format(sum(CONSENT == 0, na.rm=TRUE)/sum(b == 1)*100, digits = 2, nsmall=0), ")")
-      ) %>% 
-      t() %>% unlist()
-  ) 
-```
-
-```{r Table2aOut}
-
-bind_rows(tb_enroll_new#,
-          # tb_status
-          ) %>% 
-  kbl(caption = "") %>%
-  kable_paper(bootstrap_options = "striped", 
-              full_width = T, html_font = "Cambria", position = "left",
-              latex_options = "hold_position") %>% 
-  footnote(alphabet = c("denominator is n screened (MNH02 completed)"
-                        )) %>% 
-  pack_rows("Enrollment", 1, 2, label_row_css = "color: steelblue;")  %>% 
-  pack_rows("Reason not enrolled, n(%)^a^", 3, 6, label_row_css = "color: steelblue;") 
-```
-
-&nbsp;
-&nbsp;
-
-#### `r emo::ji("pushpin")` Table 2b: <span style="text-decoration:underline">Cumulative</span> enrollment numbers for PRISMA MNH Study 
+#### `r emo::ji("pushpin")` Table 3: <span style="text-decoration:underline">Cumulative</span> enrollment numbers for PRISMA MNH Study 
 *Value: look at cumulative enrollment and study progress distributions since the start of relaunch. If ineligible, distributions by exclusion criteria are listed below. Each column should sum to 100%.*
 
-```{r Table2b}
+```{r Table3}
 ## Cumulative Enrollment 
 # denominator: a = n all screened 
 
@@ -400,7 +322,7 @@ tb_enroll <- MatData_Screen_Enroll %>%
 
 ```
 
-```{r Table2bOut}
+```{r Table3 Out}
 bind_rows(tb_enroll#,
           # tb_status
           ) %>% 
@@ -438,7 +360,7 @@ enroll_cum %>%
   ggplot(aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE)) +
   geom_point(shape = 15) +
   geom_line() +
-  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), dmy("20-04-2023"))) + ## UPDATE EACH RUN 
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), dmy("28-04-2023"))) + ## UPDATE EACH RUN 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         legend.position="bottom",
@@ -446,6 +368,7 @@ enroll_cum %>%
   xlab("Enrollment Week") +
   ylab("Site Participant Enrolled") +
   ggtitle("")
+
 
 ```
 
@@ -456,7 +379,7 @@ enroll_cum %>%
 
 ```{r, figure-side, fig.show='hold', out.width="50%"}
 
-
+## pakistan
 enroll_cum_PA <- MatData_Screen_Enroll %>% 
   arrange("", by_group=START_DATE_MOM_WK) %>% 
   filter(SCREEN == 1 & SITE == "Pakistan" & !is.na(START_DATE_MOM_WK), 
@@ -490,11 +413,12 @@ enroll_cum_PA %>%
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         legend.position="bottom",
         panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), dmy("07-04-2023"))) + ## UPDATE EACH RUN
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), dmy("19-04-2023"))) + ## UPDATE EACH RUN
   xlab("Enrollment Week") +
   ylab("Site Participant Expected and Enrolled") +
   ggtitle("Pakistan") 
 
+# kenya
 enroll_cum_KE <- MatData_Screen_Enroll %>% 
   arrange("", by_group=START_DATE_MOM_WK) %>% 
   filter(SCREEN == 1 & SITE == "Kenya" & !is.na(START_DATE_MOM_WK), 
@@ -528,7 +452,7 @@ enroll_cum_KE %>%
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         legend.position="bottom",
         panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("20-11-2022"), dmy("20-04-2023"))) +     ## UPDATE EACH RUN
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("20-11-2022"), dmy("28-04-2023"))) +     ## UPDATE EACH RUN
   xlab("Enrollment Week") +
   ylab("Site Participant Expected and Enrolled") +
   ggtitle("Kenya") 
@@ -567,19 +491,59 @@ enroll_cum_GA %>%
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         legend.position="bottom",
         panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("26-12-2022"), dmy("14-04-2023"))) +     ## UPDATE EACH RUN
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("26-12-2022"), dmy("27-04-2023"))) +     ## UPDATE EACH RUN
   xlab("Enrollment Week") +
   ylab("Site Participant Expected and Enrolled") +
   ggtitle("Ghana")
+
+# Zambia
+enroll_cum_ZA <- MatData_Screen_Enroll %>% 
+  arrange("", by_group=START_DATE_MOM_WK) %>% 
+  filter(SCREEN == 1 & SITE == "Zambia" & !is.na(START_DATE_MOM_WK), 
+         START_DATE_MOM_WK > dmy("25/12/2022")) %>% 
+  group_by(START_DATE_MOM_WK) %>% 
+  summarise(enroll_n=sum(ENROLL==1),
+            expect_n=mean(EXPECT)) %>% 
+  mutate(
+  gap = as.numeric(ymd(START_DATE_MOM_WK)-lag(ymd(START_DATE_MOM_WK))),
+  expect_n = case_when(
+    gap <= 1 ~ expect_n,
+    gap > 1 ~ expect_n*gap,
+    is.na(gap) ~ expect_n
+  )) %>% 
+  mutate(expect_cum=cumsum(expect_n),
+         enroll_cum=cumsum(enroll_n))%>% 
+  ungroup() 
+
+enroll_cum_ZA$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_ZA$START_DATE_MOM_WK))
+
+enroll_cum_ZA %>% 
+  ggplot(aes(x = START_DATE_MOM_WK)) +
+  geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
+  geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
+  geom_line(aes(y = expect_cum, color = "Expected")) +
+  geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  scale_color_manual("",
+                     breaks=c("Expected","Enrolled"),
+                     values = c("orange", "royalblue1")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position="bottom",
+        panel.grid.minor = element_blank()) +
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-12-2022"), dmy("30-03-2023"))) + ## UPDATE EACH RUN
+  xlab("Enrollment Week") +
+  ylab("Site Participant Expected and Enrolled") +
+  ggtitle("Zambia") 
+
 
 ```
 
 \newpage
 
-#### `r emo::ji("pushpin")` Table 3: Study Status for PRISMA MNH Study 
+#### `r emo::ji("pushpin")` Table 4: Study Status for PRISMA MNH Study 
 *Value: look at current status of enrolled women. Each column should sum to 100%.*
 
-```{r Table3}
+```{r Table 4}
 ## study status 
 # denominator: c = n all enrolled
 
@@ -636,7 +600,7 @@ tb_status <- MatData_Screen_Enroll %>%
   ) 
 ```
 
-```{r Table3Out}
+```{r Table4Out}
 tb_status %>% 
   kbl(caption = "") %>%
   kable_paper(bootstrap_options = "striped", 
@@ -651,7 +615,7 @@ tb_status %>%
 
 \newpage
 
-#### `r emo::ji("pushpin")` Table 4: ANC study visit & procedure completion metrics
+#### `r emo::ji("pushpin")` Table 5: ANC study visit & procedure completion metrics
 *Value: Percent of all expected forms (late visit window has passed) that are required at each ANC visit are listed below. A visit is considered "complete" if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNH04). Additionally, key metrics such as gestational age and percentage of women who have received an ultrasound at enrollment and 32 weeks are listed. This table will help us identify any gaps in visit completion or missing forms.*
 
 ```{r ga_tb}
@@ -685,7 +649,7 @@ ga_tb <- MatData_Anc_Visits %>%
   "Ultrasound image at ANC-32, n(%)^d^" = paste0("0 (0)") 
   
   ) %>% ungroup() %>% 
-  mutate(`Gestational Age at Enrollment, mean ± SD` = ifelse(SITE == "Ghana", NA, `Gestational Age at Enrollment, mean ± SD`)) %>% 
+  #mutate(`Gestational Age at Enrollment, mean ± SD` = ifelse(SITE == "Ghana", NA, `Gestational Age at Enrollment, mean ± SD`)) %>% 
   t() %>% 
   as.data.frame() %>% 
   `colnames<-`(c(.[1,])) %>% 
@@ -693,7 +657,7 @@ ga_tb <- MatData_Anc_Visits %>%
   add_column(
     .before = 1,
     "All sites" = MatData_Anc_Visits %>%
-  mutate(GA_ENROLL_WKS = ifelse(SITE == "Ghana", NA, GA_ENROLL_WKS)) %>% 
+ # mutate(GA_ENROLL_WKS = ifelse(SITE == "Ghana", NA, GA_ENROLL_WKS)) %>% 
  plyr::summarise(
      "total enrolled" = paste0(
     "(n=",sum(c==1),")"
@@ -1251,7 +1215,7 @@ ANC36 <- MatData_Anc_Visits %>%
 
 ```
 
-```{r PRISMA TABLE 4 OUT}
+```{r PRISMA TABLE 5 OUT}
 
 bind_rows(ga_tb, 
           ANCLESS20, 
@@ -1556,9 +1520,9 @@ PNC6_MOM <- MatData_Pnc_Visits %>%
       ")"), 
     
     "MNH26 Maternal Fatigue" = paste0(
-      format(sum(M26_VISIT_COMPLETE_10 == 10, na.rm = TRUE), nsmall = 0, digits = 2),
+      format(sum(M26_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
       " (",
-      format(round(sum(M26_VISIT_COMPLETE_10 == 10, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      format(round(sum(M26_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
       ")")
 
   ) %>%
@@ -2339,7 +2303,7 @@ bind_rows(pnc_tb_inf,
 ### **2. ReMAPP** 
 
 #### `r emo::ji("pushpin")` Table 1: ReMAPP healthy cohort eligibility
-*Value: This table will be updated as lab measurements are updated and reported. Those who are unknown may move into eligible or ineligible categories based on updated lab reports.*
+*Value: This table will be updated as lab measurements are updated and reported. Those who are unknown may move into eligible or ineligible categories based on updated lab reports. Those who are eligible were enrolled in PRISMA following the launch of ReMAPP at each site.*
 
 ```{r}
 options(knitr.kable.NA = '0 (0)')
