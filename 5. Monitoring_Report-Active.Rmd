@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 20px'> PRISMA & ReMAPP Monitoring Report"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2023-05-30)"
 output:
   html_document:
     df_print: paged
@@ -15,10 +15,15 @@ output:
 always_allow_html: true
 ---
   
-```{r setup, include=FALSE}
-  # Last Updated: May 01, 2023
-      # Combined tables 1a and 2a to include only 1 table that provides a snapshot of prescreening/enrollment in the most recent 1 week. 
-      # renamed the remaining tables to account for changes in tables 1-2
+```{r updates, include=FALSE}
+ # Last Updated: May 20, 2023
+      # Updated tables to display visit completion, form completion, and protocol compliance 
+      # Split table 5 (Visit completion) into two tables (5a and 5b) to reflect on-time and late windows, respectively
+
+# Previous updates:
+    # May 01, 2023: 
+      # 1. Combined tables 1a and 2a to include only 1 table that provides a snapshot of prescreening/enrollment in the most recent 1 week. 
+      # 2. Renamed the remaining tables to account for changes in tables 1-2
   
 ```
 
@@ -29,31 +34,29 @@ always_allow_html: true
 }
 ```
 
-&nbsp;
-
 <center>
-#### PRISMA MNH and ReMAPP Monitoring Report {.unlisted .unnumbered}
+##### PRISMA MNH and ReMAPP Monitoring Report {.unlisted .unnumbered}
 </center>
 
 &nbsp;
 
-##### **PRISMA MNH:** Pregnancy Risk and Infant Surveillance and Measurement Alliance Maternal and Newborn Health (PRISMA MNH) Study: A multi-center, prospective cohort study of maternal, newborn, and infant health {.unlisted .unnumbered}
+#####  **PRISMA MNH:** Pregnancy Risk and Infant Surveillance and Measurement Alliance Maternal and Newborn Health (PRISMA MNH) Study: A multi-center, prospective cohort study of maternal, newborn, and infant health {.unlisted .unnumbered}
 
 &nbsp;
 
-##### **ReMAPP:** Redefining Maternal Anemia in Pregnancy and Postpartum (ReMAPP) Study {.unlisted .unnumbered}
+#####  **ReMAPP:** Redefining Maternal Anemia in Pregnancy and Postpartum (ReMAPP) Study {.unlisted .unnumbered}
 
-&nbsp;
+<!-- &nbsp; -->
 
-##### **Date report issued: ** `r Sys.Date()` {.unlisted .unnumbered}
+<!-- ##### **Date report issued:** `r Sys.Date()` {.unlisted .unnumbered} -->
 
 &nbsp;
 
 ##### **Includes data from synapse last updated:** {.unlisted .unnumbered}
-##### Kenya : 2023-04-28 {.unlisted .unnumbered}
-##### Pakistan : 2023-04-28 {.unlisted .unnumbered}
-##### Ghana : 2023-04-28 {.unlisted .unnumbered}
-##### Zambia : 2023-04-28 {.unlisted .unnumbered}
+##### Kenya : 2023-05-26 {.unlisted .unnumbered}
+##### Pakistan : 2023-05-26 {.unlisted .unnumbered}
+##### Ghana : 2023-05-26 {.unlisted .unnumbered}
+##### Zambia : 2023-05-26 {.unlisted .unnumbered}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
@@ -68,23 +71,14 @@ library(naniar)
 #library(dplyr)
 library(RColorBrewer)
 
-UploadDate = "2023-04-28" 
+UploadDate = "2023-05-26" 
 
-load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "MatData_Report_", UploadDate, ".RData"))
-load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "MatData_Screen_Enroll_", UploadDate, ".RData"))
-load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "MatData_Anc_Visits_", UploadDate, ".RData"))
-load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "MatData_Pnc_Visits_", UploadDate, ".RData"))
-load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "MatData_Hb_Visits_", UploadDate, ".RData"))
-load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "MatData_Hb_GA_Visit_", UploadDate, ".RData"))
-load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "healthyOutcome_", UploadDate, ".RData"))
-load(paste0("~/Monitoring Report/data/cleaned/",UploadDate, "/", "InfData_Pnc_Visits_", UploadDate, ".RData"))
+## Set working directory to site-specific folder -- QUERIES folder
+setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
 
-table(MatData_Pnc_Visits$M26_VISIT_COMPLETE_10)
-## LINES UPDATE EACH RUN: 
-# Line 45-48: Date of last synapse upload
-# Line 110-112: Date of Last enrollment 
-# Line 435:Figure 1a, replace the max value of x axis to be the most recent date of enrollment 
-# Lines 487, 525, 564:Figure 1b, replace the max value of x axis to be the most recent date of enrollment 
+## import all rda files 
+rda_files = list.files(pattern="*.RData")
+walk(rda_files, ~ load(.x, .GlobalEnv))
 
 ```
 
@@ -96,7 +90,6 @@ lastscreen <- MatData_Screen_Enroll %>%
   group_by(SITE) %>%
   mutate(last_screen = max((M00_SCRN_OBSSTDAT_1), na.rm = TRUE)) %>% 
   ungroup()
-
 
 lastenroll <- MatData_Screen_Enroll %>%
   filter(ENROLL == 1) %>% 
@@ -112,19 +105,23 @@ lastenroll <- MatData_Screen_Enroll %>%
 ##new 
 date_last_enrll_pak <- lastenroll %>% filter(SITE == "Pakistan") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_ke <- lastenroll %>% filter(SITE == "Kenya") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
-date_last_enrll_ga <- lastenroll %>% filter(SITE == "Ghana") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-14) %>% pull()
+date_last_enrll_ga <- lastenroll %>% filter(SITE == "Ghana") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_za <- lastenroll %>% filter(SITE == "Zambia") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 
 ```
 ##### **Last Enrollment Date: ** 
-##### Kenya : 2023-04-28 {.unlisted .unnumbered}
-##### Pakistan : 2023-04-19 {.unlisted .unnumbered}
-##### Ghana : 2023-04-27 {.unlisted .unnumbered}
-##### Zambia : 2023-03-30 {.unlisted .unnumbered}
+##### Kenya : 2023-05-25 {.unlisted .unnumbered}
+##### Pakistan : 2023-05-19 {.unlisted .unnumbered}
+##### Ghana : 2023-05-24 {.unlisted .unnumbered}
+##### Zambia : 2023-05-17 {.unlisted .unnumbered}
 
 ```{r Table1}
 ## Prescreening and enrollment in the most recent one week 
 # denominator: a = n all pre-screened 
+MatData_Screen_Enroll$date_last_enrll_pak = date_last_enrll_pak
+MatData_Screen_Enroll$date_last_enrll_ke = date_last_enrll_ke
+MatData_Screen_Enroll$date_last_enrll_ga = date_last_enrll_ga
+MatData_Screen_Enroll$date_last_enrll_za = date_last_enrll_za
 
 tb_prescreen_enroll <- MatData_Screen_Enroll %>% 
   filter(
@@ -153,6 +150,7 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
     SITE == "Ghana" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ga) |
     SITE == "Zambia" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_za) 
 
+
   ) %>% 
   plyr::summarise("Pre-screened for PRISMA, n" = sum(PRESCREEN == 1),
             "Eligible based on pre-screening, n" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE), 
@@ -174,13 +172,12 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
 &nbsp;
 &nbsp;
 
-#### `r emo::ji("pushpin")` Table 1: Pre-screening and Enrollment numbers for PRISMA MNH Study for the most recent <span style="text-decoration:underline">one week</span> 
+#### `r emo::ji("pushpin")` Table 1: Pre-screening and Enrollment numbers for PRISMA for the most recent <span style="text-decoration:underline">one week</span> 
 *Value: This will provide a snapshot of weekly pre-screening and enrollment progress.* 
 
 <!-- &nbsp; -->
 
 ```{r Table1aOut}
-
 bind_rows(tb_prescreen_enroll) %>% 
     `rownames<-`(c("Pre-screened for PRISMA, n",
                   "Eligible based on pre-screening, n(%)  ^a^",
@@ -193,7 +190,7 @@ bind_rows(tb_prescreen_enroll) %>%
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = "hold_position") %>% 
   footnote(alphabet = c("Denominator is pre-screened (MNH00 completed)",
-                        "denominator is n screened (MNH02 completed)"))  %>% 
+                        "Denominator is n screened (MNH02 completed)"))  %>% 
   pack_rows("Pre-screening (MNH00)", 1, 2, label_row_css = "color: steelblue;")  %>% 
   pack_rows("Enrollment (MNH02)", 3, 4, label_row_css = "color: steelblue;") 
 
@@ -203,7 +200,7 @@ bind_rows(tb_prescreen_enroll) %>%
 &nbsp;
 &nbsp;
 
-#### `r emo::ji("pushpin")` Table 2: <span style="text-decoration:underline">Cumulative</span>  pre-screening numbers for PRISMA MNH Study 
+#### `r emo::ji("pushpin")` Table 2: <span style="text-decoration:underline">Cumulative</span>  pre-screening numbers for PRISMA
 *Value: look at cumulative pre-screening distributions since the start of relaunch. If ineligible, distributions by exclusion criteria are listed below.*
 
 ```{r Table2}
@@ -215,8 +212,8 @@ tb_prescreen_all <- MatData_Screen_Enroll %>%
   group_by(SITE) %>% 
   summarise("Pre-screened for PRISMA, n (MNH00)" = sum(PRESCREEN == 1),
             
-            "Eligible based on pre-screening, n" = sum(PRESCR_ELIGIBLE == 1), 
-            
+            "Eligible based on pre-screening, n(%)^a^" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm = TRUE), 
+                                        " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
             "No clinical signs of pregnancy" = paste0(sum(PRESCR_PREGSIGN == 0, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_PREGSIGN == 0, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
             "Viable pregnancy with GA>=25 weeks" = paste0(sum(PRESCR_GA25 == 0, na.rm = TRUE), 
@@ -228,8 +225,8 @@ tb_prescreen_all <- MatData_Screen_Enroll %>%
                                         " (", format(sum(PRESCR_CATCHAREA == 0, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
             "Other reason^1^" = paste0(sum(PRESCR_OTHER == 0, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_OTHER == 0, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Did not consent" = paste0(sum(PRESCR_CONSENT== 0, na.rm = TRUE), 
-                                        " (", format(sum(PRESCR_CONSENT == 0, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")")
+            "Did not consent" = paste0(sum(CONSENT_PRESCREEN== 0, na.rm = TRUE), 
+                                        " (", format(sum(CONSENT_PRESCREEN == 0, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")")
 ) %>% 
   t() %>% as.data.frame() %>% 
   `colnames<-`(c(.[1,])) %>% 
@@ -238,7 +235,8 @@ tb_prescreen_all <- MatData_Screen_Enroll %>%
     .before = 1,
     "All sites" = MatData_Screen_Enroll %>% 
   plyr::summarise("Pre-screened for PRISMA, n (MNH00)" = sum(PRESCREEN == 1),
-            "Eligible based on pre-screening, n" = sum(PRESCR_ELIGIBLE == 1),
+            "Eligible based on pre-screening, n(%)^a^" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm = TRUE), 
+                                        " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
             "No clinical signs of pregnancy" = paste0(sum(PRESCR_PREGSIGN == 0, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_PREGSIGN == 0, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
             "Viable pregnancy with GA>=25 weeks" = paste0(sum(PRESCR_GA25 == 0, na.rm = TRUE), 
@@ -249,13 +247,12 @@ tb_prescreen_all <- MatData_Screen_Enroll %>%
                                         " (", format(sum(PRESCR_CATCHAREA == 0, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
             "Other reason^1^" = paste0(sum(PRESCR_OTHER == 0, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_OTHER == 0, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")"),
-            "Did not consent" = paste0(sum(PRESCR_CONSENT== 0), 
-                                        " (", format(sum(PRESCR_CONSENT == 0, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")")
+            "Did not consent" = paste0(sum(CONSENT_PRESCREEN== 0, na.rm = TRUE), 
+                                        " (", format(sum(CONSENT_PRESCREEN == 0, na.rm = TRUE)/sum(a == 1)*100, digits = 2, nsmall=0), ")")
 ) %>% 
       t() %>% unlist()
   ) 
 ```
-
 
 ```{r Table2out}
 bind_rows(tb_prescreen_all
@@ -275,10 +272,10 @@ bind_rows(tb_prescreen_all
 &nbsp;
 
 
-#### `r emo::ji("pushpin")` Table 3: <span style="text-decoration:underline">Cumulative</span> enrollment numbers for PRISMA MNH Study 
+#### `r emo::ji("pushpin")` Table 3: <span style="text-decoration:underline">Cumulative</span> enrollment numbers for PRISMA
 *Value: look at cumulative enrollment and study progress distributions since the start of relaunch. If ineligible, distributions by exclusion criteria are listed below. Each column should sum to 100%.*
 
-```{r Table3}
+```{r Table3 gen}
 ## Cumulative Enrollment 
 # denominator: a = n all screened 
 
@@ -288,6 +285,13 @@ tb_enroll <- MatData_Screen_Enroll %>%
   summarise("Screened for PRISMA (MNH02), n" = sum(SCREEN == 1),
             "Enrolled in PRISMA (MNH02), n(%) ^a^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(b == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+            
+              "Gestational Age at Enrollment, mean (SD)" = paste0(format(round(mean(GA_ENROLL_WKS, na.rm = TRUE),2), 
+                                                        nsmall=0, digits = 2), " (",format(round(sd(GA_ENROLL_WKS, 
+                                                            na.rm = TRUE),2), nsmall=0, digits = 2), ")"), 
+              "First trimester (<14 wks), n(%)^a^" = paste0(sum(GA_ENROLL_WKS < 14, na.rm = TRUE)," (",
+                          format(round(sum(GA_ENROLL_WKS < 14, na.rm = TRUE)/sum(c == 1)*100, 2), nsmall = 0, digits = 2),
+    ")"),
             "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
                              " (", format(sum(AGE == 0, na.rm=TRUE)/sum(b == 1)*100, digits = 2, nsmall=0), ")"),
             "Viable pregnancy with GA>=20 weeks by US" = paste0(sum(GA20 == 0, na.rm=TRUE),
@@ -306,6 +310,12 @@ tb_enroll <- MatData_Screen_Enroll %>%
   plyr::summarise("Screened for PRISMA (MNH02), n" = sum(SCREEN == 1),
             "Enrolled in PRISMA (MNH02), n(%) ^a^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(b == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+            "Gestational Age at Enrollment, mean (SD)" = paste0(format(round(mean(GA_ENROLL_WKS, na.rm = TRUE),2), 
+                                                        nsmall=0, digits = 2), " (",format(round(sd(GA_ENROLL_WKS, 
+                                                            na.rm = TRUE),2), nsmall=0, digits = 2), ")"), 
+            "First trimester (<14 wks), n(%)^a^" = paste0(sum(GA_ENROLL_WKS < 14, na.rm = TRUE)," (",
+                          format(round(sum(GA_ENROLL_WKS < 14, na.rm = TRUE)/sum(c == 1)*100, 2), nsmall = 0, digits = 2),
+    ")"),
             "Viable pregnancy with GA>=20 weeks by US" = paste0(sum(AGE == 0, na.rm=TRUE),
                              " (", format(sum(AGE == 0, na.rm=TRUE)/sum(b == 1)*100, digits = 2, nsmall=0), ")"),
             "GA >= 20 wks by US" = paste0(sum(GA20 == 0, na.rm=TRUE),
@@ -325,19 +335,30 @@ tb_enroll <- MatData_Screen_Enroll %>%
 ```{r Table3 Out}
 bind_rows(tb_enroll#,
           # tb_status
-          ) %>% 
+          ) %>%
+    `rownames<-` (c(
+                 "Screened for PRISMA (MNH02), n",
+                 "Enrolled in PRISMA (MNH02), n(%) ^a^",
+                 "Gestational Age at Enrollment, mean (SD)",
+                 "First trimester (<14 wks), n(%)^b^",
+                 "Did not meet age requirement",
+                 "Viable pregnancy with GA>=20 weeks by US", 
+                 "Outside catchment area", 
+                 "Did not consent"
+                 )
+                ) %>% 
   kbl(caption = "") %>%
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = "hold_position") %>% 
-  footnote(alphabet = c("denominator is n screened (MNH02 completed)"
-          ) ) %>% 
-  pack_rows("Enrollment", 1, 2, label_row_css = "color: steelblue;")  %>% 
-  pack_rows("Reason not enrolled, n(%)^a^", 3, 6, label_row_css = "color: steelblue;") 
+  footnote(alphabet = c("denominator is n screened (MNH02 completed)", 
+                        "denominator is n enrolled")
+          )  %>% 
+  pack_rows("Enrollment", 1, 4, label_row_css = "color: steelblue;")  %>% 
+  pack_rows("Reason not enrolled, n(%)^a^", 5, 8, label_row_css = "color: steelblue;") 
 ```
 
-&nbsp;
-&nbsp;
+\newpage
 
 #### `r emo::ji("pushpin")` Figure 1a: Cumulative Enrollment by Site and Week
 *Value: Illustrate cumulative enrollment status by site over time.*
@@ -360,7 +381,7 @@ enroll_cum %>%
   ggplot(aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE)) +
   geom_point(shape = 15) +
   geom_line() +
-  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), dmy("28-04-2023"))) + ## UPDATE EACH RUN 
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), UploadDate)) + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         legend.position="bottom",
@@ -413,7 +434,7 @@ enroll_cum_PA %>%
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         legend.position="bottom",
         panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), dmy("19-04-2023"))) + ## UPDATE EACH RUN
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), date_last_enrll_pak)) + ## UPDATE EACH RUN
   xlab("Enrollment Week") +
   ylab("Site Participant Expected and Enrolled") +
   ggtitle("Pakistan") 
@@ -452,7 +473,7 @@ enroll_cum_KE %>%
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         legend.position="bottom",
         panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("20-11-2022"), dmy("28-04-2023"))) +     ## UPDATE EACH RUN
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("20-11-2022"), date_last_enrll_ke)) +    
   xlab("Enrollment Week") +
   ylab("Site Participant Expected and Enrolled") +
   ggtitle("Kenya") 
@@ -491,7 +512,7 @@ enroll_cum_GA %>%
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         legend.position="bottom",
         panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("26-12-2022"), dmy("27-04-2023"))) +     ## UPDATE EACH RUN
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("26-12-2022"), date_last_enrll_ga)) +  
   xlab("Enrollment Week") +
   ylab("Site Participant Expected and Enrolled") +
   ggtitle("Ghana")
@@ -500,7 +521,7 @@ enroll_cum_GA %>%
 enroll_cum_ZA <- MatData_Screen_Enroll %>% 
   arrange("", by_group=START_DATE_MOM_WK) %>% 
   filter(SCREEN == 1 & SITE == "Zambia" & !is.na(START_DATE_MOM_WK), 
-         START_DATE_MOM_WK > dmy("25/12/2022")) %>% 
+         START_DATE_MOM_WK > dmy("15/12/2022")) %>% 
   group_by(START_DATE_MOM_WK) %>% 
   summarise(enroll_n=sum(ENROLL==1),
             expect_n=mean(EXPECT)) %>% 
@@ -530,7 +551,7 @@ enroll_cum_ZA %>%
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         legend.position="bottom",
         panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("25-12-2022"), dmy("30-03-2023"))) + ## UPDATE EACH RUN
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("15-12-2022"), date_last_enrll_za)) + 
   xlab("Enrollment Week") +
   ylab("Site Participant Expected and Enrolled") +
   ggtitle("Zambia") 
@@ -543,7 +564,7 @@ enroll_cum_ZA %>%
 #### `r emo::ji("pushpin")` Table 4: Study Status for PRISMA MNH Study 
 *Value: look at current status of enrolled women. Each column should sum to 100%.*
 
-```{r Table 4}
+```{r Table3}
 ## study status 
 # denominator: c = n all enrolled
 
@@ -600,7 +621,7 @@ tb_status <- MatData_Screen_Enroll %>%
   ) 
 ```
 
-```{r Table4Out}
+```{r Table3Out}
 tb_status %>% 
   kbl(caption = "") %>%
   kable_paper(bootstrap_options = "striped", 
@@ -615,10 +636,670 @@ tb_status %>%
 
 \newpage
 
-#### `r emo::ji("pushpin")` Table 5: ANC study visit & procedure completion metrics
-*Value: Percent of all expected forms (late visit window has passed) that are required at each ANC visit are listed below. A visit is considered "complete" if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNH04). Additionally, key metrics such as gestational age and percentage of women who have received an ultrasound at enrollment and 32 weeks are listed. This table will help us identify any gaps in visit completion or missing forms.*
+#### `r emo::ji("pushpin")` Table 5a: PRISMA Visit Completion (On-Time Windows)
+*Value: Are forms completed for each visit? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).*
+<br>
+<br>
 
-```{r ga_tb}
+*Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed on-time window for visit type = i 
+<br>
+*Denominator:* Passed on-time window for visit type = i
+```{r Table 5a }
+#* Num: Any form with visit type = i AND visit status = 1 or 2 & Passed window for visit type = i
+#* Denom: Passed window for visit type = i
+
+VISIT_COMPLETE_ANC <- Visit_Complete_Anc %>% 
+          rowwise() %>% 
+          group_by(SITE) %>% 
+          summarise(
+
+      "Enrollment" = paste0(
+        format(sum(VC_ENROLL_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ENROLL_NUM == 1, na.rm = TRUE)/sum(ENROLL_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "Denominator,n" = paste0(
+        format(sum(ENROLL_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 20" = paste0(
+        format(sum(VC_ANC20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC20_NUM == 1, na.rm = TRUE)/sum(ANC20_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "Denominator,n " = paste0(
+        format(sum(ANC20_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+      
+      "ANC = 28" = paste0(
+        format(sum(VC_ANC28_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC28_NUM == 1, na.rm = TRUE)/sum(ANC28_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+            
+      "Denominator,n  " = paste0(
+        format(sum(ANC28_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+      
+      "ANC = 32" = paste0(
+        format(sum(VC_ANC32_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC32_NUM == 1, na.rm = TRUE)/sum(ANC32_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+            
+      "Denominator,n   " = paste0(
+        format(sum(ANC32_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 36" = paste0(
+        format(sum(VC_ANC36_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC36_NUM == 1, na.rm = TRUE)/sum(ANC36_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+            
+      "Denominator,n    " = paste0(
+        format(sum(ANC36_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        )
+      ) %>%
+  t() %>% as.data.frame() %>% 
+  `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+      add_column(
+      .before = 1,
+      "All sites" = Visit_Complete_Anc %>% 
+        plyr::summarise(
+
+      "Enrollment" = paste0(
+        format(sum(VC_ENROLL_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ENROLL_NUM == 1, na.rm = TRUE)/sum(ENROLL_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+            
+      "Denominator,n" = paste0(
+        format(sum(ENROLL_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+      
+      "ANC = 20" = paste0(
+        format(sum(VC_ANC20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC20_NUM == 1, na.rm = TRUE)/sum(ANC20_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+            
+      "Denominator,n " = paste0(
+        format(sum(ANC20_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 28" = paste0(
+        format(sum(VC_ANC28_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC28_NUM == 1, na.rm = TRUE)/sum(ANC28_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+            
+      "Denominator,n  " = paste0(
+        format(sum(ANC28_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 32" = paste0(
+        format(sum(VC_ANC32_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC32_NUM == 1, na.rm = TRUE)/sum(ANC32_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+            
+      "Denominator,n   " = paste0(
+        format(sum(ANC32_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 36" = paste0(
+        format(sum(VC_ANC36_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC36_NUM == 1, na.rm = TRUE)/sum(ANC36_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+            
+      "Denominator,n    " = paste0(
+        format(sum(ANC36_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        )
+      
+      ) %>% 
+        t() %>% 
+        as.data.frame() %>% 
+      `colnames<-`(c(.[1,])) %>% unlist() 
+)
+
+
+## PNC 
+VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>% 
+          rowwise() %>% 
+          group_by(SITE) %>% 
+          summarise(
+
+      "PNC = 0" = paste0(
+        format(sum(VC_PNC0_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC0_NUM == 1, na.rm = TRUE)/sum(PNC0_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                  
+      "Denominator,n" = paste0(
+        format(sum(PNC0_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 1" = paste0(
+        format(sum(VC_PNC1_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC1_NUM == 1, na.rm = TRUE)/sum(PNC1_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                        
+      "Denominator,n " = paste0(
+        format(sum(PNC1_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 4" = paste0(
+        format(sum(VC_PNC4_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC4_NUM == 1, na.rm = TRUE)/sum(PNC4_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                        
+      "Denominator,n  " = paste0(
+        format(sum(PNC4_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+      
+      "PNC = 6" = paste0(
+        format(sum(VC_PNC6_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC6_NUM == 1, na.rm = TRUE)/sum(PNC6_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                        
+      "Denominator,n   " = paste0(
+        format(sum(PNC6_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+      
+      "PNC = 26" = paste0(
+        format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(PNC26_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                        
+      "Denominator,n    " = paste0(
+        format(sum(PNC26_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+      
+      "PNC = 52" = paste0(
+        format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(PNC52_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                        
+      "Denominator,n     " = paste0(
+        format(sum(PNC52_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        )
+      ) %>%
+  t() %>% as.data.frame() %>% 
+  `colnames<-`(c(.[1,])) %>% 
+  slice(-1) %>% 
+      add_column(
+      .before = 1,
+      "All sites" = Visit_Complete_Pnc %>% 
+        plyr::summarise(
+          
+      "PNC = 0" = paste0(
+        format(sum(VC_PNC0_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC0_NUM == 1, na.rm = TRUE)/sum(PNC0_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                  
+      "Denominator,n" = paste0(
+        format(sum(PNC0_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 1" = paste0(
+        format(sum(VC_PNC1_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC1_NUM == 1, na.rm = TRUE)/sum(PNC1_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                        
+      "Denominator,n " = paste0(
+        format(sum(PNC1_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 4" = paste0(
+        format(sum(VC_PNC4_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC4_NUM == 1, na.rm = TRUE)/sum(PNC4_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                        
+      "Denominator,n  " = paste0(
+        format(sum(PNC4_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+      
+      "PNC = 6" = paste0(
+        format(sum(VC_PNC6_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC6_NUM == 1, na.rm = TRUE)/sum(PNC6_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                        
+      "Denominator,n   " = paste0(
+        format(sum(PNC6_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 26" = paste0(
+        format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(PNC26_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                        
+      "Denominator,n    " = paste0(
+        format(sum(PNC26_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+      
+      "PNC = 52" = paste0(
+        format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(PNC52_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+                        
+      "Denominator,n     " = paste0(
+        format(sum(PNC52_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        )
+      ) %>% 
+        t() %>% 
+        as.data.frame() %>% 
+      `colnames<-`(c(.[1,])) %>% unlist() 
+)
+
+## since no PNC data in zambia or ghana - replace with "no data" 
+#VISIT_COMPLETE_PNC <- VISIT_COMPLETE_PNC %>%  add_column(Ghana = "No PNC Data", .after = "All sites")
+VISIT_COMPLETE_PNC <- VISIT_COMPLETE_PNC %>%  add_column(Zambia = "No PNC Data", .after = "Pakistan")
+
+```
+
+```{r PRISMA TABLE 5a OUT}
+
+bind_rows(VISIT_COMPLETE_ANC, 
+          VISIT_COMPLETE_PNC, 
+          ) %>% 
+  `rownames<-` (c(## anc (1-10)
+                 "Enrollment (Target window: <20wks)",
+                 "Denominator, n",
+                 "ANC = 20 (Target window: 18 to 22wks)",
+                 "Denominator, n ",
+                 "ANC = 28 (Target window: 26 to 30wks)",
+                 "Denominator, n  ",
+                 "ANC = 32 (Target window: 31 to 33wks)",
+                 "Denominator, n   ",
+                 "ANC = 36 (Target window: 34 to 38wks)",
+                 "Denominator, n    ",
+                 ## pnc (11-22)
+                 "PNC = 0 (Target window: 3 to 5 days)",
+                 "Denominator, n     ",
+                 "PNC = 1 (Target window: 7 to 14 days)",
+                 "Denominator, n      ",
+                 "PNC = 4 (Target window: 28 to 35 days)",
+                 "Denominator, n       ",
+                 "PNC = 6 (Target window: 6 to 7wks)",
+                 "Denominator, n        ",
+                 "PNC = 26 (Target window: 26 to 28wks)",
+                 "Denominator, n         ",
+                 "PNC = 52 (Target window: 52 to 54wks)",
+                 "Denominator, n          "
+                 )
+                ) %>% 
+  mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
+  kbl(caption = "") %>%
+    footnote(alphabet = c("denominator is n passed window for visit type=i"),
+             general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.", 
+             footnote_order = c("alphabet", "general")) %>% 
+  kable_paper(bootstrap_options = "striped", 
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = c("repeat_header", "HOLD_position")) %>% 
+  row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
+  row_spec(c(1,3,5,7,9,11,13,15,17,19,21), extra_css = "border-bottom: 0px white;") %>% 
+  #row_spec(c(2, 4, 6,8,10, 12, 14,16,18,20,22), italic = TRUE) %>% 
+  add_indent(c(2, 4, 6,8,10, 12, 14,16,18,20,22), level_of_indent = 2)  %>% 
+  pack_rows("ANC Visits", 1, 10, label_row_css = "color: steelblue;") %>% 
+  pack_rows("PNC Visits", 11, 22, label_row_css = "color: steelblue;") 
+
+```
+
+
+#### `r emo::ji("pushpin")` Table 5b: PRISMA Visit Completion (Late Windows) 
+*Value: Are forms completed for each visit? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). If there is no late window for a visit, the on-time windows are used.*
+<br>
+<br>
+
+*Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i
+<br>
+*Denominator:* Passed late window for visit type = i
+```{r Table 5b }
+#* Num: Any form with visit type = i AND visit status = 1 or 2 & Passed window for visit type = i
+#* Denom: Passed window for visit type = i
+
+VISIT_COMPLETE_ANC <- Visit_Complete_Anc %>%
+          rowwise() %>%
+          group_by(SITE) %>%
+          summarise(
+
+      "Enrollment" = paste0(
+        format(sum(VC_ENROLL_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ENROLL_NUM_LATE == 1, na.rm = TRUE)/sum(ENROLL_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n" = paste0(
+        format(sum(ENROLL_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 20" = paste0(
+        format(sum(VC_ANC20_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC20_NUM_LATE == 1, na.rm = TRUE)/sum(ANC20_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n " = paste0(
+        format(sum(ANC20_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 28" = paste0(
+        format(sum(VC_ANC28_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC28_NUM_LATE == 1, na.rm = TRUE)/sum(ANC28_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n  " = paste0(
+        format(sum(ANC28_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 32" = paste0(
+        format(sum(VC_ANC32_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC32_NUM_LATE == 1, na.rm = TRUE)/sum(ANC32_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n   " = paste0(
+        format(sum(ANC32_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 36" = paste0(
+        format(sum(VC_ANC36_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC36_NUM_LATE == 1, na.rm = TRUE)/sum(ANC36_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n    " = paste0(
+        format(sum(ANC36_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        )
+      ) %>%
+  t() %>% as.data.frame() %>%
+  `colnames<-`(c(.[1,])) %>%
+  slice(-1) %>%
+      add_column(
+      .before = 1,
+      "All sites" = Visit_Complete_Anc %>%
+        plyr::summarise(
+
+      "Enrollment" = paste0(
+        format(sum(VC_ENROLL_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ENROLL_NUM_LATE == 1, na.rm = TRUE)/sum(ENROLL_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n" = paste0(
+        format(sum(ENROLL_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 20" = paste0(
+        format(sum(VC_ANC20_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC20_NUM_LATE == 1, na.rm = TRUE)/sum(ANC20_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n " = paste0(
+        format(sum(ANC20_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 28" = paste0(
+        format(sum(VC_ANC28_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC28_NUM_LATE == 1, na.rm = TRUE)/sum(ANC28_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n  " = paste0(
+        format(sum(ANC28_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 32" = paste0(
+        format(sum(VC_ANC32_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC32_NUM_LATE == 1, na.rm = TRUE)/sum(ANC32_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n   " = paste0(
+        format(sum(ANC32_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "ANC = 36" = paste0(
+        format(sum(VC_ANC36_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_ANC36_NUM_LATE == 1, na.rm = TRUE)/sum(ANC36_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n    " = paste0(
+        format(sum(ANC36_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        )
+
+      ) %>%
+        t() %>%
+        as.data.frame() %>%
+      `colnames<-`(c(.[1,])) %>% unlist()
+)
+
+
+## PNC
+VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>%
+          rowwise() %>%
+          group_by(SITE) %>%
+          summarise(
+
+      "PNC = 0" = paste0(
+        format(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE)/sum(PNC0_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n" = paste0(
+        format(sum(PNC0_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 1" = paste0(
+        format(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE)/sum(PNC1_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n " = paste0(
+        format(sum(PNC1_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 4" = paste0(
+        format(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE)/sum(PNC4_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n  " = paste0(
+        format(sum(PNC4_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 6" = paste0(
+        format(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE)/sum(PNC6_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n   " = paste0(
+        format(sum(PNC6_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 26" = paste0(
+        format(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(PNC26_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n    " = paste0(
+        format(sum(PNC26_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 52" = paste0(
+        format(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(PNC52_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n     " = paste0(
+        format(sum(PNC52_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        )
+      ) %>%
+  t() %>% as.data.frame() %>%
+  `colnames<-`(c(.[1,])) %>%
+  slice(-1) %>%
+      add_column(
+      .before = 1,
+      "All sites" = Visit_Complete_Pnc %>%
+        plyr::summarise(
+
+      "PNC = 0" = paste0(
+        format(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE)/sum(PNC0_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n" = paste0(
+        format(sum(PNC0_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 1" = paste0(
+        format(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE)/sum(PNC1_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n " = paste0(
+        format(sum(PNC1_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 4" = paste0(
+        format(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE)/sum(PNC4_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n  " = paste0(
+        format(sum(PNC4_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 6" = paste0(
+        format(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE)/sum(PNC6_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n   " = paste0(
+        format(sum(PNC6_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 26" = paste0(
+        format(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(PNC26_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n    " = paste0(
+        format(sum(PNC26_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "PNC = 52" = paste0(
+        format(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(PNC52_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "Denominator,n     " = paste0(
+        format(sum(PNC52_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        )
+      ) %>%
+        t() %>%
+        as.data.frame() %>%
+      `colnames<-`(c(.[1,])) %>% unlist()
+)
+
+## since no PNC data in zambia or ghana - replace with "no data"
+# VISIT_COMPLETE_PNC <- VISIT_COMPLETE_PNC %>%  add_column(Ghana = "No PNC Data", .after = "All sites")
+VISIT_COMPLETE_PNC <- VISIT_COMPLETE_PNC %>%  add_column(Zambia = "No PNC Data", .after = "Pakistan")
+
+```
+
+```{r PRISMA TABLE 5b OUT}
+
+bind_rows(VISIT_COMPLETE_ANC,
+          VISIT_COMPLETE_PNC,
+          ) %>%
+  `rownames<-` (c(## anc (1-10)
+                 "Enrollment (Late window: None)", ## NONE - SKIP WINDOW
+                 "Denominator, n",
+                 "ANC = 20 (Late window: 23 to 25wks)",
+                 "Denominator, n ",
+                 "ANC = 28 (Late window: None)", ## NONE - SKIP WINDOW
+                 "Denominator, n  ",
+                 "ANC = 32 (Late window: 34 to delivery)", ## ask about this delivery end date
+                 "Denominator, n   ",
+                 "ANC = 36 (Late window: 38 to delivery)", ## ask about this delivery end date
+                 "Denominator, n    ",
+                 ## pnc (11-22)
+                 "PNC = 0 (Late window: None)", ## NONE - SKIP WINDOW
+                 "Denominator, n     ",
+                 "PNC = 1 (Late window: None)", ## NONE - SKIP WINDOW
+                 "Denominator, n      ",
+                 "PNC = 4 (Late window: None)", ## NONE - SKIP WINDOW
+                 "Denominator, n       ",
+                 "PNC = 6 (Late window: 8 to 12wks)",
+                 "Denominator, n        ",
+                 "PNC = 26 (Late window: 29 to 39wks)",
+                 "Denominator, n         ",
+                 "PNC = 52 (Late window: 55 to 64wks)",
+                 "Denominator, n          "
+                 )
+                ) %>%
+  mutate_all(funs(str_replace(., "NaN", "0"))) %>%
+  kbl(caption = "") %>%
+    footnote(alphabet = c("denominator is n passed window for visit type=i"),
+             general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.",
+             footnote_order = c("alphabet", "general")) %>%
+  kable_paper(bootstrap_options = "striped",
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = c("repeat_header", "HOLD_position")) %>%
+  row_spec(0, extra_css = "border-bottom: 0px white;") %>%
+  row_spec(c(1,3,5,7,9,11,13,15,17,19,21), extra_css = "border-bottom: 0px white;") %>%
+  #row_spec(c(2, 4, 6,8,10, 12, 14,16,18,20,22), italic = TRUE) %>%
+  add_indent(c(2, 4, 6,8,10, 12, 14,16,18,20,22), level_of_indent = 2)  %>%
+  pack_rows("ANC Visits", 1, 10, label_row_css = "color: steelblue;") %>%
+  pack_rows("PNC Visits", 11, 22, label_row_css = "color: steelblue;")
+
+```
+
+
+\newpage
+
+#### `r emo::ji("pushpin")` Table 6: ANC Protocol Compliance
+*Value: Among women successfully contacted during the ANC period, are all expected forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).*
+<br>
+<br>
+
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+<br>
+*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+
+```{r ga_tb PC}
 ## ANC visits - ultrasound form  
 # denominator: c = n all screened 
 
@@ -627,27 +1308,7 @@ ga_tb <- MatData_Anc_Visits %>%
   summarise(
   "total enrolled" = paste0(
     "(n=",sum(c==1), ")"
-  ),
-  "Gestational Age at Enrollment, mean ± SD" = paste0(
-    format(round(mean(GA_ENROLL_WKS, na.rm = TRUE),2), nsmall=0, digits = 2),
-    " (",
-    format(round(sd(GA_ENROLL_WKS, na.rm = TRUE),2), nsmall=0, digits = 2),
-    ")"
-  ), 
-  "First trimester (<14 wks), n(%)^a^" = paste0(
-    sum(GA_ENROLL_WKS < 14, na.rm = TRUE),
-    " (",
-    format(round(sum(GA_ENROLL_WKS < 14, na.rm = TRUE)/sum(c == 1)*100, 2), nsmall = 0, digits = 2),
-    ")"
-  ),
-  "Ultrasound at enrollment, n(%)^a^" = paste0(
-    sum(M01_US_VISIT_1 == 1, na.rm = TRUE),
-    " (",
-    format(round(sum(M01_US_VISIT_1 == 1, na.rm = TRUE)/sum(c == 1)*100, 2), nsmall = 0, digits = 2),
-    ")"),
-  
-  "Ultrasound image at ANC-32, n(%)^d^" = paste0("0 (0)") 
-  
+  )
   ) %>% ungroup() %>% 
   #mutate(`Gestational Age at Enrollment, mean ± SD` = ifelse(SITE == "Ghana", NA, `Gestational Age at Enrollment, mean ± SD`)) %>% 
   t() %>% 
@@ -661,197 +1322,199 @@ ga_tb <- MatData_Anc_Visits %>%
  plyr::summarise(
      "total enrolled" = paste0(
     "(n=",sum(c==1),")"
-  ),
-  "Gestational Age at Enrollment, mean ± SD" = paste0(
-    format(round(mean(GA_ENROLL_WKS, na.rm = TRUE),2), nsmall=0, digits = 2),
-    " (",
-    format(round(sd(GA_ENROLL_WKS, na.rm = TRUE),2), nsmall=0, digits = 2),
-    ")"
-  ), 
-  "First trimester (<14 wks), n(%)^a^" = paste0(
-    sum(GA_ENROLL_WKS < 14, na.rm = TRUE),
-    " (",
-    format(round(sum(GA_ENROLL_WKS < 14, na.rm = TRUE)/sum(c==1)*100, 2), nsmall = 0, digits = 2),
-    ")"
-  ),
-  
-  "Ultrasound at enrollment, n(%)^a^" = paste0(
-    sum(M01_US_VISIT_1 == 1, na.rm = TRUE),
-    " (",
-    format(round(sum(M01_US_VISIT_1 == 1, na.rm = TRUE)/sum(c == 1)*100, 2), nsmall = 0, digits = 2),
-    ")"), 
-  
-  "Ultrasound image at ANC-32, n(%)^d^" = paste0("0 (0)") 
-  )  %>% 
+  )
+  ) %>% 
       t() %>% as.data.frame() %>% unlist()
   ) 
 
 
 ```
 
-```{r ANCLESS20}
+```{r ENROLLMENT PC}
 
-# denominator: den_enroll_visit = particpants who have completed mnh04 visit have visit status = 1/2 AND have visit type = 1 OR enrollment overdue
+#* Num (hard code in monitoring report rmd): For each form: visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
+#* Denom: Any form with visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
 
-ANCLESS20 <- MatData_Anc_Visits %>% 
+ENROLLMENT <- Prot_Compliance_Anc %>% 
     rowwise() %>% 
     group_by(SITE) %>% 
     summarise(
+      "Denominator" = paste0(
+        format(sum(PC_ENROLL_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+      
+      "MNH01 Ultrasound" = paste0(
+        format(sum(M01_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(M01_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
 
       "MNH02 Enrollment Status" = paste0(
-        format(sum(M02_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M02_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M02_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M02_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       "MNH03 Sociodemographic" = paste0(
-        format(sum(M03_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M03_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M03_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M03_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH04 ANC Clinical Status" = paste0(
-        format(sum(M04_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M04_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M04_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M04_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH05 Maternal Anthropometry" = paste0(
-        format(sum(M05_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M05_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M05_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M05_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH06 Maternal POC" = paste0(
-        format(sum(M06_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M06_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M06_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M06_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH07 Maternal Specimen" = paste0(
-        format(sum(M07_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M07_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M07_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M07_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH08 Maternal Lab" = paste0(
-        format(sum(M08_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M08_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M08_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M08_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>%
   t() %>% as.data.frame() %>% 
   `colnames<-`(c(.[1,])) %>% 
   slice(-1) %>% 
       add_column(
       .before = 1,
-      "All sites" = MatData_Anc_Visits %>% 
+      "All sites" = Prot_Compliance_Anc %>% 
         plyr::summarise(
+          
+      "Denominator" = paste0(
+        format(sum(PC_ENROLL_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
 
-      "MNH02 Enrollment Status" = paste0(
-        format(sum(M02_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      "MNH01 Ultrasound" = paste0(
+        format(sum(M01_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M02_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M01_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH02 Enrollment Status" = paste0(
+        format(sum(M02_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(M02_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH03 Sociodemographic" = paste0(
-        format(sum(M03_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M03_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M03_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M03_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH04 ANC Clinical Status" = paste0(
-        format(sum(M04_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M04_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M04_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M04_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH05 Maternal Anthropometry" = paste0(
-        format(sum(M05_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M05_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M05_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M05_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH06 Maternal POC" = paste0(
-        format(sum(M06_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M06_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M06_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M06_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH07 Maternal Specimen" = paste0(
-        format(sum(M07_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M07_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M07_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M07_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       # 
        "MNH08 Maternal Lab" = paste0(
-        format(sum(M08_VISIT_COMPLETE_1 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M08_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M08_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(den_enroll_visit==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M08_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, na.rm = TRUE)/sum(PC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>% 
         t() %>% 
         as.data.frame() %>% 
       `colnames<-`(c(.[1,])) %>% unlist() 
 )
 
- 
 
-    
 ```
 
-```{r ANC20}
-# denominator: d = participants who have completed mnh04 visit with visit type = 2 and are <= 17wks GA at enrollment OR ANC20 overdue
-# denominator for MNH25: MNH25_VISIT1_VISIT2_DEN = participants who have completed mnh04 with visit type = 2 and have visit status = 1/2 AND have GA <= 17wks at enrollment OR completed mnh04 with visit type = 1 and have visit status = 1/2 AND have GA >= 17wks OR ANC20 overdue
+```{r ANC20 PC}
+#* Num (hard code in monitoring report rmd): For each form: visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
+#* Denom: Any form with visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
 
-ANC20 <- MatData_Anc_Visits %>% 
+ANC20 <- Prot_Compliance_Anc %>% 
     rowwise() %>% 
     group_by(SITE) %>% 
     summarise(
 
-    "MNH01 Ultrasounds (optional)" = paste0(
-        format(sum(M01_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+    "Denominator" = paste0(
+        format(sum(PC_ANC20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
+    "MNH01 Ultrasound (optional)" = paste0(
+        format(sum(M01_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M01_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M01_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
     
       "MNH04 ANC Clinical Status" = paste0(
-        format(sum(M04_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M04_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M04_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M04_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH05 Maternal Anthropometry" = paste0(
-        format(sum(M05_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M05_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M05_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M05_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH06 Maternal POC" = paste0(
-        format(sum(M06_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M06_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M06_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M06_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH07 Maternal Specimen" = paste0(
-        format(sum(M07_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M07_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M07_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M07_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
        "MNH08 Maternal Lab" = paste0(
-        format(sum(M08_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M08_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M08_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M08_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH25 Maternal Depression" = paste0(
-        format(sum(MNH25_VISIT1_VISIT2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(MNH25_VISIT1_VISIT2 == 1, na.rm = TRUE)/sum(MNH25_VISIT1_VISIT2_DEN==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
        "MNH26 Maternal Fatigue" = paste0(
-        format(sum(!is.na(M26_VISIT_COMPLETE_2), na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M26_VISIT_COMPLETE_2)  & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(!is.na(M26_VISIT_COMPLETE_2), na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(!is.na(M26_VISIT_COMPLETE_2)  & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>%
     t() %>% 
     as.data.frame() %>%    
@@ -859,55 +1522,59 @@ ANC20 <- MatData_Anc_Visits %>%
   slice(-1) %>% 
     add_column(
       .before = 1,
-      "All sites" = MatData_Anc_Visits %>% 
+      "All sites" = Prot_Compliance_Anc %>% 
         plyr::summarise(
           
-      "MNH01 Ultrasounds (optional)" = paste0(
-        format(sum(M01_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      "Denominator" = paste0(
+        format(sum(PC_ANC20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+          
+      "MNH01 Ultrasound (optional)" = paste0(
+        format(sum(M01_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M01_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M01_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
     
       "MNH04 ANC Clinical Status" = paste0(
-        format(sum(M04_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M04_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M04_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M04_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH05 Maternal Anthropometry" = paste0(
-        format(sum(M05_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M05_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M05_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M05_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH06 Maternal POC" = paste0(
-        format(sum(M06_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M06_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M06_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M06_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH07 Maternal Specimen" = paste0(
-        format(sum(M07_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M07_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M07_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M07_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       # 
        "MNH08 Maternal Lab" = paste0(
-        format(sum(M08_VISIT_COMPLETE_2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M08_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M08_VISIT_COMPLETE_2 == 1, na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M08_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH25 Maternal Depression" = paste0(
-        format(sum(MNH25_VISIT1_VISIT2 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(MNH25_VISIT1_VISIT2 == 1, na.rm = TRUE)/sum(MNH25_VISIT1_VISIT2_DEN==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
        "MNH26 Maternal Fatigue" = paste0(
-        format(sum(!is.na(M26_VISIT_COMPLETE_2), na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M26_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(!is.na(M26_VISIT_COMPLETE_2), na.rm = TRUE)/sum(d==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(!is.na(M26_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>%
         
         t() %>% as.data.frame() %>% unlist() 
@@ -915,89 +1582,99 @@ ANC20 <- MatData_Anc_Visits %>%
 
 ```
 
-```{r ANC 28}
-# denominator: e = participants who have completed mnh04 visit AND have visit status = 1/2 AND have visit type =3 OR ANC28 overdue
+```{r ANC 28 PC}
+#* Num (hard code in monitoring report rmd): For each form: visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
+#* Denom: Any form with visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
 
-ANC28 <- MatData_Anc_Visits %>% 
+ANC28 <- Prot_Compliance_Anc %>% 
     rowwise() %>% 
     group_by(SITE) %>% 
     summarise(
+      
+      "Denominator" = paste0(
+        format(sum(PC_ANC28_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
        "MNH01 Ultrasound (optional)" = paste0(
-        format(sum(M01_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M01_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M01_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M01_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH04 ANC Clinical Status" = paste0(
-        format(sum(M04_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M04_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M04_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M04_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH05 Maternal Anthropometry" = paste0(
-        format(sum(M05_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M05_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M05_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M05_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH06 Maternal POC" = paste0(
-        format(sum(M06_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M06_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M06_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M06_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH07 Maternal Specimen" = paste0(
-        format(sum(M07_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M07_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M07_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M07_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH08 Maternal Lab" = paste0(
-        format(sum(M08_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M08_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M08_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M08_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>%
   t() %>% `colnames<-`(c(.[1,]))  %>% as.data.frame() %>% 
   slice(-1) %>% 
       add_column(
       .before = 1,
-      "All sites" = MatData_Anc_Visits %>% 
+      "All sites" = Prot_Compliance_Anc %>% 
         plyr::summarise(
+          
+      "Denominator" = paste0(
+        format(sum(PC_ANC28_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
 
        "MNH01 Ultrasound (optional)" = paste0(
-        format(sum(M01_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M01_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M01_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M01_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH04 ANC Clinical Status" = paste0(
-        format(sum(M04_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M04_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M04_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M04_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH05 Maternal Anthropometry" = paste0(
-        format(sum(M05_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M05_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M05_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M05_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH06 Maternal POC" = paste0(
-        format(sum(M06_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M06_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M06_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M06_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH07 Maternal Specimen" = paste0(
-        format(sum(M07_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M07_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M07_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M07_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       # 
        "MNH08 Maternal Lab" = paste0(
-        format(sum(M08_VISIT_COMPLETE_3 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M08_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M08_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(e==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M08_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>% 
         t() %>% `colnames<-`(c(.[1,])) %>% 
         as.data.frame() %>% unlist() 
@@ -1005,60 +1682,65 @@ ANC28 <- MatData_Anc_Visits %>%
 
 ```
 
-```{r ANC 32}
-# denominator: f = participants who have completed mnh04 visit AND have visit status = 1/2 AND have visit type = 4 OR ANC32 overdue
+```{r ANC 32 PC}
+#* Num (hard code in monitoring report rmd): For each form: visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
+#* Denom: Any form with visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
 
-ANC32 <- MatData_Anc_Visits %>% 
+ANC32 <- Prot_Compliance_Anc %>% 
     rowwise() %>% 
     group_by(SITE) %>% 
     summarise(
-      
+    
+  "Denominator" = paste0(
+        format(sum(PC_ANC32_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
    "MNH01 Ultrasound" = paste0(
-        format(sum(M01_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M01_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M01_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M01_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH04 ANC Clinical Status" = paste0(
-        format(sum(M04_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M04_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M04_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M04_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH05 Maternal Anthropometry" = paste0(
-        format(sum(M05_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M05_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M05_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M05_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH06 Maternal POC" = paste0(
-        format(sum(M06_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M06_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M06_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M06_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH07 Maternal Specimen" = paste0(
-        format(sum(M07_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M07_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M07_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M07_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH08 Maternal Lab" = paste0(
-        format(sum(M08_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M08_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M08_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M08_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH25 Maternal Lab" = paste0(
-        format(sum(M25_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M25_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"), 
    
       "MNH26 Maternal Fatigue" = paste0(
-        format(sum(!is.na(M26_VISIT_COMPLETE_4), na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(!is.na(M26_VISIT_COMPLETE_4), na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>%
 
   t() %>% as.data.frame() %>% 
@@ -1066,54 +1748,58 @@ ANC32 <- MatData_Anc_Visits %>%
   slice(-1) %>% 
       add_column(
       .before = 1,
-      "All sites" = MatData_Anc_Visits %>% 
+      "All sites" = Prot_Compliance_Anc %>% 
         plyr::summarise(
-
+          
+  "Denominator" = paste0(
+        format(sum(PC_ANC32_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
     "MNH01 Ultrasound" = paste0(
-        format(sum(M01_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M01_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M01_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M01_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH04 ANC Clinical Status" = paste0(
-        format(sum(M04_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M04_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M04_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M04_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH05 Maternal Anthropometry" = paste0(
-        format(sum(M05_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M05_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M05_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M05_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH06 Maternal POC" = paste0(
-        format(sum(M06_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M06_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M06_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M06_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH07 Maternal Specimen" = paste0(
-        format(sum(M07_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M07_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M07_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M07_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       # 
        "MNH08 Maternal Lab" = paste0(
-        format(sum(M08_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M08_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M08_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M08_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       "MNH25 Maternal Lab" = paste0(
-        format(sum(M25_VISIT_COMPLETE_4 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M25_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH26 Maternal Fatigue" = paste0(
-        format(sum(!is.na(M26_VISIT_COMPLETE_4), na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(!is.na(M26_VISIT_COMPLETE_4), na.rm = TRUE)/sum(f==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>%
 
         t() %>% 
@@ -1123,91 +1809,100 @@ ANC32 <- MatData_Anc_Visits %>%
 
 ```
 
-```{r ANC36}
-# denominator: g = participants who have completed mnh04 visit AND have visit status = 1/2 AND have visit type = 5 OR ANC36 overdue
+```{r ANC36 PC}
+#* Num (hard code in monitoring report rmd): For each form: visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
+#* Denom: Any form with visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
 
-ANC36 <- MatData_Anc_Visits %>% 
+ANC36 <- Prot_Compliance_Anc %>% 
     rowwise() %>% 
     group_by(SITE) %>% 
     summarise(
-      
+                
+       "Denominator" = paste0(
+        format(sum(PC_ANC36_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+  
        "MNH01 Ultrasound (optional)" = paste0(
-        format(sum(M01_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M01_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M01_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M01_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
 
       "MNH04 ANC Clinical Status" = paste0(
-        format(sum(M04_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M04_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M04_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M04_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH05 Maternal Anthropometry" = paste0(
-        format(sum(M05_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M05_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M05_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M05_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH06 Maternal POC" = paste0(
-        format(sum(M06_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M06_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M06_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M06_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH07 Maternal Specimen" = paste0(
-        format(sum(M07_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M07_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M07_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M07_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH08 Maternal Lab" = paste0(
-        format(sum(M08_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M08_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M08_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M08_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>%
   t() %>% `colnames<-`(c(.[1,]))  %>% as.data.frame() %>% 
   slice(-1) %>% 
       add_column(
       .before = 1,
-      "All sites" = MatData_Anc_Visits %>% 
+      "All sites" = Prot_Compliance_Anc %>% 
         plyr::summarise(
           
+       "Denominator" = paste0(
+        format(sum(PC_ANC36_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+          
        "MNH01 Ultrasound (optional)" = paste0(
-        format(sum(M01_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M01_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M01_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M01_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH04 ANC Clinical Status" = paste0(
-        format(sum(M04_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M04_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M04_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M04_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH05 Maternal Anthropometry" = paste0(
-        format(sum(M05_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M05_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M05_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M05_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH06 Maternal POC" = paste0(
-        format(sum(M06_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M06_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M06_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M06_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "MNH07 Maternal Specimen" = paste0(
-        format(sum(M07_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M07_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M07_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M07_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       # 
        "MNH08 Maternal Lab" = paste0(
-        format(sum(M08_VISIT_COMPLETE_5 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(M08_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(M08_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(g==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(M08_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>%
         t() %>% `colnames<-`(c(.[1,])) %>% 
         as.data.frame() %>% unlist() 
@@ -1215,21 +1910,19 @@ ANC36 <- MatData_Anc_Visits %>%
 
 ```
 
-```{r PRISMA TABLE 5 OUT}
+```{r PRISMA TABLE 6 OUT}
 
 bind_rows(ga_tb, 
-          ANCLESS20, 
+          ENROLLMENT, 
           ANC20,
           ANC28, 
           ANC32, 
           ANC36
           ) %>% 
   `rownames<-`(c(" ",
-                  "Gestational Age at Enrollment, mean (SD)",
-                  "First trimester (<14 wks), n(%)^a^",
-                  "Ultrasound at enrollment, n(%)^a^",
-                  "Ultrasound image at ANC-32 n(%)^d^",
-                 ## ANCLESS20 
+                 ## ANCLESS20 (2-10)
+                 "Denominator, n",
+                 "MNH01 Ultrasound", 
                  "MNH02 Enrollment Status", 
                  "MNH03 Sociodemographic", 
                  "MNH04 ANC Clinical Status",
@@ -1237,7 +1930,8 @@ bind_rows(ga_tb,
                  "MNH06 Maternal POC",
                  "MNH07 Maternal Specimen",
                  "MNH08 Maternal Lab",
-                 ## ANC20
+                 ## ANC20 (11-19)
+                 "Denominator, n ",                 
                  "MNH01 Ultrasound (optional) ",
                  "MNH04 ANC Clinical Status ",
                  "MNH05 Maternal Anthropometry ",
@@ -1246,14 +1940,16 @@ bind_rows(ga_tb,
                  "MNH08 Maternal Lab ",
                  "MNH25 Maternal Depression ",
                  "MNH26 Maternal Fatigue ",
-                 ## ANC28
+                 ## ANC28 (20-26)
+                 "Denominator, n  ",                 
                  "MNH01 Ultrasound (optional)  ",
                  "MNH04 ANC Clinical Status  ",
                  "MNH05 Maternal Anthropometry  ",
                  "MNH06 Maternal POC  ",
                  "MNH07 Maternal Specimen  ",
                  "MNH08 Maternal Lab  ",
-                 ## ANC32
+                 ## ANC32 (27-35)
+                 "Denominator, n   ",                 
                  "MNH01 Ultrasound   ",
                  "MNH04 ANC Clinical Status   ",
                  "MNH05 Maternal Anthropometry   ",
@@ -1262,7 +1958,8 @@ bind_rows(ga_tb,
                  "MNH08 Maternal Lab   ",
                  "MNH25 Maternal Depression   ",
                  "MNH26 Maternal Fatigue   ",
-                 ##ANC36
+                 ##ANC36 (36-42)
+                 "Denominator, n    ",                 
                  "MNH01 Ultrasound (optional)    ",
                  "MNH04 ANC Clinical Status    ",
                  "MNH05 Maternal Anthropometry    ",
@@ -1274,11 +1971,12 @@ bind_rows(ga_tb,
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
   kbl(caption = "", longtable = T) %>%
     footnote(alphabet = c("denominator is n enrolled", 
-                      "denominator is n completed MNH-04 with visit type=ANC20 AND completed visit type=ANC<20 OR missed on-time window with >22 weeks gestation",
-                      "denominator is n completed  MNH-04 with visit type=ANC28  OR missed on-time window with >30 weeks gestation",
-                      "denominator is n completed  MNH-04 with visit type=ANC32  OR missed on-time window with>33 weeks gestation",
-                      "denominator is n completed  MNH-04 with visit type=ANC36  OR missed on-time window with >38 weeks gestation"),
-             general = "Denominators for all visits are calculated based on completion of ANC Clinical Status (MNH-04). A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNH04). Missed on-time windows are calculated using reported gestational age at ultrasound and target windows outlined in the protocol.", 
+                      "denominator is n completed any form with visit status=complete AND visit type=Enrollment AND passed on-time window with >19 weeks gestation",
+                      "denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed on-time window with >22 weeks gestation",
+                      "denominator is n completed any form with visit status=complete ANDvisit type=ANC28  AND passed on-time window with >30 weeks gestation",
+                      "denominator is n completed any form with visit status=complete AND visit type=ANC32  AND passed on-time window with>33 weeks gestation",
+                      "denominator is n completed any form with visit status=complete AND visit type=ANC36  AND passed on-time window with >38 weeks gestation"),
+             general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.", 
              footnote_order = c("alphabet", "general")) %>% 
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
@@ -1286,39 +1984,42 @@ bind_rows(ga_tb,
               #latex_options = "hold_position") %>% 
   row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
   row_spec(0:1, extra_css = "padding: 0.1px") %>% 
-  pack_rows("MNH01 Ultrasound", 2, 5, label_row_css = "color: steelblue;") %>% 
-  pack_rows(paste0("ANC < 20, n(%)^a^ \nTarget window: <20wks"), 6, 12, 
+  row_spec(c(2,11,20,27,36), bold = TRUE) %>% 
+  #pack_rows("MNH01 Ultrasound", 2, 5, label_row_css = "color: steelblue;") %>%
+  pack_rows(paste0("Enrollment, n(%)^b^ \nTarget window: <20wks"),2, 10, 
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("ANC = 20, n(%)^b^ \nTarget window: 18 to 28wks", 13, 20, 
+  pack_rows("ANC = 20, n(%)^c^ \nTarget window: 18 to 22wks", 11, 19, 
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("ANC = 28, n(%)^c^ \nTarget window: 26 to 30wks", 21, 26,
+  pack_rows("ANC = 28, n(%)^d^ \nTarget window: 26 to 30wks", 20, 26,
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("ANC = 32, n(%)^d^ \nTarget window: 31 to 33wks", 27, 34,
+  pack_rows("ANC = 32, n(%)^e^ \nTarget window: 31 to 33wks", 27, 35,
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("ANC = 36, n(%)^e^ \nTarget window: 34 to 38wks", 35, 40,
+  pack_rows("ANC = 36, n(%)^f^ \nTarget window: 34 to 38wks", 36, 42,
             label_row_css = "color: steelblue;") 
 
-## things to do: 
-  ## update numbering for all tables 
-  ## update alphabet coding for footnotes 
-## add optional visit to names in tables 
-
 ```
+
 \newpage
 
+#### `r emo::ji("pushpin")` Table 7: ANC Form Completion
+*Value: Are forms completed regardless of visit status?*
+<br>
+<br>
 
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+<br>
+*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
 
-#### `r emo::ji("pushpin")` Table 6a: PNC study visit & procedure completion for mothers 
-*Value: Percent of all expected forms (late visit window has passed) that are required at each maternal PNC visit are listed below. A visit is considered "complete" if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNH12). This will help us find any gaps in visit completion or missing forms.*
-
-```{r pnc_tb_mat}
-## code for the beginning of table indicating the number of women with birth outcomes 
-pnc_tb_mom <- MatData_Pnc_Visits %>% 
+```{r ga_tb FC}
+## ANC visits - ultrasound form  
+# denominator: c = n all screened 
+# Participants are included in the numerator of this table if, for each form, they have visit type = i AND have any visit status AND passed window for visit type = 1. Participants are included Visit status is defined by MAT_VISIT_MNHxx variables in each form.*
+ga_tb <- MatData_Anc_Visits %>% 
   group_by(SITE) %>% 
   summarise(
-    "Mothers, n" = paste0(
-      sum(BIRTH_OUTCOME_YN==1, na.rm = TRUE)
-    )
+  "total enrolled" = paste0(
+    "(n=",sum(c==1), ")"
+  )
   ) %>% ungroup() %>% 
   t() %>% 
   as.data.frame() %>% 
@@ -1326,978 +2027,686 @@ pnc_tb_mom <- MatData_Pnc_Visits %>%
   slice(-1) %>% 
   add_column(
     .before = 1,
-    "All sites" = MatData_Pnc_Visits %>% 
-      plyr::summarise(
-        "Mothers, n" = paste0(
-          sum(BIRTH_OUTCOME_YN==1, na.rm = TRUE)
-        )
-      )  %>% 
+    "All sites" = MatData_Anc_Visits %>%
+ plyr::summarise(
+     "total enrolled" = paste0(
+    "(n=",sum(c==1),")"
+  )) %>% 
       t() %>% as.data.frame() %>% unlist()
   ) 
 
-```
-
-```{r PNC0_mat}
-# denominator: h = participants who have completed mnh12 visit AND have visit status = 1/2 AND have visit type = 7 OR PNC0 overdue
-
-PNC0_MOM <- MatData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-    
-    "MNH06 Maternal POC" = paste0(
-      format(sum(M06_VISIT_COMPLETE_7 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M06_VISIT_COMPLETE_7 == 1, na.rm = TRUE)/sum(h==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    "MNH12 Mat PNC Clinical Status" = paste0(
-      format(sum(M12_VISIT_COMPLETE_7 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M12_VISIT_COMPLETE_7 == 1, na.rm = TRUE)/sum(h==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-  ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = MatData_Pnc_Visits %>% 
-      plyr::summarise(
-        
-        "MNH06 Maternal POC" = paste0(
-          format(sum(M06_VISIT_COMPLETE_7 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-          " (",
-          format(round(sum(M06_VISIT_COMPLETE_7 == 1, na.rm = TRUE)/sum(h==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-          ")"),
-        "MNH12 Mat PNC Clinical Status" = paste0(
-          format(sum(M12_VISIT_COMPLETE_7 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-          " (",
-          format(round(sum(M12_VISIT_COMPLETE_7 == 1, na.rm = TRUE)/sum(h==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-          ")")
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-  )
-
 
 ```
 
-```{r PNC1_mat}
-# denominator: i = participants who have completed mnh12 visit AND have visit status = 1/2 AND have visit type = 8 OR PNC1 overdue
+```{r ENROLLMENT FC}
 
-PNC1_MOM <- MatData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-    
-    "MNH06 Maternal POC" = paste0(
-      format(sum(M06_VISIT_COMPLETE_8 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M06_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(i==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    "MNH12 Mat PNC Clinical Status" = paste0(
-      format(sum(M12_VISIT_COMPLETE_8 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M12_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(i==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-  ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = MatData_Pnc_Visits %>% 
-      plyr::summarise(
-        
-        "MNH06 Maternal POC" = paste0(
-          format(sum(M06_VISIT_COMPLETE_8 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-          " (",
-          format(round(sum(M06_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(i==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-          ")"),
-        "MNH12 Mat PNC Clinical Status" = paste0(
-          format(sum(M12_VISIT_COMPLETE_8 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-          " (",
-          format(round(sum(M12_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(i==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-          ")")
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-  )
+#* Num (hard code in monitoring report rmd): for each form: visit type = i AND have any visit status AND passed window for visit type = i 
+#* Denom: Any form with visit type = i AND have any visit status AND passed window for visit type = i
 
-```
+ENROLLMENT <- Form_Completion_Anc %>% 
+    rowwise() %>% 
+    group_by(SITE) %>% 
+    summarise(
+      "Denominator" = paste0(
+        format(sum(FC_ENROLL_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
 
-```{r PNC4_mat}
-# denominator: j = participants who have completed mnh12 visit AND have visit status = 1/2 AND have visit type = 9 OR PNC4 overdue
+      "MNH01 Ultrasound" = paste0(
+        format(sum(!is.na(M01_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M01_VISIT_COMPLETE_1)& ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
 
-PNC4_MOM <- MatData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-    
-    "MNH06 Maternal POC" = paste0(
-      format(sum(M06_VISIT_COMPLETE_9 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M06_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(j==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    "MNH12 Mat PNC Clinical Status" = paste0(
-      format(sum(M12_VISIT_COMPLETE_9 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M12_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(j==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-    
-  ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = MatData_Pnc_Visits %>% 
-      plyr::summarise(
-        
-        "MNH06 Maternal POC" = paste0(
-          format(sum(M06_VISIT_COMPLETE_9 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-          " (",
-          format(round(sum(M06_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(j==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-          ")"),
-        "MNH12 Mat PNC Clinical Status" = paste0(
-          format(sum(M12_VISIT_COMPLETE_9 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-          " (",
-          format(round(sum(M12_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(j==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-          ")")
-
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-  )
-
-```
-
-```{r PNC6_mat}
-# denominator: k = participants who have completed mnh12 visit AND have visit status = 1/2 AND have visit type = 10 OR PNC6 overdue
-
-PNC6_MOM <- MatData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-    
-    "MNH05 Maternal Anthropometrics" = paste0(
-      format(sum(M05_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M05_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
+      "MNH02 Enrollment Status" = paste0(
+        format(sum(!is.na(M02_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M02_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      "MNH03 Sociodemographic" = paste0(
+        format(sum(!is.na(M03_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M03_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
       
-    "MNH06 Maternal POC" = paste0(
-      format(sum(M06_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M06_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH07 Maternal Specimen" = paste0(
-      format(sum(M07_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M07_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH08 Maternal Lab" = paste0(
-      format(sum(M08_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M08_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH12 Mat PNC Clinical Status" = paste0(
-      format(sum(M12_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M12_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH25 Maternal Depression" = paste0(
-      format(sum(M25_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M25_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"), 
-    
-    "MNH26 Maternal Fatigue" = paste0(
-      format(sum(M26_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M26_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-
-  ) %>%
+      "MNH04 ANC Clinical Status" = paste0(
+        format(sum(!is.na(M04_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M04_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH05 Maternal Anthropometry" = paste0(
+        format(sum(!is.na(M05_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M05_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH06 Maternal POC" = paste0(
+        format(sum(!is.na(M06_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M06_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH07 Maternal Specimen" = paste0(
+        format(sum(!is.na(M07_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M07_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH08 Maternal Lab" = paste0(
+        format(sum(!is.na(M08_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M08_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")")) %>%
   t() %>% as.data.frame() %>% 
   `colnames<-`(c(.[1,])) %>% 
   slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = MatData_Pnc_Visits %>% 
-      plyr::summarise(
+      add_column(
+      .before = 1,
+      "All sites" = Form_Completion_Anc %>% 
+        plyr::summarise(
         
-    "MNH05 Maternal Anthropometrics" = paste0(
-      format(sum(M05_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M05_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
+      "Denominator" = paste0(
+        format(sum(FC_ENROLL_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),  
       
-    "MNH06 Maternal POC" = paste0(
-      format(sum(M06_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M06_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH07 Maternal Specimen" = paste0(
-      format(sum(M07_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M07_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH08 Maternal Lab" = paste0(
-      format(sum(M08_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M08_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH12 Mat PNC Clinical Status" = paste0(
-      format(sum(M12_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M12_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH25 Maternal Depression" = paste0(
-      format(sum(M25_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M25_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"), 
-    
-    "MNH26 Maternal Fatigue" = paste0(
-      format(sum(M26_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M26_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-    
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
+      "MNH01 Ultrasound" = paste0(
+        format(sum(!is.na(M01_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M01_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH02 Enrollment Status" = paste0(
+        format(sum(!is.na(M02_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M02_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "MNH03 Sociodemographic" = paste0(
+        format(sum(!is.na(M03_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M03_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "MNH04 ANC Clinical Status" = paste0(
+        format(sum(!is.na(M04_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M04_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH05 Maternal Anthropometry" = paste0(
+        format(sum(!is.na(M05_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M05_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH06 Maternal POC" = paste0(
+        format(sum(!is.na(M06_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M06_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH07 Maternal Specimen" = paste0(
+        format(sum(!is.na(M07_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M07_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      # 
+       "MNH08 Maternal Lab" = paste0(
+        format(sum(!is.na(M08_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M08_VISIT_COMPLETE_1) & ENROLL_PASS == 1, na.rm = TRUE)/sum(FC_ENROLL_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")")) %>% 
+        t() %>% 
+        as.data.frame() %>% 
       `colnames<-`(c(.[1,])) %>% unlist() 
-  )
+)
+
 
 ```
 
-```{r PNC26_mat}
-# denominator: l = participants who have completed mnh12 visit AND have visit status = 1/2 AND have visit type = 11 OR PNC26 overdue
+```{r ANC20 FC}
+#* Num (hard code in monitoring report rmd): for each form: visit type = i AND have any visit status AND passed window for visit type = i 
+#* Denom: Any form with visit type = i AND have any visit status AND passed window for visit type = i
 
-PNC26_MOM <- MatData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-    
-    "MNH05 Maternal Anthropometrics" = paste0(
-      format(sum(M05_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M05_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
+ANC20 <- Form_Completion_Anc %>% 
+    rowwise() %>% 
+    group_by(SITE) %>% 
+    summarise(
       
-    "MNH06 Maternal POC" = paste0(
-      format(sum(M06_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M06_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
+    "Denominator" = paste0(
+        format(sum(FC_ANC20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ), 
+      
+    "MNH01 Ultrasound (optional)" = paste0(
+        format(sum(!is.na(M01_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M01_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
     
-    "MNH07 Maternal Specimen" = paste0(
-      format(sum(M07_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M07_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH08 Maternal Lab" = paste0(
-      format(sum(M08_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M08_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH12 Mat PNC Clinical Status" = paste0(
-      format(sum(M12_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M12_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-    
-  ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
+      "MNH04 ANC Clinical Status" = paste0(
+        format(sum(!is.na(M04_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M04_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH05 Maternal Anthropometry" = paste0(
+        format(sum(!is.na(M05_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M05_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH06 Maternal POC" = paste0(
+        format(sum(!is.na(M06_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M06_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH07 Maternal Specimen" = paste0(
+        format(sum(!is.na(M07_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M07_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+       "MNH08 Maternal Lab" = paste0(
+        format(sum(!is.na(M08_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M08_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "MNH25 Maternal Depression" = paste0(
+        format(sum(!is.na(M25_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M25_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+       "MNH26 Maternal Fatigue" = paste0(
+        format(sum(!is.na(M26_VISIT_COMPLETE_2)  & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M26_VISIT_COMPLETE_2)  & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")")) %>%
+    t() %>% 
+    as.data.frame() %>%    
+        `colnames<-`(c(.[1,])) %>% 
   slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = MatData_Pnc_Visits %>% 
-      plyr::summarise(
+    add_column(
+      .before = 1,
+      "All sites" = Form_Completion_Anc %>% 
+        plyr::summarise(
+                
+    "Denominator" = paste0(
+        format(sum(FC_ANC20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ), 
+    
+      "MNH01 Ultrasound (optional)" = paste0(
+        format(sum(!is.na(M01_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M01_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+    
+      "MNH04 ANC Clinical Status" = paste0(
+        format(sum(!is.na(M04_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M04_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH05 Maternal Anthropometry" = paste0(
+        format(sum(!is.na(M05_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M05_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH06 Maternal POC" = paste0(
+        format(sum(!is.na(M06_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M06_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH07 Maternal Specimen" = paste0(
+        format(sum(!is.na(M07_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M07_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      # 
+       "MNH08 Maternal Lab" = paste0(
+        format(sum(!is.na(M08_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M08_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "MNH25 Maternal Depression" = paste0(
+        format(sum(!is.na(M25_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M25_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+       "MNH26 Maternal Fatigue" = paste0(
+        format(sum(!is.na(M26_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M26_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")")) %>%
         
-    "MNH05 Maternal Anthropometrics" = paste0(
-      format(sum(M05_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M05_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
+        t() %>% as.data.frame() %>% unlist() 
+)
+
+```
+
+```{r ANC 28 FC}
+#* Num (hard code in monitoring report rmd): for each form: visit type = i AND have any visit status AND passed window for visit type = i 
+#* Denom: Any form with visit type = i AND have any visit status AND passed window for visit type = i
+
+ANC28 <- Form_Completion_Anc %>% 
+    rowwise() %>% 
+    group_by(SITE) %>% 
+    summarise(
+            
+    "Denominator" = paste0(
+        format(sum(FC_ANC28_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ), 
+    
+       "MNH01 Ultrasound (optional)" = paste0(
+        format(sum(!is.na(M01_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M01_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "MNH04 ANC Clinical Status" = paste0(
+        format(sum(!is.na(M04_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M04_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
       
-    "MNH06 Maternal POC" = paste0(
-      format(sum(M06_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M06_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH07 Maternal Specimen" = paste0(
-      format(sum(M07_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M07_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH08 Maternal Lab" = paste0(
-      format(sum(M08_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M08_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH12 Mat PNC Clinical Status" = paste0(
-      format(sum(M12_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M12_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-  )
-
-
-```
-
-```{r PNC52_mat}
-# denominator: m = participants who have completed mnh12 visit AND have visit status = 1/2 AND have visit type = 12 OR PNC52 overdue
-
-PNC52_MOM <- MatData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-    "MNH05 Maternal Anthropometrics" = paste0(
-      format(sum(M05_VISIT_COMPLETE_12 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M05_VISIT_COMPLETE_12 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH06 Maternal POC" = paste0(
-      format(sum(M06_VISIT_COMPLETE_12 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M06_VISIT_COMPLETE_12 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    "MNH12 Mat PNC Clinical Status" = paste0(
-      format(sum(M12_VISIT_COMPLETE_12 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M12_VISIT_COMPLETE_12 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH23 Maternal Close-out" = paste0(
-      format(sum(M23_CLOSE_DSDECOD == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M23_CLOSE_DSDECOD == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-    
-    
-  ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
+      "MNH05 Maternal Anthropometry" = paste0(
+        format(sum(!is.na(M05_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M05_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH06 Maternal POC" = paste0(
+        format(sum(!is.na(M06_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M06_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH07 Maternal Specimen" = paste0(
+        format(sum(!is.na(M07_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M07_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH08 Maternal Lab" = paste0(
+        format(sum(!is.na(M08_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M08_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")")) %>%
+  t() %>% `colnames<-`(c(.[1,]))  %>% as.data.frame() %>% 
   slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = MatData_Pnc_Visits %>% 
-      plyr::summarise(
-    "MNH05 Maternal Anthropometrics" = paste0(
-      format(sum(M05_VISIT_COMPLETE_12 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M05_VISIT_COMPLETE_12 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
+      add_column(
+      .before = 1,
+      "All sites" = Form_Completion_Anc %>% 
+        plyr::summarise(
+                      
+    "Denominator" = paste0(
+        format(sum(FC_ANC28_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ), 
 
-    "MNH06 Maternal POC" = paste0(
-      format(sum(M06_VISIT_COMPLETE_12 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M06_VISIT_COMPLETE_12 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    "MNH12 Mat PNC Clinical Status" = paste0(
-      format(sum(M12_VISIT_COMPLETE_12 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M12_VISIT_COMPLETE_12 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH23 Maternal Close-out" = paste0(
-      format(sum(M23_CLOSE_DSDECOD == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M23_CLOSE_DSDECOD == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
+       "MNH01 Ultrasound (optional)" = paste0(
+        format(sum(!is.na(M01_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M01_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
 
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-  )
-
+      "MNH04 ANC Clinical Status" = paste0(
+        format(sum(!is.na(M04_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M04_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH05 Maternal Anthropometry" = paste0(
+        format(sum(!is.na(M05_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M05_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH06 Maternal POC" = paste0(
+        format(sum(!is.na(M06_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M06_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH07 Maternal Specimen" = paste0(
+        format(sum(!is.na(M07_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M07_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      # 
+       "MNH08 Maternal Lab" = paste0(
+        format(sum(!is.na(M08_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M08_VISIT_COMPLETE_3) & ANC28_PASS == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")")) %>% 
+        t() %>% `colnames<-`(c(.[1,])) %>% 
+        as.data.frame() %>% unlist() 
+)
 
 ```
 
-```{r MATERNAL TABLE 6}
-#options(knitr.kable.NA = 0)
-options(knitr.kable.NA = '0')
+```{r ANC 32 FC}
+#* Num (hard code in monitoring report rmd): for each form: visit type = i AND have any visit status AND passed window for visit type = i 
+#* Denom: Any form with visit type = i AND have any visit status AND passed window for visit type = i
 
-bind_rows(pnc_tb_mom, 
-          PNC0_MOM, 
-          PNC1_MOM,
-          PNC4_MOM,
-          PNC6_MOM, 
-          PNC26_MOM,
-          PNC52_MOM,
+ANC32 <- Form_Completion_Anc %>% 
+    rowwise() %>% 
+    group_by(SITE) %>% 
+    summarise(
+                  
+    "Denominator" = paste0(
+        format(sum(FC_ANC32_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ), 
+      
+   "MNH01 Ultrasound" = paste0(
+        format(sum(!is.na(M01_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M01_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "MNH04 ANC Clinical Status" = paste0(
+        format(sum(!is.na(M04_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M04_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH05 Maternal Anthropometry" = paste0(
+        format(sum(!is.na(M05_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M05_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH06 Maternal POC" = paste0(
+        format(sum(!is.na(M06_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M06_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH07 Maternal Specimen" = paste0(
+        format(sum(!is.na(M07_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M07_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH08 Maternal Lab" = paste0(
+        format(sum(!is.na(M08_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M08_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH25 Maternal Lab" = paste0(
+        format(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"), 
+   
+      "MNH26 Maternal Fatigue" = paste0(
+        format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")")) %>%
+
+  t() %>% as.data.frame() %>% 
+  `colnames<-`(c(.[1,]))  %>% 
+  slice(-1) %>% 
+      add_column(
+      .before = 1,
+      "All sites" = Form_Completion_Anc %>% 
+        plyr::summarise(
+                            
+    "Denominator" = paste0(
+        format(sum(FC_ANC32_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ), 
+
+    "MNH01 Ultrasound" = paste0(
+        format(sum(!is.na(M01_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M01_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "MNH04 ANC Clinical Status" = paste0(
+        format(sum(!is.na(M04_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M04_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH05 Maternal Anthropometry" = paste0(
+        format(sum(!is.na(M05_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M05_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH06 Maternal POC" = paste0(
+        format(sum(!is.na(M06_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M06_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH07 Maternal Specimen" = paste0(
+        format(sum(!is.na(M07_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M07_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      # 
+       "MNH08 Maternal Lab" = paste0(
+        format(sum(!is.na(M08_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M08_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      "MNH25 Maternal Lab" = paste0(
+        format(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH26 Maternal Fatigue" = paste0(
+        format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")")) %>%
+
+        t() %>% 
+        as.data.frame() %>% 
+      `colnames<-`(c(.[1,])) %>%  unlist() 
+)
+
+```
+
+```{r ANC36 FC}
+#* Num (hard code in monitoring report rmd): for each form: visit type = i AND have any visit status AND passed window for visit type = i 
+#* Denom: Any form with visit type = i AND have any visit status AND passed window for visit type = i
+
+ANC36 <- Form_Completion_Anc %>% 
+    rowwise() %>% 
+    group_by(SITE) %>% 
+    summarise(
+                        
+    "Denominator" = paste0(
+        format(sum(FC_ANC36_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ), 
+      
+       "MNH01 Ultrasound (optional)" = paste0(
+        format(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+
+      "MNH04 ANC Clinical Status" = paste0(
+        format(sum(!is.na(M04_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M04_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH05 Maternal Anthropometry" = paste0(
+        format(sum(!is.na(M05_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M05_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH06 Maternal POC" = paste0(
+        format(sum(!is.na(M06_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M06_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH07 Maternal Specimen" = paste0(
+        format(sum(!is.na(M07_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M07_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH08 Maternal Lab" = paste0(
+        format(sum(!is.na(M08_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M08_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")")) %>%
+  t() %>% `colnames<-`(c(.[1,]))  %>% as.data.frame() %>% 
+  slice(-1) %>% 
+      add_column(
+      .before = 1,
+      "All sites" = Form_Completion_Anc %>% 
+        plyr::summarise(
+                            
+    "Denominator" = paste0(
+        format(sum(FC_ANC36_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ), 
+          
+       "MNH01 Ultrasound (optional)" = paste0(
+        format(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+
+      "MNH04 ANC Clinical Status" = paste0(
+        format(sum(!is.na(M04_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M04_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH05 Maternal Anthropometry" = paste0(
+        format(sum(!is.na(M05_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M05_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH06 Maternal POC" = paste0(
+        format(sum(!is.na(M06_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M06_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      
+      "MNH07 Maternal Specimen" = paste0(
+        format(sum(!is.na(M07_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M07_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")"),
+      # 
+       "MNH08 Maternal Lab" = paste0(
+        format(sum(!is.na(M08_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        " (",
+        format(round(sum(!is.na(M08_VISIT_COMPLETE_5) & ANC36_PASS == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        ")")) %>%
+        t() %>% `colnames<-`(c(.[1,])) %>% 
+        as.data.frame() %>% unlist() 
+)
+
+```
+
+```{r PRISMA TABLE 7 OUT}
+bind_rows(ga_tb, 
+          ENROLLMENT, 
+          ANC20,
+          ANC28, 
+          ANC32, 
+          ANC36
           ) %>% 
-  mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
-  `rownames<-`(c("Mothers, n^1^",
-                 ## PNC0
-                  "MNH06 Maternal POC ",
-                  "MNH12 Mat PNC Clinical Status ",
-                 ## PNC1 (4-5)
-                 "MNH06 Maternal POC  ", 
-                 "MNH12 Mat PNC Clinical Status  ", 
-                 ## PNC4 (6-7)
+  `rownames<-`(c(" ",
+                 ## ANCLESS20 (2-10)
+                 "Denominator, n",
+                 "MNH01 Ultrasound", 
+                 "MNH02 Enrollment Status", 
+                 "MNH03 Sociodemographic", 
+                 "MNH04 ANC Clinical Status",
+                 "MNH05 Maternal Anthropometry",
+                 "MNH06 Maternal POC",
+                 "MNH07 Maternal Specimen",
+                 "MNH08 Maternal Lab",
+                 ## ANC20 (11-19)
+                 "Denominator, n ",
+                 "MNH01 Ultrasound (optional) ",
+                 "MNH04 ANC Clinical Status ",
+                 "MNH05 Maternal Anthropometry ",
+                 "MNH06 Maternal POC ",
+                 "MNH07 Maternal Specimen ",
+                 "MNH08 Maternal Lab ",
+                 "MNH25 Maternal Depression ",
+                 "MNH26 Maternal Fatigue ",
+                 ## ANC28 (20-26)
+                 "Denominator, n  ",
+                 "MNH01 Ultrasound (optional)  ",
+                 "MNH04 ANC Clinical Status  ",
+                 "MNH05 Maternal Anthropometry  ",
+                 "MNH06 Maternal POC  ",
+                 "MNH07 Maternal Specimen  ",
+                 "MNH08 Maternal Lab  ",
+                 ## ANC32 (27-35)
+                 "Denominator, n   ",
+                 "MNH01 Ultrasound   ",
+                 "MNH04 ANC Clinical Status   ",
+                 "MNH05 Maternal Anthropometry   ",
                  "MNH06 Maternal POC   ",
-                 "MNH12 Mat PNC Clinical Status   ",
-                 ## PNC6 (8-14)
+                 "MNH07 Maternal Specimen   ",
+                 "MNH08 Maternal Lab   ",
+                 "MNH25 Maternal Depression   ",
+                 "MNH26 Maternal Fatigue   ",
+                 ##ANC36 (36-42)
+                 "Denominator, n    ",
+                 "MNH01 Ultrasound (optional)    ",
+                 "MNH04 ANC Clinical Status    ",
                  "MNH05 Maternal Anthropometry    ",
                  "MNH06 Maternal POC    ",
                  "MNH07 Maternal Specimen    ",
-                 "MNH08 Maternal Lab    ",
-                 "MNH12 Mat PNC Clinical Status    ",
-                 "MNH25 Maternal Depression    ",
-                 "MNH26 Maternal Fatigue    ",
-                 ## PNC26 (15-19)
-                 "MNH05 Maternal Anthropometry     ",
-                 "MNH06 Maternal POC     ",
-                 "MNH07 Maternal Specimen     ",
-                 "MNH08 Maternal Lab     ",
-                 "MNH12 Mat PNC Clinical Status     ",
-                 ##PNC52 (20-23)
-                 "MNH05 Maternal Anthropometry      ",
-                 "MNH06 Maternal POC      ",
-                 "MNH12 Mat PNC Clinical Status      ",
-                 "MNH23 Maternal Close-out"
+                 "MNH08 Maternal Lab    "
                  )
                )  %>% 
+  mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
   kbl(caption = "", longtable = T) %>%
+    footnote(alphabet = c("denominator is n enrolled", 
+                      "denominator is n completed any form with any visit status AND visit type=Enrollment AND passed on-time window with >19 weeks gestation",
+                      "denominator is n completed any form with any visit status AND visit type=ANC20 AND passed on-time window with >22 weeks gestation",
+                      "denominator is n completed any form with any visit status AND visit type=ANC28 AND passed on-time window with >30 weeks gestation",
+                      "denominator is n completed any form with any visit status AND visit type=ANC32 AND passed on-time window with>33 weeks gestation",
+                      "denominator is n completed any form with any visit status AND visit type=ANC36 AND passed on-time window with >38 weeks gestation"),
+             general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.", 
+             footnote_order = c("alphabet", "general")) %>% 
   kable_paper(bootstrap_options = "striped", 
-              full_width = T, html_font = "Cambria", position = "left", 
-              latex_options = "hold_position") %>% 
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = c("repeat_header", "HOLD_position")) %>% 
+              #latex_options = "hold_position") %>% 
   row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
   row_spec(0:1, extra_css = "padding: 0.1px") %>% 
-    pack_rows("", 1, 1, label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 0, n(%)^a^ \nTarget window: 3 to 5 days", 2, 3,
+  row_spec(c(2,11,20,27,36), bold = TRUE) %>% 
+  #pack_rows("MNH01 Ultrasound", 2, 5, label_row_css = "color: steelblue;") %>%
+  pack_rows(paste0("Enrollment, n(%)^b^ \nTarget window: <20wks"),2, 10, 
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 1, n(%)^b^ \nTarget window: 7 to 14 days", 4, 5,
+  pack_rows("ANC = 20, n(%)^c^ \nTarget window: 18 to 22wks", 11, 19, 
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 4, n(%)^c^ \nTarget window: 28 to 35 days", 6, 7,
+  pack_rows("ANC = 28, n(%)^d^ \nTarget window: 26 to 30wks", 20, 26,
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 6, n(%)^d^ \nTarget window: 6 to 7wks", 8, 14,
+  pack_rows("ANC = 32, n(%)^e^ \nTarget window: 31 to 33wks", 27, 35,
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 26, n(%)^e^ \nTarget window: 26 to 28wks", 15, 19,
-            label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 52, n(%)^f^ \nTarget window: 52 to 54wks", 20, 23,
-            label_row_css = "color: steelblue;") %>% 
-  footnote(alphabet = c(#"denominator is n livebirths", 
-                      "denominator is n completed MNH-12 with visit type=PNC0 OR missed on-time window with >5 days postpartum",
-                      "denominator is n completed MNH-12 with visit type=PNC1 OR missed on-time window with >14 days postpartum",
-                      "denominator is n completed MNH-12 with visit type=PNC4 OR missed on-time window with >35 days postpartum",
-                      "denominator is n completed MNH-12 with visit type=PNC6 OR missed on-time window with >7 weeks postpartum",
-                      "denominator is n completed MNH-12 with visit type=PNC26 OR missed on-time window with >28 weeks postpartum",
-                      "denominator is n completed MNH-12 with visit type=PNC52 OR missed on-time window with >54 weeks postpartum"),
-           number = "All women who have had a birth outcome (MNH-09 completed)", 
-           general = "Denominators for all visits are calculated based on completion of PNC Clinical Status (MNH-12). A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNH12). Missed on-time windows are calculated using reported gestational age at ultrasound and target windows outlined in the protocol.", 
-           footnote_order = c("number", "alphabet", "general")) 
-
-```
-\newpage
-
-#### `r emo::ji("pushpin")` Table 6b: PNC study visit & procedure completion for infants 
-*Value: Percent of all expected forms (late visit window has passed) that are required at each infant PNC visit are listed below. A visit is considered "complete" if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNH13). This will help us find any gaps in visit completion or missing forms.*
-
-```{r pnc_tb_inf }
-
-# code for the beginning of the table looking at the number of infants 
-allbirths = 
-pnc_tb_inf <- InfData_Pnc_Visits %>% 
-  group_by(SITE) %>% 
-  summarise(
-    "Infants, n" = paste0(
-      sum(allbirths == 1, na.rm = TRUE) ## allbirths = 1: # of all live births
-    )
-  ) %>% ungroup() %>% 
-  t() %>% 
-  as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = InfData_Pnc_Visits %>% 
-      plyr::summarise(
-        "Infants, n" = paste0(
-          sum(allbirths==1,  na.rm = TRUE)
-        )
-      )  %>% 
-      t() %>% as.data.frame() %>% unlist()
-  ) 
+  pack_rows("ANC = 36, n(%)^f^ \nTarget window: 34 to 38wks", 36, 42,
+            label_row_css = "color: steelblue;") 
 
 ```
 
-```{r PNC0_inf}
-# denominator: h = participants who have completed mnh13 visit AND have visit status = 1/2 AND have visit type = 7 OR PNC0 overdue
 
-PNC0_INF <- InfData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-    "MNH13 Inf Clinical Status" = paste0(
-      format(sum(M13_VISIT_COMPLETE_7 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_7 == 1, na.rm = TRUE)/sum(h==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_7 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_7 == 1, na.rm = TRUE)/sum(h==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_7 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_7 == 1, na.rm = TRUE)/sum(h==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-  ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = InfData_Pnc_Visits %>% 
-      plyr::summarise(
-        
-    "MNH13 Inf Clinical Status" = paste0(
-      format(sum(M13_VISIT_COMPLETE_7 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_7 == 1, na.rm = TRUE)/sum(h==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_7 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_7 == 1, na.rm = TRUE)/sum(h==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_7 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_7 == 1, na.rm = TRUE)/sum(h==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-  )
-
-
-
-
-```
-
-```{r PNC1_inf}
-# denominator: i = participants who have completed mnh13 visit AND have visit status = 1/2 AND have visit type = 8 OR PNC1 overdue
-
-PNC1_INF <- InfData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-
-    "MNH13 Inf Clinical Statuss" = paste0(
-      format(sum(M13_VISIT_COMPLETE_8 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(i==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_8 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(i==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_8 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(i==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-    
-  ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = InfData_Pnc_Visits %>% 
-      plyr::summarise(
-
-    "MNH13 Inf Clinical Statuss" = paste0(
-      format(sum(M13_VISIT_COMPLETE_8 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(i==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_8 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(i==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_8 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(i==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-  )
-
-```
-
-```{r PNC4_inf}
-# denominator: j = participants who have completed mnh13 visit AND have visit status = 1/2 AND have visit type = 9 OR PNC4 overdue
-
-PNC4_INF <- InfData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-
-    "MNH13 Inf Clinical Statuss" = paste0(
-      format(sum(M13_VISIT_COMPLETE_9 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(j==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_9 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(j==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_9 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(j==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-    
-  ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = InfData_Pnc_Visits %>% 
-      plyr::summarise(
-        
-    "MNH13 Inf Clinical Statuss" = paste0(
-      format(sum(M13_VISIT_COMPLETE_9 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(j==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_9 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(j==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_9 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(j==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-        
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-  )
-
-```
-
-```{r PNC6_inf}
-# denominator: k = participants who have completed mnh13 visit AND have visit status = 1/2 AND have visit type = 10 OR PNC6 overdue
-
-PNC6_INF <- InfData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-
-    "MNH13 Inf Clinical Statuss" = paste0(
-      format(sum(M13_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-    
-  ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = InfData_Pnc_Visits %>% 
-      plyr::summarise(
-        
-    "MNH13 Inf Clinical Statuss" = paste0(
-      format(sum(M13_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_10 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(k==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-        
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-  )
-
-```
-
-```{r PNC26_inf}
-# denominator: l = participants who have completed mnh13 visit AND have visit status = 1/2 AND have visit type = 11 OR PNC26 overdue
-
-PNC26_INF <- InfData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-
-    "MNH13 Inf Clinical Statuss" = paste0(
-      format(sum(M13_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-    
-  ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = InfData_Pnc_Visits %>% 
-      plyr::summarise(
-        
-    "MNH13 Inf Clinical Statuss" = paste0(
-      format(sum(M13_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(l==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-        
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-  )
-
-```
-
-```{r PNC52_inf}
-# denominator: m = participants who have completed mnh13 visit AND have visit status = 1/2 AND have visit type = 11 OR PNC52 overdue
-
-PNC52_INF <- InfData_Pnc_Visits %>% 
-  rowwise() %>% 
-  group_by(SITE) %>% 
-  summarise(
-
-    "MNH13 Inf Clinical Status" = paste0(
-      format(sum(M13_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH24 Infant Close-out" = paste0(
-      format(sum(M24_VISIT_COMPLETE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M24_VISIT_COMPLETE == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-    
-  ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "All sites" = InfData_Pnc_Visits %>% 
-      plyr::summarise(
-        
-    "MNH13 Inf Clinical Status" = paste0(
-      format(sum(M13_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M13_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH14 Inf POC" = paste0(
-      format(sum(M14_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M14_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-
-    "MNH15 Inf Vaccination" = paste0(
-      format(sum(M15_VISIT_COMPLETE_11 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M15_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH24 Infant Close-out" = paste0(
-      format(sum(M24_VISIT_COMPLETE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M24_VISIT_COMPLETE == 1, na.rm = TRUE)/sum(m==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
-        
-      ) %>% 
-      t() %>% 
-      as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-  )
-
-```
-
-```{r INFANT TABLE 6}
-options(knitr.kable.NA = '0')
-
-
-bind_rows(pnc_tb_inf,
-          PNC0_INF,
-          PNC1_INF,
-          PNC4_INF,
-          PNC6_INF,
-          PNC26_INF,
-          PNC52_INF
-          ) %>% 
-   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
-  `rownames<-`(c("Infants, n^1^",
-                 ## PNC0 (2-4)
-                  "MNH13 Inf Clinical Status",
-                  "MNH14 Inf POC",
-                  "MNH15 Inf Vaccination",
-                 ## PNC1 (5-7)
-                 "MNH13 Inf Clinical Status ",
-                 "MNH14 Inf POC ",
-                 "MNH15 Inf Vaccination ",
-                 ## PNC4 (8-10)
-                 "MNH13 Inf Clinical Status  ",
-                 "MNH14 Inf POC  ",
-                 "MNH15 Inf Vaccination  ",
-                 ## PNC6 (11-13)
-                 "MNH13 Inf Clinical Status   ",
-                 "MNH14 Inf POC   ",
-                 "MNH15 Inf Vaccination   ",
-                 ## PNC26 (14-16)
-                 "MNH13 Inf Clinical Status    ",
-                 "MNH14 Inf POC    ",
-                 "MNH15 Inf Vaccination    ",
-                 ##PNC52 (17-20)
-                 "MNH13 Inf Clinical Status     ",
-                 "MNH14 Inf POC     ",
-                 "MNH15 Inf Vaccination     ",
-                 "MNH24 Infant Close-out"
-                 )
-               )  %>% 
-  kbl(caption = "", longtable = T) %>%
-  kable_paper(bootstrap_options = "striped", 
-              full_width = T, html_font = "Cambria", position = "left", 
-              latex_options = "hold_position") %>% 
-  row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
-  row_spec(0:1, extra_css = "padding: 0.1px") %>% 
-    pack_rows("", 1, 1, label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 0, n(%)^a^ \nTarget window: 3 to 5 days", 2, 4,
-            label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 1, n(%)^b^ \nTarget window: 7 to 14 days", 5, 7,
-            label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 4, n(%)^c^ \nTarget window: 28 to 35 days", 8, 10,
-            label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 6, n(%)^d^ \nTarget window: 6 to 7wks", 11, 13,
-            label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 26, n(%)^e^ \nTarget window: 26 to 28wks", 14, 16,
-            label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC = 52, n(%)^f^ \nTarget window: 52 to 54wks", 17, 20,
-            label_row_css = "color: steelblue;") %>% 
-  footnote(alphabet = c(#"denominator is n livebirths", 
-                      "denominator is n completed MNH-13 with visit type=PNC0 OR missed on-time window with >5 days postpartum",
-                      "denominator is n completed MNH-13 with visit type=PNC1 OR missed on-time window with >14 days postpartum",
-                      "denominator is n completed MNH-13 with visit type=PNC4 OR missed on-time window with >35 days postpartum",
-                      "denominator is n completed MNH-13 with visit type=PNC6 OR missed on-time window with >7 weeks postpartum",
-                      "denominator is n completed MNH-13 with visit type=PNC26 OR missed on-time window with >28 weeks postpartum",
-                      "denominator is n completed MNH-13 with visit type=PNC52 OR missed on-time window with >54 weeks postpartum"
-                      ),
-           number = "n is all live births", 
-          general = "Denominators for all visits are calculated based on completion of PNC Clinical Status (MNH-13). A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: INF_VISIT_MNH13). Missed on-time windows are calculated using date of birth and target windows outlined in the protocol.", 
-           footnote_order = c("number", "alphabet", "general")) 
-```
 \newpage
 
 ### **2. ReMAPP** 
@@ -2380,7 +2789,7 @@ criteria_names <- c('Aged 18 to 34 years',
                     'Systolic blood pressure <140 mmHg and \ndiastolic blood pressure <90 mmHg',
                     '<= 1 miscarriage in two consecutive \npregnancies',
                     'No previous preterm or low birth \nweight delivery',
-                    'No previous neonatal or fetal death',
+                    'No previous fetal death',
                     'No history of pregnancy complications',
                     'Non-cigarette smoking, tobacco chewing, \nor betel nut use',
                     'No reported alcohol consumption during \npregnancy',
@@ -2712,9 +3121,9 @@ remapp_table4 %>%
 
 \newpage
 
-#### `r emo::ji("pushpin")` Figure 2: Hemoglobin measures by gestational age for participants enrolled in PRISMA MNH 
+#### `r emo::ji("pushpin")` Figure 1: Hemoglobin measures by gestational age for participants enrolled in PRISMA MNH 
 
-```{r, Remapp Figure 2, fig.show='hold', out.width="80%"}
+```{r, Remapp Figure 1, fig.show='hold', out.width="80%"}
 ## x axis in weeks 
 #MatData_HB_GA_Visit_Kenya <- MatData_HB_GA_Visit %>% filter(SITE == "Kenya")
 # ggplot(data = MatData_Hb_GA_Visit, 
@@ -2777,9 +3186,9 @@ ggplot(data = MatData_Hb_GA_Visit,
 <!-- </br> -->
 \newpage
 
-#### `r emo::ji("pushpin")` Figure 3: ANC hemoglobin values (CBC) by trimester for participants
+#### `r emo::ji("pushpin")` Figure 2: ANC hemoglobin values (CBC) by trimester for participants
 
-```{r, Remapp Figure 3 Kenya, fig.show='hold', out.width="70%"}
+```{r, Remapp Figure 2 Kenya, fig.show='hold', out.width="70%"}
 
 
 ## ReMAPP figure 3
@@ -2808,7 +3217,7 @@ ggplot() +
 
 ```
 
-```{r, Remapp Figure 3 Pakistan, fig.show='hold', out.width="70%"}
+```{r, Remapp Figure 2 Pakistan, fig.show='hold', out.width="70%"}
 
 
 ## ReMAPP figure 3
@@ -2839,7 +3248,7 @@ ggplot() +
 
 ```
 
-```{r, Remapp Figure 3 Ghana, fig.show='hold', out.width="70%"}
+```{r, Remapp Figure 2 Ghana, fig.show='hold', out.width="70%"}
 
 
 ## ReMAPP figure 3
