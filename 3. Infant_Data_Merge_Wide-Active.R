@@ -2,7 +2,7 @@
 #* INFANT WIDE DATASET by VISIT 
 #*Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #*Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 17 April 2023
+#* Last updated: 1 July 2023
 
 #*Output:   
 #* 1. InfData_Wide.RData wide dataset by INFANTID and visit type (one row for each infant at each visit)
@@ -25,7 +25,7 @@ rm(list = ls())
 library(tidyverse)
 library(lubridate)
 library(readxl)
-UploadDate = "2023-04-21"
+UploadDate = "2023-07-28"
 
 #*****************************************************************************
 #* Import merged data 
@@ -48,18 +48,7 @@ if (exists("m24_infantmerged") == TRUE){ m24_infantmerged <- m24_infantmerged %>
 
 ## add visit type for M111, M13, M14, M15 -- to update once data dictionary updates go out 
 if (exists("m11_merged") == TRUE){ m11_merged$M11_TYPE_VISIT = 6}
-if (exists("m13_infantmerged") == TRUE){ m13_infantmerged <- m13_infantmerged %>% rename(M13_TYPE_VISIT = M13_PNC_N_VISIT)}
-if (exists("m14_infantmerged") == TRUE){ m14_infantmerged <- m14_infantmerged %>% rename(M14_TYPE_VISIT = M14_POC_VISIT)}
-if (exists("m15_infantmerged") == TRUE){ m15_infantmerged <- m15_infantmerged %>% rename(M15_TYPE_VISIT = M15_OBSTERM)}
 
-## update visit type assignments for pak data 
-m13_infantmerged <- m13_infantmerged %>% 
-  mutate(M13_TYPE_VISIT = ifelse(M13_TYPE_VISIT == 1, 7, 
-                                 ifelse(M13_TYPE_VISIT == 2, 8, 
-                                        ifelse(M13_TYPE_VISIT == 3, 9, 
-                                               ifelse(M13_TYPE_VISIT == 4, 10, 
-                                                      ifelse(M13_TYPE_VISIT == 5, 11, 
-                                                             ifelse(M13_TYPE_VISIT == 6, 12, M13_TYPE_VISIT)))))))
 ## extract date of birth for each infant 
 # replace default value date with NA 
 m09_wide <- m09_merged %>% 
@@ -182,15 +171,7 @@ setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/"
 #dt=format(Sys.time(), "%Y-%m-%d")
 save(InfData_Wide_Visit, file= paste("InfData_Wide_Visit","_", UploadDate,".RData",sep = ""))
 
-# ## BY MOMID, INFANTID
-# visit_pnc_6 <- inf_data_out_wide %>% 
-#   filter(TYPE_VISIT == 6) %>% 
-#   select(SITE, MOMID, PREGID, INFANTID, TYPE_VISIT, DELIVERY_DATETIME, contains("M11_")) %>% 
-#   select(-TYPE_VISIT) %>% 
-#   rename_with(~paste0(., "_", 6), .cols = -c("SITE", "MOMID", "PREGID", "INFANTID", "DELIVERY_DATETIME")) 
-# 
 # ## NOTE: Forms that only get filled out at delivery (MNH11) will need to be removed from the other visit data as to not have duplicates
-# m11_to_remove <- grep("M11_", names(InfData_Wide_Visit))
 # 
 visit_pnc_7 <- inf_data_out_wide %>% 
   filter(TYPE_VISIT == 7) %>% 
@@ -227,9 +208,6 @@ infant_pnc_visit_out <- mget(ls(pattern = "visit_pnc_"))
 # merge all forms together 
 InfData_Wide <- infant_pnc_visit_out %>% reduce(full_join, by =  c("SITE", "MOMID", "PREGID", "INFANTID", "DELIVERY_DATETIME")) %>% distinct()
 
-## Merge in MNH11 post-delivery outcomes - delete this because we added in above 
-#InfData_Wide <- full_join(InfData_Wide, m11_merged, by = c("SITE", "MOMID", "PREGID", "INFANTID"))
-
 # merge m24 infant closeout into dataset
 m24_infantmerged <- m24_infantmerged %>% 
   mutate(M24_VISIT_COMPLETE = ifelse(!is.na(M24_CLOSE_DSDECOD), 1, 0))
@@ -245,4 +223,7 @@ InfData_Wide <- full_join(InfData_Wide, m11_merged_out, by = c("SITE","INFANTID"
 setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
 #dt=format(Sys.time(), "%Y-%m-%d")
 save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
+
+table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_7)
+table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_8)
 
