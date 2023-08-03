@@ -2,7 +2,7 @@
 #* MATERNAL WIDE DATASET BY VISIT 
 #*Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #*Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 17 April 2023
+#* Last updated: 1 July 2023
 
 #*Output:   
   #* 1. MatData_Wide.RData wide dataset by MOMID and visit type (one row for each woman at each visit)
@@ -607,4 +607,3 @@ MatData_Wide <- MatData_Wide %>% filter(!(MOMID %in% out_duplicated_IDS))
 setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
 #dt=format(Sys.time(), "%Y-%m-%d")
 save(MatData_Wide, file= paste("MatData_Wide","_", UploadDate,".RData",sep = ""))
-
