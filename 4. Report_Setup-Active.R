@@ -1,26 +1,10 @@
 #*****************************************************************************
 #### MONITORING REPORT SETUP ####
-## items to UPDATE EACH RUN: 
-# read in correct data 
-# upload date for MNH04 
-# upload date for MNH12 
-# upload date for MNH13
-# upload date for MNH09 
+#* Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
+#* Input: .RData files for each form (generated from 1. data import code)
+#* Last updated: 1 July 2023
 
-## load in data 
-rm(list = ls())
-
-library(tidyverse)
-library(lubridate)
-library(readxl)
-library(dplyr)
-
-UploadDate = "2023-05-26"
-
-load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "MatData_Wide_", UploadDate, ".RData"))
-load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "InfData_Wide_", UploadDate, ".RData"))
-
-
+#*Output:   
 ## MatData_Report: 
   # input: MatData_wide 
   # only includes a subset of variables from the maternal wide dataset to be used for report purposes
@@ -48,7 +32,20 @@ load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "InfData_Wide_
 ## healthyOutcome
   ## input: MatData_Anc_Visits
   ## Includes relevant constructed variables for ReMAPP healthy criteria 
+#*****************************************************************************
 
+## load in data 
+rm(list = ls())
+
+library(tidyverse)
+library(lubridate)
+library(readxl)
+library(dplyr)
+
+UploadDate = "2023-07-28"
+
+load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "MatData_Wide_", UploadDate, ".RData"))
+load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "InfData_Wide_", UploadDate, ".RData"))
 
 #*****************************************************************************
 #* Extract variables for monitoring report 
@@ -86,12 +83,11 @@ MatData_Report <- MatData_Wide %>%
  save(InfData_Report, file= paste("InfData_Report","_",UploadDate, ".RData",sep = ""))
  
  #**************************************************************************************
- #* PRiSMA Tables 1-3
- #* Table 1a: Pre-screening numbers for PRiSMA MNH Study for the most recent one week 
- #* Table 1b: Cumulative pre-screening numbers for PRiSMA MNH Study 
- #* Table 2a: Enrollment numbers for PRiSMA MNH Study for the most recent one week
- #* Table 2b: Cumulative enrollment numbers for PRiSMA MNH Study 
- #* Table 3: Study Status for PRiSMA MNH Study 
+ #* PRiSMA Tables 1-4
+ #* Table 1: Pre-screening and enrollment numbers for PRiSMA MNH Study for the most recent one week 
+ #* Table 2: Cumulative pre-screening numbers for PRiSMA MNH Study 
+ #* Table 3: Cumulative enrollment numbers for PRiSMA MNH Study 
+ #* Table 4: Study Status for PRiSMA MNH Study 
  
  #* Pre-screening, screen and enrollment info
  #* Output = MatData_Screen_Enroll 
@@ -105,7 +101,6 @@ MatData_Screen_Enroll <- MatData_Report %>%
          START_DATE_MOM_DAY = floor_date(START_DATE_MOM, unit = "day")
   ) %>% 
   ungroup() %>% 
-  #group_by("SITE") %>% 
   mutate(START_DATE=min(START_DATE_MOM, na.rm = TRUE),
          START_DATE_MTH = floor_date(START_DATE, unit = "month"),
          START_DATE_WK = floor_date(START_DATE, unit = "week", week_start = getOption("lubridate.week.start",1))) %>% 
@@ -116,43 +111,12 @@ MatData_Screen_Enroll <- MatData_Report %>%
 
 # enrollment criteria
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
+    ## PRESCREENING CRITERIA
    # four types of consent
   mutate(
-    # participant consent (has both willingness & written consent)
-    CONSENT_PART = case_when(
-      M00_CON_YN_DSDECOD_1 == 1 & !is.na(M00_CON_DSSTDAT_1) ~ 1,
-      M00_CON_YN_DSDECOD_1 == 0 & !is.na(M00_CON_DSSTDAT_1) ~ 0,
-      TRUE ~ 77),
-    # legal representative consent (has both willingness & written consent) *optional
-    CONSENT_LAR = case_when(
-      M00_CON_LAR_YN_DSDECOD_1 == 1 & !is.na(M00_CON_LAR_SIGNDAT_1) ~ 1,  
-      M00_CON_LAR_YN_DSDECOD_1 == 0 & !is.na(M00_CON_LAR_SIGNDAT_1) ~ 0,
-      TRUE ~ 77),
-    # participant assent (has both willingness & written assent) *optional
-    ASSNT_PART = case_when(
-      M00_ASSNT_YN_DSDECOD_1 == 1 & !is.na(M00_ASSNT_DSSTDAT_1) ~ 1,  
-      M00_ASSNT_YN_DSDECOD_1 == 0 & !is.na(M00_ASSNT_DSSTDAT_1) ~ 0,
-      TRUE ~ 77),
-    # witness consent (has written consent) *optional
-    CONSENT_WITNESS = case_when(
-      M00_CON_WITNESS_SIGNATURE_PRYN_1 == 1 & !is.na(M00_CON_WITNESS_SIGNDAT_1) ~ 1,  
-      M00_CON_WITNESS_SIGNATURE_PRYN_1 == 0 & !is.na(M00_CON_WITNESS_SIGNDAT_1) ~ 0,
-      TRUE ~ 77),
-  ) %>% 
-  mutate(
-    # participant consent
-    PRESCR_CONSENT = case_when(
-      # ??? what's the consent criteria for Kenya/Ghana/Pakistan/Zambia/India ???
-      CONSENT_PART == 0 | ASSNT_PART == 0 | CONSENT_LAR == 0 | CONSENT_WITNESS == 0 ~ 0,
-      CONSENT_PART == 1 & (CONSENT_LAR == 1 | CONSENT_LAR == 77) & 
-        (ASSNT_PART == 1 | ASSNT_PART == 77) & 
-        (CONSENT_WITNESS == 1 | CONSENT_WITNESS == 77)  ~ 1,
-      # DK
-      TRUE ~ 99
-    ),
     # screen status (M00 pre-screen is completed)
     PRESCREEN = case_when(
-      !is.na(M00_SCRN_OBSSTDAT_1) ~ 1, 
+      !is.na(M00_SCRN_OBSSTDAT_1) ~ 1,
       TRUE ~ 0
     ),
     #gap between no other reason to exclude and provide consent info
@@ -165,12 +129,12 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
     # binary variable indicating if a woman was screened 
     SCREEN = case_when(!is.na(M02_FORMCOMPLDAT_MNH02_1) ~ 1, 
                        TRUE ~ 0),
-    
-    # eligible & enrolled 
-    ## M02_AGE_IEORRES_1 = meet age requirement?
-    ## M02_PC_IEORRES_1 = <20wks gestation?
-    ## M02_CATCHMENT_IEORRES_1 = live in catchment area?
-    ## M02_CATCH_REMAIN_IEORRES_1 = stay in catchment area?
+  #   ## SCREENING CRITERIA
+  #   # eligible & enrolled 
+  #   ## M02_AGE_IEORRES_1 = meet age requirement?
+  #   ## M02_PC_IEORRES_1 = <20wks gestation?
+  #   ## M02_CATCHMENT_IEORRES_1 = live in catchment area?
+  #   ## M02_CATCH_REMAIN_IEORRES_1 = stay in catchment area?
     ELIGIBLE = case_when(M02_AGE_IEORRES_1 == 1 & M02_PC_IEORRES_1 == 1 & M02_CATCHMENT_IEORRES_1 == 1 &
                            M02_CATCH_REMAIN_IEORRES_1 == 1  ~ 1,
                            M02_AGE_IEORRES_1 == 0 | M02_PC_IEORRES_1 == 0 | M02_CATCHMENT_IEORRES_1 == 0 |
@@ -178,27 +142,25 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                           TRUE ~ 99),
     CONSENT = case_when(!is.na(M02_CONSENT_IEORRES_1) ~ M02_CONSENT_IEORRES_1,
                         TRUE ~ 99),
-    ENROLL = case_when(M02_CONSENT_IEORRES_1 == 1 & !is.na(M02_FORMCOMPLDAT_MNH02_1) & ELIGIBLE == 1 ~ 1, 
+    ENROLL = case_when(M02_CONSENT_IEORRES_1 == 1 & !is.na(M02_FORMCOMPLDAT_MNH02_1) & ELIGIBLE == 1 ~ 1,
                        ELIGIBLE == 0 | M02_CONSENT_IEORRES_1 == 0 | M02_CONSENT_IEORRES_1 == 77 ~ 0,
-                       TRUE ~ 77)
-  ) %>% 
-  ## Assign denominators 
-  mutate(a = case_when(PRESCREEN == 1 ~ 1, 
-                       TRUE ~ 0)) %>%      ## a = denominator for n all pre-screened 
-  mutate(b = case_when(SCREEN == 1 ~ 1, 
-                       TRUE ~ 0)) %>%      ## b = denominator for n all screened 
-  mutate(c = case_when(ENROLL == 1 ~ 1, 
-                       TRUE ~ 0))          ## c = denominator for all n enrolled 
-  
+                       TRUE ~ 77)) %>%
+  ## Assign denominators
+  mutate(a = case_when(PRESCREEN == 1 ~ 1,
+                       TRUE ~ 0)) %>%      ## a = denominator for n all pre-screened
+  mutate(b = case_when(SCREEN == 1 ~ 1,
+                       TRUE ~ 0)) %>%      ## b = denominator for n all screened
+  mutate(c = case_when(ENROLL == 1 ~ 1,
+                       TRUE ~ 0))       ## c = denominator for all n enrolled
 
-
-## extract gestational age at enrollment 
+  ## extract gestational age at enrollment 
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
   rowwise() %>% 
   mutate(DIFFDAYS = as.numeric(difftime(M02_SCRN_OBSSTDAT_1, M01_US_OHOSTDAT_1, units = "days"))) %>% ## extract the difference in number of days between screening US and enrollment visit
   mutate(DIFFDAYS = ifelse(DIFFDAYS < 0, 0, DIFFDAYS)) %>%  ## if the difference is negative, replace with 0 (just use date of ultrasound screening)
   mutate(GA_ENROLL_WKS = floor(as.numeric((DIFFDAYS + GA_US_DAYS_1)/7)), 
-         GA_ENROLL_DAYS = floor(as.numeric(DIFFDAYS + GA_US_DAYS_1)))
+         GA_ENROLL_DAYS = floor(as.numeric(DIFFDAYS + GA_US_DAYS_1))
+  )
 
 ## extract Reasons for exclusion (check if cases match within mnh00 and 02)
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
@@ -285,71 +247,71 @@ setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/"
 #dt=format(Sys.time(), "%Y-%m-%d")
 save(MatData_Screen_Enroll, file= paste("MatData_Screen_Enroll","_",UploadDate, ".RData",sep = ""))
 
-#**************************************************************************************
-## INFANT DATA PNC VISITS
-
-#* Input = InfData_Report &  
-#* Output = InfData_Pnc_Visits 
-#**************************************************************************************
-# ## INFANT DATA PNC VISITS 
-# ## get latest M13 Date 
-# ## get vector of the latest visit date for MNH12 visits 
-M13_VISIT_VEC <- c("M13_VISIT_OBSSTDAT_7", "M13_VISIT_OBSSTDAT_8", "M13_VISIT_OBSSTDAT_9","M13_VISIT_OBSSTDAT_10", "M13_VISIT_OBSSTDAT_11", "M13_VISIT_OBSSTDAT_12")
-out_pnc_visits <- list()
-for(i in M13_VISIT_VEC){
-  out_pnc_visits[[i]] <- InfData_Report %>%
-    select(i) %>%
-    pivot_longer(everything()) %>%
-    filter(value < '2023-05-12') %>% ## UPDATE EACH RUN
-    summarise(x = max(value, na.rm = TRUE)) %>% distinct() %>% pull()
-}
-
-
-InfData_Report$LATEST_M13_V7DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_7"]]
-InfData_Report$LATEST_M13_V8DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_8"]]
-InfData_Report$LATEST_M13_V9DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_9"]]
-InfData_Report$LATEST_M13_V10DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_10"]]
-InfData_Report$LATEST_M13_V11DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_11"]]
-InfData_Report$LATEST_M13_V12DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_12"]]
-
-# assign late windows x 
-# generate overdue vars 
-# get denominators 
-InfData_Pnc_Visits <- InfData_Report %>% 
-  filter(M11_INF_DSTERM == 1) %>% ## only want live births 
-  ## CALCULATE ON TIME AND LATE PNC WINDOWS 
-  mutate(PNC0_ONTIME = DELIVERY_DATETIME + as.difftime(5, unit="days"),
-         PNC0_LATE = DELIVERY_DATETIME + as.difftime(5, unit="days"),
-         PNC1_ONTIME = DELIVERY_DATETIME + as.difftime(14, unit="days"),
-         PNC1_LATE = DELIVERY_DATETIME + as.difftime(14, unit="days"),
-         PNC4_ONTIME = DELIVERY_DATETIME + as.difftime(35, unit="days"),
-         PNC4_LATE = DELIVERY_DATETIME + as.difftime(35, unit="days"),
-         PNC6_ONTIME = DELIVERY_DATETIME + as.difftime(55, unit="days"),
-         PNC6_LATE = DELIVERY_DATETIME + as.difftime(104, unit="days"),
-         PNC26_ONTIME = DELIVERY_DATETIME + as.difftime(202, unit="days"),
-         PNC26_LATE = DELIVERY_DATETIME + as.difftime(279, unit="days"),
-         PNC52_ONTIME = DELIVERY_DATETIME + as.difftime(384, unit="days"),
-         PNC52_LATE = DELIVERY_DATETIME + as.difftime(454, unit="days")) %>%
-  ## CALCULATE INDICATOR VARIABLES for missed PNC visits 
-  mutate(PNC0_OVERDUE = ifelse(LATEST_M13_V7DATE>PNC0_ONTIME & M13_VISIT_COMPLETE_7 == 0, 1, 0),
-         PNC1_OVERDUE = ifelse(LATEST_M13_V8DATE>PNC1_ONTIME & is.na(M13_VISIT_COMPLETE_8), 1, 0),
-         PNC4_OVERDUE = ifelse(LATEST_M13_V9DATE>PNC4_ONTIME & is.na(M13_VISIT_COMPLETE_9), 1, 0),
-         PNC6_OVERDUE = ifelse(LATEST_M13_V10DATE>PNC6_ONTIME & is.na(M13_VISIT_COMPLETE_10), 1, 0),
-         PNC26_OVERDUE = ifelse(LATEST_M13_V11DATE>PNC26_ONTIME & is.na(M13_VISIT_COMPLETE_11), 1, 0),
-         PNC52_OVERDUE = ifelse(LATEST_M13_V12DATE>PNC52_ONTIME & is.na(M13_VISIT_COMPLETE_12), 1, 0)) %>% 
-  ## CALCULATE PNC DENOMINATORS 
-  mutate( allbirths = ifelse(M11_INF_DSTERM == 1, 1, 0), ## PNC0 
-          h = ifelse((M13_VISIT_COMPLETE_7 == 1 & M13_TYPE_VISIT_7 == 7) |  PNC1_OVERDUE == 1, 1, 0),
-          i = ifelse((M13_VISIT_COMPLETE_8 == 1 & M13_TYPE_VISIT_8 == 8) |  PNC1_OVERDUE == 1, 1, 0),
-          j = ifelse((M13_VISIT_COMPLETE_9 == 1 & M13_TYPE_VISIT_9 == 9) |  PNC4_OVERDUE == 1, 1, 0),
-          k = ifelse((M13_VISIT_COMPLETE_10 == 1 & M13_TYPE_VISIT_10 == 10) |  PNC6_OVERDUE == 1, 1, 0),
-          l = ifelse((M13_VISIT_COMPLETE_11 == 1 & M13_TYPE_VISIT_11 == 11) |  PNC26_OVERDUE == 1, 1, 0),
-          m = ifelse((M13_VISIT_COMPLETE_12 == 1 & M13_TYPE_VISIT_12 == 12) |  PNC52_OVERDUE == 1, 1, 0))
-
-setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
-dt=format(Sys.time(), "%Y-%m-%d")
-save(InfData_Pnc_Visits, file= paste("InfData_Pnc_Visits","_", UploadDate, ".RData",sep = ""))
-
+# #**************************************************************************************
+# ## INFANT DATA PNC VISITS -- WORKSHOPPING -- NOT READY
+# 
+# #* Input = InfData_Report &  
+# #* Output = InfData_Pnc_Visits 
+# #**************************************************************************************
+# # ## INFANT DATA PNC VISITS 
+# # ## get latest M13 Date 
+# # ## get vector of the latest visit date for MNH12 visits 
+# M13_VISIT_VEC <- c("M13_VISIT_OBSSTDAT_7", "M13_VISIT_OBSSTDAT_8", "M13_VISIT_OBSSTDAT_9","M13_VISIT_OBSSTDAT_10", "M13_VISIT_OBSSTDAT_11", "M13_VISIT_OBSSTDAT_12")
+# out_pnc_visits <- list()
+# for(i in M13_VISIT_VEC){
+#   out_pnc_visits[[i]] <- InfData_Report %>%
+#     select(i) %>%
+#     pivot_longer(everything()) %>%
+#     filter(value < '2023-05-12') %>% ## UPDATE EACH RUN
+#     summarise(x = max(value, na.rm = TRUE)) %>% distinct() %>% pull()
+# }
+# 
+# 
+# InfData_Report$LATEST_M13_V7DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_7"]]
+# InfData_Report$LATEST_M13_V8DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_8"]]
+# InfData_Report$LATEST_M13_V9DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_9"]]
+# InfData_Report$LATEST_M13_V10DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_10"]]
+# InfData_Report$LATEST_M13_V11DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_11"]]
+# InfData_Report$LATEST_M13_V12DATE = out_pnc_visits[["M13_VISIT_OBSSTDAT_12"]]
+# 
+# # assign late windows x 
+# # generate overdue vars 
+# # get denominators 
+# InfData_Pnc_Visits <- InfData_Report %>% 
+#   filter(M11_INF_DSTERM == 1) %>% ## only want live births 
+#   ## CALCULATE ON TIME AND LATE PNC WINDOWS 
+#   mutate(PNC0_ONTIME = DELIVERY_DATETIME + as.difftime(5, unit="days"),
+#          PNC0_LATE = DELIVERY_DATETIME + as.difftime(5, unit="days"),
+#          PNC1_ONTIME = DELIVERY_DATETIME + as.difftime(14, unit="days"),
+#          PNC1_LATE = DELIVERY_DATETIME + as.difftime(14, unit="days"),
+#          PNC4_ONTIME = DELIVERY_DATETIME + as.difftime(35, unit="days"),
+#          PNC4_LATE = DELIVERY_DATETIME + as.difftime(35, unit="days"),
+#          PNC6_ONTIME = DELIVERY_DATETIME + as.difftime(55, unit="days"),
+#          PNC6_LATE = DELIVERY_DATETIME + as.difftime(104, unit="days"),
+#          PNC26_ONTIME = DELIVERY_DATETIME + as.difftime(202, unit="days"),
+#          PNC26_LATE = DELIVERY_DATETIME + as.difftime(279, unit="days"),
+#          PNC52_ONTIME = DELIVERY_DATETIME + as.difftime(384, unit="days"),
+#          PNC52_LATE = DELIVERY_DATETIME + as.difftime(454, unit="days")) %>%
+#   ## CALCULATE INDICATOR VARIABLES for missed PNC visits 
+#   mutate(PNC0_OVERDUE = ifelse(LATEST_M13_V7DATE>PNC0_ONTIME & M13_VISIT_COMPLETE_7 == 0, 1, 0),
+#          PNC1_OVERDUE = ifelse(LATEST_M13_V8DATE>PNC1_ONTIME & is.na(M13_VISIT_COMPLETE_8), 1, 0),
+#          PNC4_OVERDUE = ifelse(LATEST_M13_V9DATE>PNC4_ONTIME & is.na(M13_VISIT_COMPLETE_9), 1, 0),
+#          PNC6_OVERDUE = ifelse(LATEST_M13_V10DATE>PNC6_ONTIME & is.na(M13_VISIT_COMPLETE_10), 1, 0),
+#          PNC26_OVERDUE = ifelse(LATEST_M13_V11DATE>PNC26_ONTIME & is.na(M13_VISIT_COMPLETE_11), 1, 0),
+#          PNC52_OVERDUE = ifelse(LATEST_M13_V12DATE>PNC52_ONTIME & is.na(M13_VISIT_COMPLETE_12), 1, 0)) %>% 
+#   ## CALCULATE PNC DENOMINATORS 
+#   mutate( allbirths = ifelse(M11_INF_DSTERM == 1, 1, 0), ## PNC0 
+#           h = ifelse((M13_VISIT_COMPLETE_7 == 1 & M13_TYPE_VISIT_7 == 7) |  PNC1_OVERDUE == 1, 1, 0),
+#           i = ifelse((M13_VISIT_COMPLETE_8 == 1 & M13_TYPE_VISIT_8 == 8) |  PNC1_OVERDUE == 1, 1, 0),
+#           j = ifelse((M13_VISIT_COMPLETE_9 == 1 & M13_TYPE_VISIT_9 == 9) |  PNC4_OVERDUE == 1, 1, 0),
+#           k = ifelse((M13_VISIT_COMPLETE_10 == 1 & M13_TYPE_VISIT_10 == 10) |  PNC6_OVERDUE == 1, 1, 0),
+#           l = ifelse((M13_VISIT_COMPLETE_11 == 1 & M13_TYPE_VISIT_11 == 11) |  PNC26_OVERDUE == 1, 1, 0),
+#           m = ifelse((M13_VISIT_COMPLETE_12 == 1 & M13_TYPE_VISIT_12 == 12) |  PNC52_OVERDUE == 1, 1, 0))
+# 
+# setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
+# dt=format(Sys.time(), "%Y-%m-%d")
+# save(InfData_Pnc_Visits, file= paste("InfData_Pnc_Visits","_", UploadDate, ".RData",sep = ""))
+# 
 
 
 #**************************************************************************************
@@ -556,7 +518,8 @@ MatData_Hb_Visit <- MatData_Anc_Visits %>%
          DenHBV5 = ifelse((M08_VISIT_COMPLETE_5 == 1 & M08_TYPE_VISIT_5 == 5) |  ANC36_OVERDUE == 1, 1, 0)) %>% 
   mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT_1 >= "2023-04-10") |
                                   (SITE == "Pakistan" & M02_SCRN_OBSSTDAT_1 >= "2022-09-22") |
-                                  (SITE == "Ghana" & M02_SCRN_OBSSTDAT_1 >= "2022-12-28"), 1, 0)) %>%
+                                  (SITE == "Ghana" & M02_SCRN_OBSSTDAT_1 >= "2022-12-28") | 
+                                  (SITE == "Zambia" & M02_SCRN_OBSSTDAT_1 >= "2022-12-15"), 1, 0)) %>%
   filter(ENROLL == 1 & REMAPP_LAUNCH ==1)
 
 
@@ -582,7 +545,8 @@ save(MatData_Hb_Visit, file= paste("MatData_Hb_Visits","_", UploadDate, ".RData"
 MatData_Anc_Remapp <- MatData_Anc_Visits %>% 
   mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT_1 >= "2023-04-10") |
                                   (SITE == "Pakistan" & M02_SCRN_OBSSTDAT_1 >= "2022-09-22") |
-                                  (SITE == "Ghana" & M02_SCRN_OBSSTDAT_1 >= "2022-12-28"), 1, 0)) %>%
+                                  (SITE == "Ghana" & M02_SCRN_OBSSTDAT_1 >= "2022-12-28") | 
+                                  (SITE == "Zambia" & M02_SCRN_OBSSTDAT_1 >= "2022-12-15"), 1, 0)) %>%
   filter(ENROLL == 1 & REMAPP_LAUNCH ==1) 
 
 MatData_Hb_GA_Visit_1 <- MatData_Anc_Remapp %>% 
@@ -857,7 +821,8 @@ save(vars_criteria, file= paste("vars_criteria_FullData","_", UploadDate, ".RDat
 vars_criteria <- vars_criteria %>% 
           mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT_1 >= "2023-04-10") |
                                           (SITE == "Pakistan" & M02_SCRN_OBSSTDAT_1 >= "2022-09-22") |
-                                          (SITE == "Ghana" & M02_SCRN_OBSSTDAT_1 >= "2022-12-28"), 1, 0)) %>%
+                                          (SITE == "Ghana" & M02_SCRN_OBSSTDAT_1 >= "2022-12-28") | 
+                                          (SITE == "Zambia" & M02_SCRN_OBSSTDAT_1 >= "2022-12-15"), 1, 0)) %>%
             filter(REMAPP_LAUNCH ==1)  
   
 
@@ -993,6 +958,7 @@ save(Prot_Compliance_Anc, file= paste("Prot_Compliance_Anc","_", UploadDate, ".R
 Prot_Compliance_Pnc <- MatData_Pnc_Visits %>% 
   select(SITE, MOMID, PREGID, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
          contains("_VISIT_COMPLETE_"), BIRTH_OUTCOME_YN, M23_CLOSE_DSDECOD) %>% 
+  filter(BIRTH_OUTCOME_YN == 1) %>% 
   # DENOMINATOR for protocol compliance
   mutate(PC_PNC0_DENOM =ifelse(ANY_TYPE_VISIT_COMPLETE_7 == 1 & PNC0_PASS == 1, 1, 0),
          PC_PNC1_DENOM = ifelse(ANY_TYPE_VISIT_COMPLETE_8 == 1 & PNC1_PASS == 1, 1, 0),
@@ -1012,7 +978,7 @@ save(Prot_Compliance_Pnc, file= paste("Prot_Compliance_Pnc","_", UploadDate, ".R
 
 ## ANC
 Form_Completion_Anc <- MatData_Anc_Visits %>% 
-  select(SITE, MOMID, PREGID, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
+  select(SITE, MOMID, PREGID,M02_SCRN_OBSSTDAT_1, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
          contains("_VISIT_COMPLETE_"),contains("_TYPE_VISIT_"), GA_ENROLL_WKS) %>% 
   # DENOMINATOR for form completion
     # step 1. indicator for any type visit = i with any visit status 
@@ -1060,17 +1026,18 @@ save(Form_Completion_Anc, file= paste("Form_Completion_Anc","_", UploadDate, ".R
 ## PNC 
 Form_Completion_Pnc <- MatData_Pnc_Visits %>% 
   select(SITE, MOMID, PREGID, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
-         contains("_VISIT_COMPLETE_"),contains("_TYPE_VISIT_"), BIRTH_OUTCOME_YN, M23_CLOSE_DSDECOD) %>% 
+         contains("_VISIT_COMPLETE_"),contains("_TYPE_VISIT_"), BIRTH_OUTCOME_YN, M23_CLOSE_DSDECOD) %>%
+  filter(BIRTH_OUTCOME_YN == 1) %>% 
   # DENOMINATOR for form completion
   # step 1. indicator for any type visit = i with any visit status 
   mutate(TYPE_VISIT_ANY_STATUS_7 = ifelse((M06_TYPE_VISIT_7 == 7 & !is.na(M06_VISIT_COMPLETE_7)) |
-                                            (M12_TYPE_VISIT_7 == 7 & !is.na(M08_VISIT_COMPLETE_7)), 1, 0),
+                                            (M12_TYPE_VISIT_7 == 7 & !is.na(M12_VISIT_COMPLETE_7)), 1, 0),
          
          TYPE_VISIT_ANY_STATUS_8 = ifelse((M06_TYPE_VISIT_8 == 8 & !is.na(M06_VISIT_COMPLETE_8)) |
-                                            (M12_TYPE_VISIT_8 == 8 & !is.na(M08_VISIT_COMPLETE_8)), 1, 0),
+                                            (M12_TYPE_VISIT_8 == 8 & !is.na(M12_VISIT_COMPLETE_8)), 1, 0),
          
          TYPE_VISIT_ANY_STATUS_9 = ifelse((M06_TYPE_VISIT_9 == 9 & !is.na(M06_VISIT_COMPLETE_9)) |
-                                            (M12_TYPE_VISIT_9 == 9 & !is.na(M08_VISIT_COMPLETE_9)), 1, 0),
+                                            (M12_TYPE_VISIT_9 == 9 & !is.na(M12_VISIT_COMPLETE_9)), 1, 0),
          
          TYPE_VISIT_ANY_STATUS_10 = ifelse((M05_TYPE_VISIT_10 == 10 & !is.na(M05_VISIT_COMPLETE_10)) |
                                              (M06_TYPE_VISIT_10 == 10 & !is.na(M06_VISIT_COMPLETE_10)) |
@@ -1079,7 +1046,7 @@ Form_Completion_Pnc <- MatData_Pnc_Visits %>%
                                              (M12_TYPE_VISIT_10 == 10 & !is.na(M12_VISIT_COMPLETE_10)) | 
                                              (M25_TYPE_VISIT_10 == 10 & !is.na(M25_VISIT_COMPLETE_10)) | 
                                              (M26_TYPE_VISIT_10 == 10 & !is.na(M26_VISIT_COMPLETE_10)), 1, 0),
-         
+         ## might need to add some detail here of who we expect after the 42 day fu (only women who have had a live birth)
          TYPE_VISIT_ANY_STATUS_11 = ifelse((M05_TYPE_VISIT_11 == 11 & !is.na(M05_VISIT_COMPLETE_11)) |
                                              (M06_TYPE_VISIT_11 == 11 & !is.na(M06_VISIT_COMPLETE_11)) |
                                              (M07_TYPE_VISIT_11 == 11 & !is.na(M07_VISIT_COMPLETE_11)) |
@@ -1099,3 +1066,37 @@ Form_Completion_Pnc <- MatData_Pnc_Visits %>%
 
 save(Form_Completion_Pnc, file= paste("Form_Completion_Pnc","_", UploadDate, ".RData",sep = ""))
 
+#**************************************************************************************
+#* PNC Infant Protocol Compliance - to work on 
+#* Are all expected forms for the visit complete? 
+
+#* Num: For each form: visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
+#* Denom: Any form with visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
+#**************************************************************************************
+
+
+
+
+
+#**************************************************************************************
+## export as .CSV into network drive
+#**************************************************************************************
+
+# 1. place all merged datasets into list
+files_list <- mget(ls(c("MatData_Wide", "MatData_Pnc_Visits", "MatData_Anc_Visits")))
+
+# 2. rename
+names(files_list) = str_replace(names(files_list),  "m", "mnh")
+
+# 3. set working directory
+# first need to make subfolder with upload date
+maindir <- paste0("Z:/Stacked Data", sep = "")
+subdir = UploadDate
+dir.create(file.path(maindir, subdir), showWarnings = FALSE)
+
+setwd(paste("Z:/Stacked Data/", UploadDate, sep = ""))
+
+# 4. export
+lapply(1:length(files_list), function(i) write.csv(files_list[[i]], 
+                                                   file = paste0(names(files_list[i]), ".csv"),
+                                                   row.names = FALSE))
