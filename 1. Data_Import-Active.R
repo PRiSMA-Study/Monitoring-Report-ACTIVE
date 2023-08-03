@@ -36,14 +36,15 @@ library(readxl)
 
 # UPDATE EACH RUN # 
 # set upload date 
-UploadDate = "2023-04-20"
+UploadDate = "2023-07-28"
 
 # UPDATE EACH RUN # 
 # create vector of all sites with data in the upload 
-site_vec <- c("Pakistan", "Kenya", "Ghana")
+site_vec <- c("Pakistan", "Kenya", "Ghana", "Zambia")
 
 ## import data dictionary -- this will be used to pull field types for each variable  
-data_dict <- read_excel("~/PRiSMAv2Data/Queries/PRiSMA-MNH-Data-Dictionary-Repository-V.2.2-FEB012023_Queries.xlsx")
+data_dict <-read_excel("~/PRiSMAv2Data/Queries/PRiSMA-MNH-Data-Dictionary-Repository-V.2.3-MAR272023.xlsx")
+
 data_dict <- data_dict %>% 
   select(Form,`Variable Name`, `Field Type (Date, Time, Number, Text)`) %>% 
   rename("FieldType" = `Field Type (Date, Time, Number, Text)`)
@@ -69,50 +70,7 @@ myfiles <- lapply(myfiles, function (x){
 ## convert to individual dataframes 
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
-
-## fix pakistan infant id naming 
-mnh09_Pakistan <- mnh09_Pakistan %>%  rename(INFANTID_INF1 = INFANTID,
-                                             INFANTID_INF2 = INFANTID.1,
-                                             INFANTID_INF3 = INFANTID.2,
-                                             INFANTID_INF4 = INFANTID.3)
-
-## Update mnh12 because the visit type variable naming is different -- to remove once we send out CRFs
-mnh12_Pakistan$PNC_N_VISIT <- ifelse(mnh12_Pakistan$PNC_N_VISIT==1, 8,
-                                      ifelse(mnh12_Pakistan$PNC_N_VISIT==2, 9,
-                                             ifelse(mnh12_Pakistan$PNC_N_VISIT==3, 10,
-                                                    ifelse(mnh12_Pakistan$PNC_N_VISIT==4, 11,
-                                                           ifelse(mnh12_Pakistan$PNC_N_VISIT==5,  12,
-                                                                  ifelse(mnh12_Pakistan$PNC_N_VISIT==6, 13, NA))))))
-
-## Update mnh13 because the visit type variable naming is different -- to remove once we send out CRFs
-mnh13_Pakistan$PNC_N_VISIT <- ifelse(mnh13_Pakistan$PNC_N_VISIT==1, 7,
-                                     ifelse(mnh13_Pakistan$PNC_N_VISIT==2, 8,
-                                            ifelse(mnh13_Pakistan$PNC_N_VISIT==3, 9,
-                                                   ifelse(mnh13_Pakistan$PNC_N_VISIT==4, 10,
-                                                          ifelse(mnh13_Pakistan$PNC_N_VISIT==5,  11,
-                                                                 ifelse(mnh13_Pakistan$PNC_N_VISIT==6, 12, 
-                                                                        ifelse(mnh13_Pakistan$PNC_N_VISIT == 77, 13, NA)))))))
-## Update mnh13 because the visit type variable naming is different -- to remove once we send out CRFs
-mnh15_Pakistan$OBSTERM <- ifelse(mnh15_Pakistan$OBSTERM==1, 7,
-                                     ifelse(mnh15_Pakistan$OBSTERM==2, 8,
-                                            ifelse(mnh15_Pakistan$OBSTERM==3, 9,
-                                                   ifelse(mnh15_Pakistan$OBSTERM==4, 10,
-                                                          ifelse(mnh15_Pakistan$OBSTERM==5,  11,
-                                                                 ifelse(mnh15_Pakistan$OBSTERM==6, 12,  NA))))))
-## Update mnh13 because the visit type variable naming is different -- to remove once we send out CRFs
-mnh25_Pakistan <- mnh25_Pakistan %>% rename("TYPE_VISIT" = "ANC_VISIT_N") %>% 
-  mutate(TYPE_VISIT = ifelse(TYPE_VISIT == 1, 2, 
-                             ifelse(TYPE_VISIT == 2, 3, 
-                                    ifelse(TYPE_VISIT == 3, 4, 
-                                           ifelse(TYPE_VISIT == 4, 5, 
-                                                  ifelse(TYPE_VISIT == 5, 13,
-                                                         ifelse(TYPE_VISIT == 6, 8, 
-                                                                ifelse(TYPE_VISIT == 7,9, 
-                                                                       ifelse(TYPE_VISIT == 8, 10, 
-                                                                              ifelse(TYPE_VISIT == 9, 11, 
-                                                                                     ifelse(TYPE_VISIT == 10, 12, NA)))))))))))
-
-
+ 
 
 #************************Kenya************************
 site = "Kenya"
@@ -132,36 +90,34 @@ myfiles <- lapply(myfiles, function (x){
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
+## in order to calculate ga at visit for mnh26, we need to merge in m01 data, but can't do it because ke does not have momid/preig in m01
+#     ## can remove once we have type visit in mnh26 -- we only need this step because we have to calculate gestational ages
+# mnh02_ids <- mnh02_Kenya %>% select(MOMID,PREGID, SCRNID)
+# mnh01_Kenya <- mnh01_Kenya %>% select(-MOMID, -PREGID) %>%
+#   left_join(mnh02_ids, by = c("SCRNID")) 
 
-## rename type visit variables in kenya data -- to remove once we send out CRFs
-mnh13_Kenya <- mnh13_Kenya %>% rename("PNC_N_VISIT" = "TYPE_VISIT")
-mnh14_Kenya <- mnh14_Kenya %>% rename("POC_VISIT" = "TYPE_VISIT")
-mnh15_Kenya <- mnh15_Kenya %>% rename("OBSTERM" = "TYPE_VISIT")
-mnh25_Kenya <- mnh25_Kenya %>% rename("TYPE_VISIT" = "ANC_VISIT_N")
 
 #************************Zambia************************
-# site = "Zambia"
-# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
-# 
-# ## import raw .CSVs in wide format
-# temp = list.files(pattern="*.csv")
-# myfiles = lapply(temp, read.csv)
-# 
-# #  ## make sure all column names are uppercase
-# myfiles <- lapply(myfiles, function (x){
-#   upper <- toupper(names(x))
-#   setnames(x, upper)
-# })
-# 
-# ## convert to individual dataframes
-# names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
-# list2env(myfiles, globalenv())
+site = "Zambia"
+setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+
+## import raw .CSVs in wide format
+temp = list.files(pattern="*.csv")
+myfiles = lapply(temp, read.csv)
+
+#  ## make sure all column names are uppercase
+myfiles <- lapply(myfiles, function (x){
+  upper <- toupper(names(x))
+  setnames(x, upper)
+})
+
+## convert to individual dataframes
+names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+list2env(myfiles, globalenv())
 
 #************************Ghana************************
 site = "Ghana"
 setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
-
-#setwd("D:/Users/stacie.loisate/Documents/ghana_418")
 
 ## import raw .CSVs in wide format 
 temp = list.files(pattern="*.csv")
@@ -176,7 +132,6 @@ myfiles <- lapply(myfiles, function (x){
 ## convert to individual dataframes 
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
-
 
 #*************************************************
 #* Merge all data by form and site 
@@ -250,10 +205,12 @@ if (exists("m00") == TRUE) {
     # Extract missing varnames from site data
     m00_missing <- lapply(m00_rbind, function(x) setdiff(allNms, colnames(x)))
     
+    
     # Export data in .RData format
-    setwd("~/Monitoring Report/data/merged")
+    setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
     save(m00_merged, file= paste("m00_merged",".RData",sep = ""))
-
+    
+    
 }
 
 #******M01
@@ -297,9 +254,9 @@ if (exists("m01") == TRUE) {
                         rename_with( ~ paste0("M01_", .), -c(1:3)) %>% 
                         replace_with_na(replace = list(MOMID = c("n/a"),
                                                        PREGID = c("n/a"))) %>% 
-                        group_by(SCRNID, MOMID, PREGID, M01_US_VISIT) %>%  
-                        arrange(desc(M01_US_OHOSTDAT)) %>% 
-                        slice(1) %>% 
+#                        group_by(SCRNID, MOMID, PREGID, M01_US_VISIT) %>%  
+#                        arrange(desc(M01_US_OHOSTDAT)) %>% 
+#                        slice(1) %>% 
                         ungroup() %>% 
                         distinct()
   )
@@ -324,10 +281,11 @@ if (exists("m01") == TRUE) {
   m01_missing <- lapply(m01_rbind, function(x) setdiff(allNms, colnames(x)))
   
   # Export data in .RData format
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m01_merged, file= paste("m01_merged",".RData",sep = ""))
   
 }
+
 
 #******M02 
 
@@ -399,10 +357,11 @@ if (exists("m02") == TRUE) {
   m02_missing <- lapply(m02_rbind, function(x) setdiff(allNms, colnames(x)))
   
   # Export data in .RData format
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m02_merged, file= paste("m02_merged",".RData",sep = ""))
   
 }
+
 
 #******M03 
 
@@ -469,9 +428,9 @@ if (exists("m03") == TRUE) {
   
   ## get the variables that are missing from sites
   m03_missing <- lapply(m03_rbind, function(x) setdiff(allNms, colnames(x)))
-  
+
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m03_merged, file= paste("m03_merged",".RData",sep = ""))
   
 }
@@ -502,7 +461,7 @@ if (exists("m04") == TRUE) {
   }) 
   
   ## pakistan had weird dates for tetanus -- remove columns 
-  numeric <- lapply(numeric, function(x) { x["TETANUS_CMSTDAT"] <- NULL; x })
+  #numeric <- lapply(numeric, function(x) { x["TETANUS_CMSTDAT"] <- NULL; x })
   
   date <- lapply(numeric, function(df) {
     m04_dd_date <- data_dict_m04 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
@@ -543,9 +502,9 @@ if (exists("m04") == TRUE) {
     
     ## get the variables that are missing from sites
     m04_missing <- lapply(m04_rbind, function(x) setdiff(allNms, colnames(x)))
-    
+
     ## export data 
-    setwd("~/Monitoring Report/data/merged")
+    setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
     save(m04_merged, file= paste("m04_merged",".RData",sep = ""))
     
   }
@@ -588,7 +547,7 @@ if (exists("m05") == TRUE) {
   # remove duplicates and add prefix  
   m05_rbind <- lapply(m05, function(x) x %>% 
                         #add  "M##_"
-                        select(MOMID, PREGID, everything()) %>% 
+                        select(MOMID, PREGID,  everything()) %>% 
                         rename_with( ~ paste0("M05_", .), -c(1:2)) %>% 
                         distinct()
   )
@@ -613,7 +572,7 @@ if (exists("m05") == TRUE) {
   m05_missing <- lapply(m05_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m05_merged, file= paste("m05_merged",".RData",sep = ""))
   
 }
@@ -657,6 +616,7 @@ if (exists("m06") == TRUE) {
   # remove duplicates and add prefix  
   m06_rbind <- lapply(m06, function(x) x %>% 
                         #add  "M##_"
+                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M06_", .), -c(1:2)) %>% 
                         distinct()
@@ -682,7 +642,7 @@ if (exists("m06") == TRUE) {
   m06_missing <- lapply(m06_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m06_merged, file= paste("m06_merged",".RData",sep = ""))
   
 }
@@ -726,12 +686,13 @@ if (exists("m07") == TRUE) {
   # remove duplicates and add prefix  
   m07_rbind <- lapply(m07, function(x) x %>% 
                         #add  "M##_"
+                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M07_", .), -c(1:2)) %>% 
                         #remove previous case for duplicates
-                        group_by(MOMID, PREGID, M07_MAT_SPEC_COLLECT_VISIT) %>% 
-                        arrange(desc(M07_MAT_SPEC_COLLECT_DAT)) %>% 
-                        slice(1) %>% 
+                        #group_by(MOMID, PREGID, M07_TYPE_VISIT) %>% ## UPDATED 06/12
+                        #arrange(desc(M07_MAT_SPEC_COLLECT_DAT)) %>% 
+                        #slice(1) %>% 
                         ungroup() %>% 
                         distinct()
   )
@@ -756,7 +717,7 @@ if (exists("m07") == TRUE) {
   m07_missing <- lapply(m07_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m07_merged, file= paste("m07_merged",".RData",sep = ""))
   
 }
@@ -800,12 +761,13 @@ if (exists("m08") == TRUE) {
   # remove duplicates and add prefix  
   m08_rbind <- lapply(m08, function(x) x %>% 
                         #add  "M##_"
+                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M08_", .), -c(1:2)) %>% 
                         #remove previous case for duplicates
-                        group_by(MOMID, PREGID, M08_VISIT_LBSTDAT) %>% 
-                        arrange(desc(M08_LBSTDAT)) %>% 
-                        slice(1) %>% 
+                        # group_by(MOMID, PREGID, M08_TYPE_VISIT) %>% 
+                        #arrange(desc(M08_LBSTDAT)) %>% 
+                        #slice(1) %>% 
                         ungroup() %>% 
                         distinct()
   )
@@ -830,7 +792,7 @@ if (exists("m08") == TRUE) {
   m08_missing <- lapply(m08_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m08_merged, file= paste("m08_merged",".RData",sep = ""))
   
 }
@@ -898,7 +860,7 @@ if (exists("m09") == TRUE) {
   m09_missing <- lapply(m09_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m09_merged, file= paste("m09_merged",".RData",sep = ""))
   
 }
@@ -944,6 +906,7 @@ if (exists("m10") == TRUE) {
   # remove duplicates and add prefix  
   m10_rbind <- lapply(m10, function(x) x %>% 
                         #add  "M##_"
+                       # filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M10_", .), -c(1:2)) %>% 
                         distinct()
@@ -969,7 +932,7 @@ if (exists("m10") == TRUE) {
   m10_missing <- lapply(m10_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m10_merged, file= paste("m10_merged",".RData",sep = ""))
   
 }
@@ -977,9 +940,6 @@ if (exists("m10") == TRUE) {
 #******M11 
 
 # get list of all the MNH11 forms 
-
-## rename infant id column for pakistan 
-mnh11_Pakistan <- mnh11_Pakistan %>% rename(INFANTID = "INFANT_ID")
 
 for (x in site_vec) {
   if (exists(paste("mnh11_", x, sep = ""))==TRUE){
@@ -1017,6 +977,7 @@ if (exists("m11") == TRUE) {
   # remove duplicates and add prefix  
   m11_rbind <- lapply(m11, function(x) x %>% 
                         #add  "M##_"
+                        #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, INFANTID, everything()) %>% 
                         rename_with( ~ paste0("M11_", .), -c(1:3)) %>% 
                         distinct()
@@ -1042,7 +1003,7 @@ if (exists("m11") == TRUE) {
   m11_missing <- lapply(m11_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m11_merged, file= paste("m11_merged",".RData",sep = ""))
   
 }
@@ -1086,8 +1047,9 @@ if (exists("m12") == TRUE) {
   # remove duplicates and add prefix  
   m12_rbind <- lapply(m12, function(x) x %>% 
                         #add  "M##_"
+                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
-                        rename_with( ~ paste0("M12_", .), -c(1:2)) %>% 
+                        rename_with( ~ paste0("M12_", .), -c(1:3)) %>% 
                         distinct()
                         # group_by(MOMID, PREGID, M12_PNC_N_VISIT) %>% 
                         # arrange(desc(M12_VISIT_OBSSTDAT)) %>% 
@@ -1116,7 +1078,7 @@ if (exists("m12") == TRUE) {
   m12_missing <- lapply(m12_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m12_merged, file= paste("m12_merged",".RData",sep = ""))
   
 }
@@ -1161,11 +1123,12 @@ if (exists("m13") == TRUE) {
   # remove duplicates and add prefix
   m13_rbind <- lapply(m13, function(x) x %>%
                         #add  "M##_"
+                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, INFANTID, everything()) %>%
                         rename_with( ~ paste0("M13_", .), -c(1:3)) %>%
-                        group_by(MOMID, PREGID, INFANTID, M13_PNC_N_VISIT) %>%
-                        arrange(desc(M13_VISIT_OBSSTDAT)) %>%
-                        slice(1) %>%
+                        # group_by(MOMID, PREGID, INFANTID, M13_PNC_N_VISIT) %>%
+                        # arrange(desc(M13_VISIT_OBSSTDAT)) %>%
+                        # slice(1) %>%
                         ungroup() %>%
                         distinct()
   )
@@ -1190,7 +1153,7 @@ if (exists("m13") == TRUE) {
   m13_missing <- lapply(m13_rbind, function(x) setdiff(allNms, colnames(x)))
 
   ## export data
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m13_infantmerged, file= paste("m13_infantmerged",".RData",sep = ""))
 
 }
@@ -1236,11 +1199,12 @@ if (exists("m14") == TRUE) {
   # remove duplicates and add prefix
   m14_rbind <- lapply(m14, function(x) x %>%
                         #add  "M##_"
+                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID,INFANTID, everything()) %>%
                         rename_with( ~ paste0("M14_", .), -c(1:3)) %>%
-                        group_by(MOMID, PREGID,INFANTID, M14_POC_VISIT) %>%
-                        arrange(desc(M14_VISIT_OBSSTDAT)) %>%
-                        slice(1) %>%
+                        # group_by(MOMID, PREGID,INFANTID, M14_POC_VISIT) %>%
+                        # arrange(desc(M14_VISIT_OBSSTDAT)) %>%
+                        # slice(1) %>%
                         ungroup() %>%
                         distinct()
   )
@@ -1265,7 +1229,7 @@ if (exists("m14") == TRUE) {
   m14_missing <- lapply(m14_rbind, function(x) setdiff(allNms, colnames(x)))
 
   ## export data
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m14_infantmerged, file= paste("m14_infantmerged",".RData",sep = ""))
 
 }
@@ -1310,11 +1274,12 @@ if (exists("m15") == TRUE) {
   # remove duplicates and add prefix
   m15_rbind <- lapply(m15, function(x) x %>%
                         #add  "M##_"
+                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID,INFANTID, everything()) %>%
                         rename_with( ~ paste0("M15_", .), -c(1:3)) %>%
-                        group_by(MOMID, PREGID,INFANTID, M15_OBSTERM) %>%
-                        arrange(desc(M15_OBSSTDAT)) %>%
-                        slice(1) %>%
+                        # group_by(MOMID, PREGID,INFANTID, M15_OBSTERM) %>%
+                        # arrange(desc(M15_OBSSTDAT)) %>%
+                        # slice(1) %>%
                         ungroup() %>%
                         distinct()
   )
@@ -1339,7 +1304,7 @@ if (exists("m15") == TRUE) {
   m15_missing <- lapply(m15_rbind, function(x) setdiff(allNms, colnames(x)))
 
   ## export data
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m15_infantmerged, file= paste("m15_infantmerged",".RData",sep = ""))
 
 }
@@ -1382,6 +1347,7 @@ if (exists("m16") == TRUE) {
   # remove duplicates and add prefix  
   m16_rbind <- lapply(m16, function(x) x %>% 
                         #add  "M##_"
+                        #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M16_", .), -c(1:2)) %>% 
                         distinct()
@@ -1407,7 +1373,7 @@ if (exists("m16") == TRUE) {
   m16_missing <- lapply(m16_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m16_merged, file= paste("m16_merged",".RData",sep = ""))
   
 }
@@ -1450,6 +1416,7 @@ if (exists("m17") == TRUE) {
   # remove duplicates and add prefix  
   m17_rbind <- lapply(m17, function(x) x %>% 
                         #add  "M##_"
+                       # filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M17_", .), -c(1:2)) %>% 
                         distinct()
@@ -1475,7 +1442,7 @@ if (exists("m17") == TRUE) {
   m17_missing <- lapply(m17_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m17_merged, file= paste("m17_merged",".RData",sep = ""))
   
 }
@@ -1519,6 +1486,7 @@ if (exists("m18") == TRUE) {
   # remove duplicates and add prefix  
   m18_rbind <- lapply(m18, function(x) x %>% 
                         #add  "M##_"
+                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M18_", .), -c(1:2)) %>% 
                         distinct()
@@ -1544,7 +1512,7 @@ if (exists("m18") == TRUE) {
   m18_missing <- lapply(m18_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m18_merged, file= paste("m18_merged",".RData",sep = ""))
   
 }
@@ -1589,6 +1557,7 @@ if (exists("m19") == TRUE) {
   # remove duplicates and add prefix  
   m19_rbind <- lapply(m19, function(x) x %>% 
                         #add  "M##_"
+                      #  filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M19_", .), -c(1:2)) %>% 
                         distinct()
@@ -1614,7 +1583,7 @@ if (exists("m19") == TRUE) {
   m19_missing <- lapply(m19_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m19_merged, file= paste("m19_merged",".RData",sep = ""))
   
 }
@@ -1622,76 +1591,76 @@ if (exists("m19") == TRUE) {
 #******M20
 #* INFANT FORM - INFANTID
 
-# # get list of all the MNH20 forms 
-# for (x in site_vec) {
-#   if (exists(paste("mnh20_", x, sep = ""))==TRUE){
-#     
-#     m20 <- mget(ls(pattern = "mnh20_.*"))
-#     
-#   }
-# }
-# 
-# if (exists("m20") == TRUE) {
-#   # create a list of data frame names as string
-#   m20_names = as.vector(names(m20))
-#   
-#   # assign field types
-#   data_dict_m20 <- data_dict %>% filter(Form == "MNH20") %>% select(`Variable Name`, FieldType)
-#   
-#   numeric <- lapply(m20, function(df) {
-#     m20_dd_numeric <- data_dict_m20 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
-#     num <- colnames(df) %in% m20_dd_numeric
-#     df[num] <- lapply(df[num], as.numeric)
-#     df
-#   }) 
-#   
-#   date <- lapply(numeric, function(df) {
-#     m20_dd_date <- data_dict_m20 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-#     date <- colnames(df) %in% m20_dd_date
-#     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
-#     df[date] <- lapply(df[date], ymd)
-#     df
-#   })
-#   
-#   
-#   m20 = date
-#   
-#   # remove duplicates and add prefix  
-#   m20_rbind <- lapply(m20, function(x) x %>% 
-#                         #add  "M##_"
-#                         select(INFANTID, everything()) %>% 
-#                         rename_with( ~ paste0("M20_", .), -c(1:2)) %>% 
-#                         group_by(INFANTID) %>% 
-#                         arrange(desc(M20_OBSSTDAT)) %>% 
-#                         slice(1) %>% 
-#                         ungroup() %>% 
-#                         distinct()
-#   )
-#   
-#   # add in site variable 
-#   for(i in names(m20_rbind)){
-#     m20_rbind[[i]]$SITE <- paste(gsub("mnh20_","",i))
-#   }
-#   
-#   # get all variable names
-#   allNms <- unique(unlist(lapply(m20_rbind, names)))
-#   
-#   # merge all MNH20 forms together 
-#   m20_merged <- do.call(rbind,c(lapply(m20_rbind,function(x) 
-#     data.frame(c(x, sapply(setdiff(allNms, names(x)),
-#                            function(y) NA)))), make.row.names=FALSE))
-#   
-#   # make site the first variable 
-#   m20_infantmerged <- m20_merged %>% relocate(SITE)
-#   
-#   ## get the variables that are missing from sites
-#   m20_missing <- lapply(m20_rbind, function(x) setdiff(allNms, colnames(x)))
-#   
-#   ## export data 
-#   setwd("~/Monitoring Report/data/merged")
-#   save(m20_infantmerged, file= paste("m20_infantmerged",".RData",sep = ""))
-#   
-# }
+# get list of all the MNH20 forms
+for (x in site_vec) {
+  if (exists(paste("mnh20_", x, sep = ""))==TRUE){
+
+    m20 <- mget(ls(pattern = "mnh20_.*"))
+
+  }
+}
+
+if (exists("m20") == TRUE) {
+  # create a list of data frame names as string
+  m20_names = as.vector(names(m20))
+
+  # assign field types
+  data_dict_m20 <- data_dict %>% filter(Form == "MNH20") %>% select(`Variable Name`, FieldType)
+
+  numeric <- lapply(m20, function(df) {
+    m20_dd_numeric <- data_dict_m20 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m20_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  })
+
+  date <- lapply(numeric, function(df) {
+    m20_dd_date <- data_dict_m20 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m20_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], ymd)
+    df
+  })
+
+
+  m20 = date
+
+  # remove duplicates and add prefix
+  m20_rbind <- lapply(m20, function(x) x %>%
+                        #add  "M##_"
+                        select(INFANTID, everything()) %>%
+                        rename_with( ~ paste0("M20_", .), -c(1:2)) %>%
+                        group_by(INFANTID) %>%
+                        arrange(desc(M20_OBSSTDAT)) %>%
+                        slice(1) %>%
+                        ungroup() %>%
+                        distinct()
+  )
+
+  # add in site variable
+  for(i in names(m20_rbind)){
+    m20_rbind[[i]]$SITE <- paste(gsub("mnh20_","",i))
+  }
+
+  # get all variable names
+  allNms <- unique(unlist(lapply(m20_rbind, names)))
+
+  # merge all MNH20 forms together
+  m20_merged <- do.call(rbind,c(lapply(m20_rbind,function(x)
+    data.frame(c(x, sapply(setdiff(allNms, names(x)),
+                           function(y) NA)))), make.row.names=FALSE))
+
+  # make site the first variable
+  m20_infantmerged <- m20_merged %>% relocate(SITE)
+
+  ## get the variables that are missing from sites
+  m20_missing <- lapply(m20_rbind, function(x) setdiff(allNms, colnames(x)))
+
+  ## export data
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
+  save(m20_infantmerged, file= paste("m20_infantmerged",".RData",sep = ""))
+
+}
 
 
 
@@ -1759,7 +1728,7 @@ if (exists("m21") == TRUE) {
   m21_missing <- lapply(m21_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m21_merged, file= paste("m21_merged",".RData",sep = ""))
   
 }
@@ -1806,9 +1775,9 @@ if (exists("m22") == TRUE) {
                         #add  "M##_"
                         select(INFANTID, everything()) %>%
                         rename_with( ~ paste0("M22_", .), -c(1:2)) %>%
-                        group_by(INFANTID) %>%
-                        arrange(desc(M22_DVSTDAT)) %>%
-                        slice(1) %>%
+                        # group_by(INFANTID) %>%
+                        # arrange(desc(M22_DVSTDAT)) %>%
+                        # slice(1) %>%
                         ungroup() %>%
                         distinct()
   )
@@ -1833,7 +1802,7 @@ if (exists("m22") == TRUE) {
   m22_missing <- lapply(m22_rbind, function(x) setdiff(allNms, colnames(x)))
 
   ## export data
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m22_infantmerged, file= paste("m22_infantmerged",".RData",sep = ""))
 
 }
@@ -1901,7 +1870,7 @@ if (exists("m23") == TRUE) {
   m23_missing <- lapply(m23_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m23_merged, file= paste("m23_merged",".RData",sep = ""))
   
 }
@@ -1947,9 +1916,9 @@ if (exists("m24") == TRUE) {
                         #add  "M##_"
                         select(INFANTID, everything()) %>%
                         rename_with( ~ paste0("M24_", .), -c(1:3)) %>%
-                        group_by(INFANTID) %>%
-                        arrange(desc(M24_CLOSE_DSSTDAT)) %>%
-                        slice(1) %>%
+                        # group_by(INFANTID) %>%
+                        # arrange(desc(M24_CLOSE_DSSTDAT)) %>%
+                        # slice(1) %>%
                         ungroup() %>%
                         distinct()
   )
@@ -1974,7 +1943,7 @@ if (exists("m24") == TRUE) {
   m24_missing <- lapply(m24_rbind, function(x) setdiff(allNms, colnames(x)))
 
   ## export data
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m24_infantmerged, file= paste("m24_infantmerged",".RData",sep = ""))
 
 }
@@ -2042,7 +2011,7 @@ if (exists("m25") == TRUE) {
   m25_missing <- lapply(m25_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m25_merged, file= paste("m25_merged",".RData",sep = ""))
   
 }
@@ -2082,13 +2051,13 @@ if (exists("m26") == TRUE) {
   #   df
   # })
   # 
-  m26 = m26 ## to fix 
+  m26 = m26 ## to fix once all sites have harmonized m26
   
   # remove duplicates and add prefix  
   m26_rbind <- lapply(m26, function(x) x %>% 
                         #add  "M##_"
                         select(MOMID, PREGID, everything()) %>% 
-                        rename_with( ~ paste0("M26_", .), -c(1:3)) %>% 
+                        rename_with( ~ paste0("M26_", .), -c(1:2)) %>% 
                         distinct()
   )
   
@@ -2112,7 +2081,7 @@ if (exists("m26") == TRUE) {
   m26_missing <- lapply(m26_rbind, function(x) setdiff(allNms, colnames(x)))
 
   ## export data 
-  setwd("~/Monitoring Report/data/merged")
+  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
   save(m26_merged, file= paste("m26_merged",".RData",sep = ""))
   
 }
@@ -2127,16 +2096,44 @@ varname_missing <- mget(ls(pattern = "._missing*"))
 #View(varname_missing)
 
 # get list of all merged data 
-mat_data_merged <- mget(ls(pattern = "._merged*")) 
-inf_data_merged <- mget(ls(pattern = "._infantmerged*")) 
+#mat_data_merged <- mget(ls(pattern = "._merged*")) 
+#inf_data_merged <- mget(ls(pattern = "._infantmerged*")) 
 
 ## look at all ANC visits by site 
 table(m04_merged$SITE, m04_merged$M04_TYPE_VISIT)
 
 ## look at all PNC visits by site 
-table(m12_merged$SITE, m12_merged$M12_PNC_N_VISIT)
+table(m12_merged$SITE, m12_merged$M12_TYPE_VISIT)
 
 ## look at all PNC visits by site 
-table(m13_merged$SITE, m13_merged$M13_PNC_N_VISIT)
+table(m13_merged$SITE, m13_merged$M13_TYPE_VISIT)
+
+## look at all m25 visits by site 
+table(m25_merged$SITE, m25_merged$M25_TYPE_VISIT)
+
+
+table(m05_merged$SITE, m05_merged$M05_TYPE_VISIT)
+table(m26_merged$SITE, m26_merged$M26_TYPE_VISIT)
+
+# ## export as .CSV into network drive
+# # 1. place all merged datasets into list
+# files_list <- mget(ls(pattern = "_merged"))
+# 
+# #names(files_list) = str_replace(names(files_list),  "_merged", "")
+# # 2. rename
+# names(files_list) = str_replace(names(files_list),  "m", "mnh")
+# 
+# # 3. set working directory
+#   # first need to make subfolder with upload date
+# maindir <- paste0("Z:/Stacked Data", sep = "")
+# subdir = UploadDate
+# dir.create(file.path(maindir, subdir), showWarnings = FALSE)
+# 
+# setwd(paste("Z:/Stacked Data/", UploadDate, sep = ""))
+# 
+# # 4. export
+# lapply(1:length(files_list), function(i) write.csv(files_list[[i]], 
+#                                                 file = paste0(names(files_list[i]), ".csv"),
+#                                                 row.names = FALSE))
 
 
