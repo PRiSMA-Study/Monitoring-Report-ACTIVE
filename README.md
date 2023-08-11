@@ -1,11 +1,10 @@
 ## PRISMA & ReMAPP Monitoring Report
 #### Last Updated: 8 August 2023
 
-
 ### Overview
 
 Data monitoring is conducted on a weekly basis to ensure the data collected and processed by sites meets quality expectation, 
-and to have an ontime look at the accrual of maternal and neonatal outcomes of interest. 
+and to have an on-time look at the accrual of maternal and neonatal outcomes of interest. 
 
 In the ultimate output report, the following contents are included:
 - Pre-screening numbers for PRiSMA MNH study for most recent one week and for all (cumulative)
