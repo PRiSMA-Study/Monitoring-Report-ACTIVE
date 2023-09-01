@@ -25,7 +25,7 @@ rm(list = ls())
 library(tidyverse)
 library(lubridate)
 library(readxl)
-UploadDate = "2023-07-28"
+UploadDate = "2023-08-25"
 
 #*****************************************************************************
 #* Import merged data 
@@ -44,11 +44,13 @@ if (exists("m13_infantmerged") == TRUE){ m13_infantmerged <- m13_infantmerged %>
 if (exists("m14_infantmerged") == TRUE){ m14_infantmerged <- m14_infantmerged %>% mutate(VISIT_DATE = M14_VISIT_OBSSTDAT) }
 if (exists("m15_infantmerged") == TRUE){ m15_infantmerged <- m15_infantmerged %>% mutate(VISIT_DATE = M15_OBSSTDAT) }
 if (exists("m20_infantmerged") == TRUE){ m20_infantmerged <- m20_infantmerged %>% mutate(VISIT_DATE = M20_OBSSTDAT) }
+if (exists("m21_merged") == TRUE){ m21_merged <- m21_merged %>% mutate(VISIT_DATE = M21_AESTDAT) }
 if (exists("m24_infantmerged") == TRUE){ m24_infantmerged <- m24_infantmerged %>% mutate(VISIT_DATE = M24_CLOSE_DSSTDAT) }
 
 ## add visit type for M111, M13, M14, M15 -- to update once data dictionary updates go out 
 if (exists("m11_merged") == TRUE){ m11_merged$M11_TYPE_VISIT = 6}
 
+#m20_infantmerged = m20_infantmerged %>% rename("PREGID" = "M20_PREGID")
 ## extract date of birth for each infant 
 # replace default value date with NA 
 m09_wide <- m09_merged %>% 
@@ -104,7 +106,7 @@ form_vec <- as.vector(paste((gsub("_infantmerged","", names(all_out)))))
 names(all_out) <- form_vec
 
 ## get PNC forms vector 
-inf_vec <- c("m13", "m14", "m15", "m20")
+inf_vec <- c("m13", "m14", "m15")
 
 # get a vector of the forms that are in the data pulled 
 inf_vec_data <- inf_vec[inf_vec %in% form_vec]
@@ -118,9 +120,9 @@ for (i in inf_vec_data) {
 # get pnc visit types allowed 
 inf_visits <- c(7,8,9,10,11,12)
 for (i in inf_vec_data) {
- # inf_data[[i]] <- inf_data[[i]] %>% rename("TYPE_VISIT" = paste(toupper(i),"_","TYPE_VISIT", sep = "")) %>% 
+  # inf_data[[i]] <- inf_data[[i]] %>% rename("TYPE_VISIT" = paste(toupper(i),"_","TYPE_VISIT", sep = "")) %>% 
   inf_data[[i]] <- inf_data[[i]] %>% mutate(TYPE_VISIT = if_all(matches("(.+)_TYPE_VISIT"))) %>% 
-  filter(TYPE_VISIT %in% inf_visits)
+    filter(TYPE_VISIT %in% inf_visits)
 }
 
 ## Add binary PNC Yes/No column (1 = Yes, 0 = No)
@@ -129,7 +131,7 @@ inf_data_out <- list()
 for(i in names(inf_data)){
   ## remove m09 variables now that we have age at visit  
   m09_to_remove <- grep("M09_", names(inf_data[[i]]))
-
+  
   inf_data_out[[i]] <- inf_data[[i]] %>% 
     rowwise() %>%
     group_by(SITE, MOMID, PREGID, INFANTID) %>% 
@@ -219,11 +221,133 @@ InfData_Wide <- full_join(InfData_Wide, m24_infantmerged, by = c("SITE", "MOMID"
 m11_merged_out <- m11_merged %>% select(-c("MOMID", "PREGID"))
 InfData_Wide <- full_join(InfData_Wide, m11_merged_out, by = c("SITE","INFANTID")) %>% distinct()
 
-## export data 
-setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
-#dt=format(Sys.time(), "%Y-%m-%d")
-save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
+## Merge in MNH28 infant VA
+m28_merged_out <- m28_merged %>% select(-c("MOMID", "PREGID"))
+InfData_Wide <- full_join(InfData_Wide, m28_merged_out, by = c("SITE","INFANTID")) %>% distinct()
+
+#*****************************************************************************
+#* Merge all forms that do not have visit type and can have multiple visits
+#* Steps: 
+# 1. Generate indicator variable assigning a number for each instance a form is filled out for participant 
+# 2. Generate variable denoting the total number of visits for each form for each woman 
+# 4. Add suffix to each variable indicating what visit number it is (based on frequency and not visit type)
+# 5. Merge all non-visit type forms together 
+# 6. Merge into wide dataset 
+#*****************************************************************************
+## forms: MNH20/MNH21/MNH28
+
+if (exists("m20_merged") == TRUE){ 
+  non_sched_m20 <- m20_infantmerged %>% 
+    mutate(VISIT_1 = 1) %>% 
+    group_by(SITE, MOMID, PREGID, INFANTID) %>%
+    arrange(-desc(VISIT_DATE)) %>% 
+    mutate(VISIT_N = cumsum(VISIT_1)) %>% 
+    ## add prefix in to all new variables 
+    rename(!!paste0("M20",quo_name("_VISIT_DATE")) := "VISIT_DATE")  
+  
+  # print list of visit frequencies to see the max number of visits an individual has
+  print(table(non_sched_m20$VISIT_N))
+  
+  # add suffix to each variable name by visit# 
+  non_sched_m20_visit1 = non_sched_m20 %>% 
+    filter(VISIT_N == 1) %>% 
+    rename_with(~paste0(., "_VISIT1"), .cols = -c("SITE", "MOMID", "PREGID", "INFANTID"))
+  
+  # non_sched_m20_visit2 = non_sched_m20 %>% 
+  #   filter(VISIT_N == 2) %>% 
+  #   rename_with(~paste0(., "_VISIT2"), .cols = -c("SITE", "MOMID", "PREGID","INFANTID"))
+  
+  # non_sched_m20_visit3 = non_sched_m20 %>% 
+  #   filter(VISIT_N == 3) %>% 
+  #   rename_with(~paste0(., "_VISIT3"), .cols = -c("SITE", "MOMID", "PREGID","INFANTID"))
+  
+  ## Compile all visit type datasets into a list 
+  non_sched_form_out_m20 <- mget(ls(pattern = "non_sched_m20_"))
+  
+  # Merge all forms together -- this should have the same number of rows as the number visit =1 observations
+  non_sched_wide_m20 <- non_sched_form_out_m20 %>% reduce(full_join, by =  c("SITE", "MOMID", "PREGID","INFANTID")) %>% distinct()
+  
+  # add variable indicating the total number of hospitalizations an individual has
+  non_sched_wide_m20 <- non_sched_wide_m20 %>% 
+    mutate(M20_VISITS_TOT = sum(across(matches("VISIT_1")), na.rm = TRUE)) %>% 
+    select(-contains("VISIT_1_"), -contains("VISIT_N_"))
+}
+
+
+if (exists("m21_merged") == TRUE){ 
+  non_sched_m21 <- m21_merged %>% 
+    ## since this form can be filled out for maternal or infant adverse events -- filter for infant events 
+    filter(M21_AETERM %in% c(2, 3, 5)) %>% 
+    mutate(VISIT_1 = 1) %>% 
+    group_by(SITE, MOMID, PREGID, INFANTID) %>%
+    arrange(-desc(VISIT_DATE)) %>% 
+    mutate(VISIT_N = cumsum(VISIT_1)) %>% 
+    ## add prefix in to all new variables 
+    rename(!!paste0("M21",quo_name("_VISIT_DATE")) := "VISIT_DATE")  
+  
+  # print list of visit frequencies to see the max number of visits an individual has
+  print(table(non_sched_m21$VISIT_N))
+  
+  # add suffix to each variable name by visit# 
+  non_sched_m21_visit1 = non_sched_m21 %>% 
+    filter(VISIT_N == 1) %>% 
+    rename_with(~paste0(., "_VISIT1"), .cols = -c("SITE", "MOMID", "PREGID", "INFANTID"))
+  
+  non_sched_m21_visit2 = non_sched_m21 %>% 
+    filter(VISIT_N == 2) %>% 
+    rename_with(~paste0(., "_VISIT2"), .cols = -c("SITE", "MOMID", "PREGID","INFANTID"))
+  
+  # non_sched_m21_visit3 = non_sched_m21 %>% 
+  #   filter(VISIT_N == 3) %>% 
+  #   rename_with(~paste0(., "_VISIT3"), .cols = -c("SITE", "MOMID", "PREGID","INFANTID"))
+  
+  ## Compile all visit type datasets into a list 
+  non_sched_form_out_m21 <- mget(ls(pattern = "non_sched_m21_"))
+  
+  # Merge all forms together -- this should have the same number of rows as the number visit =1 observations
+  non_sched_wide_m21 <- non_sched_form_out_m21 %>% reduce(full_join, by =  c("SITE", "MOMID", "PREGID","INFANTID")) %>% distinct()
+  
+  # add variable indicating the total number of hospitalizations an individual has
+  non_sched_wide_m21 <- non_sched_wide_m21 %>% 
+    mutate(M21_VISITS_TOT = sum(across(matches("VISIT_1")), na.rm = TRUE)) %>% 
+    select(-contains("VISIT_1_"), -contains("VISIT_N_"))
+}
+
+
+## Compile all visit type datasets into a list 
+non_sched_form_out_all <- mget(ls(pattern = "non_sched_wide_m"))
+
+# Merge all forms together 
+non_sched_form_wide_all <- non_sched_form_out_all %>% reduce(full_join, by =  c("SITE", "MOMID", "PREGID", "INFANTID")) %>% distinct()
+
+## Merge in maternal closeout form (MNH23) -- only filled out once which is why we merge it at the end  
+InfData_Wide <- left_join(InfData_Wide, non_sched_form_wide_all, by =c("SITE", "MOMID", "PREGID", "INFANTID")) %>% 
+  relocate(any_of(c("SCRNID", "MOMID", "PREGID", "INFANTID")), .after = SITE) %>% 
+  distinct()
+
+
 
 table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_7)
 table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_8)
 
+#*****************************************************************************
+#* Export wide dataset 
+#*****************************************************************************
+## export to personal
+setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
+#dt=format(Sys.time(), "%Y-%m-%d")
+save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
+
+# export to shared  
+setwd(paste("Z:/Processed Data/",UploadDate, sep = ""))
+#dt=format(Sys.time(), "%Y-%m-%d")
+save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
+
+# out <- m09_merged %>% select(SITE, MOMID, PREGID,M09_INFANTID_INF1, M09_BIRTH_DSTERM_INF1,
+#                              M09_INFANTID_INF2, M09_BIRTH_DSTERM_INF2,
+#                              M09_INFANTID_INF3, M09_BIRTH_DSTERM_INF3,
+#                              M09_INFANTID_INF4, M09_BIRTH_DSTERM_INF4)
+# 
+# out <- out %>% filter(M09_BIRTH_DSTERM_INF1== 2)
+# test <- m24_infantmerged 
+# 

@@ -42,7 +42,7 @@ library(lubridate)
 library(readxl)
 library(dplyr)
 
-UploadDate = "2023-07-28"
+UploadDate = "2023-08-25"
 
 load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "MatData_Wide_", UploadDate, ".RData"))
 load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "InfData_Wide_", UploadDate, ".RData"))
@@ -82,7 +82,7 @@ MatData_Report <- MatData_Wide %>%
  #dt=format(Sys.time(), "%Y-%m-%d")
  save(InfData_Report, file= paste("InfData_Report","_",UploadDate, ".RData",sep = ""))
  
- #**************************************************************************************
+  #**************************************************************************************
  #* PRiSMA Tables 1-4
  #* Table 1: Pre-screening and enrollment numbers for PRiSMA MNH Study for the most recent one week 
  #* Table 2: Cumulative pre-screening numbers for PRiSMA MNH Study 
@@ -627,7 +627,6 @@ save(MatData_Hb_GA_Visit, file= paste("MatData_Hb_GA_Visit","_", UploadDate, ".R
 #*includes: CRIT_s, HEALTHY_ELIGIBLE
 #**************************************************************************************
 #*Create Variables for Aim 1 Criteria (21 vars)
-
 vars_criteria <- MatData_Anc_Visits %>%
   select(
     SCRNID, MOMID, PREGID, SITE, ENROLL, M00_KNOWN_DOBYN_SCORRES_1,
@@ -637,7 +636,7 @@ vars_criteria <- MatData_Anc_Visits %>%
     GA_US_DAYS_1,
     M04_PRETERM_RPORRES_1, M04_PH_PREV_RPORRES_1, M04_PH_PREVN_RPORRES_1, M04_PH_LIVE_RPORRES_1, 
     M04_MISCARRIAGE_RPORRES_1, M04_MISCARRIAGE_CT_RPORRES_1, M04_PH_OTH_RPORRES_1,M04_STILLBIRTH_RPORRES_1,
-    M04_LOWBIRTHWT_RPORRES_1, M04_MALARIA_EVER_MHOCCUR_1, 
+    M04_LOWBIRTHWT_RPORRES_1, M04_MALARIA_EVER_MHOCCUR_1, M06_MALARIA_POC_LBORRES_1,M06_MALARIA_POC_LBPERF_1,
     M04_CANCER_EVER_MHOCCUR_1, M04_KIDNEY_EVER_MHOCCUR_1, M04_CARDIAC_EVER_MHOCCUR_1,
     M04_HIV_MHOCCUR_1, M04_HIV_EVER_MHOCCUR_1, M04_UNPL_CESARIAN_PROCCUR_1, M04_PREECLAMPSIA_RPORRES_1,
     M04_GEST_DIAB_RPORRES_1, M04_PREMATURE_RUPTURE_RPORRES_1,
@@ -652,48 +651,81 @@ vars_criteria <- MatData_Anc_Visits %>%
     M08_RBC_LBPERF_2_1, M08_RBC_THALA_LBORRES_1, M08_RBC_LBPERF_3_1, M08_RBC_GLUC6_LBORRES_1,
     M08_MN_LBPERF_12_1, M08_CRP_LBORRES_1, M08_MN_LBPERF_13_1, M08_AGP_LBORRES_1, EDD,BASELINEDATE_1
   ) %>%
-# mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT_1 >= "2023-04-10") |
-#                                (SITE == "Pakistan" & M02_SCRN_OBSSTDAT_1 >= "2022-09-22") |
-#                                (SITE == "Ghana" & M02_SCRN_OBSSTDAT_1 >= "2022-12-28"), 1, 0)) %>%
-  filter(ENROLL == 1) %>%  #& REMAPP_LAUNCH ==1) %>%  
+  mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT_1 >= "2023-04-10") | 
+                                  (SITE == "Pakistan" & M02_SCRN_OBSSTDAT_1 >= "2022-09-22") |
+                                  (SITE == "Ghana" & M02_SCRN_OBSSTDAT_1 >= "2022-12-28") | 
+                                  (SITE == "Zambia" & M02_SCRN_OBSSTDAT_1 >= "2022-12-15"), 1, 0)) %>% 
+  filter(ENROLL == 1) %>%  #& REMAPP_LAUNCH == 1) %>% 
   mutate(
     # 1. age at enrollment
     # age at enrollment
     AGE_ENROLL = ifelse(M00_KNOWN_DOBYN_SCORRES_1 == 1 &  M00_BRTHDAT_1 != "1907-07-07", 
                         as.numeric(difftime(M02_SCRN_OBSSTDAT_1,M00_BRTHDAT_1, units = "days")/365),
-                 ifelse(M00_KNOWN_DOBYN_SCORRES_1 == 0 & M00_ESTIMATED_AGE_1 != -7, M00_ESTIMATED_AGE_1, 99)),
+                        ifelse(M00_KNOWN_DOBYN_SCORRES_1 == 0 & M00_ESTIMATED_AGE_1 != -7, M00_ESTIMATED_AGE_1, 99)),
     
     CRIT_AGE = ifelse((AGE_ENROLL > 0 & AGE_ENROLL < 18) | AGE_ENROLL > 34, 0,
-               ifelse(AGE_ENROLL >= 18 & AGE_ENROLL <= 34, 1, 55)
+                      ifelse(AGE_ENROLL >= 18 & AGE_ENROLL <= 34, 1, 
+                             ifelse(AGE_ENROLL == -5  | AGE_ENROLL ==-7, 55, 77))
     ),
     
     # 2. GA at enrollment
     # gestational age at enrollment 
     BASELINE_GA_WKS = floor(GA_US_DAYS_1/7),
     
-    CRIT_GA = ifelse(BASELINE_GA_WKS > 0 & BASELINE_GA_WKS <= 13, 1, 
-              ifelse(BASELINE_GA_WKS > 13 & BASELINE_GA_WKS <=26, 0,
-              ifelse(BASELINE_GA_WKS == -7 | is.na(BASELINE_GA_WKS), NA, 77))),
+    CRIT_GA = ifelse(BASELINE_GA_WKS > 0 & BASELINE_GA_WKS < 14, 1, 
+                     ifelse(BASELINE_GA_WKS >= 14 & BASELINE_GA_WKS <=26, 0,
+                            ifelse(BASELINE_GA_WKS == -7 | is.na(BASELINE_GA_WKS), NA, 77))),
     # 3. BMI 
     # BMI
     BMI = M05_WEIGHT_PERES_1 / M05_HEIGHT_PERES_1 / M05_HEIGHT_PERES_1 * 10000,
     
-    CRIT_BMI = ifelse(BMI <= 18.5 | BMI >= 30, 0, 
-               ifelse(BMI > 18.5 & BMI < 30, 1, 55)
+    BMI_TEMP = ifelse(M05_WEIGHT_PERES_1 == -5 | M05_WEIGHT_PERES_1 == -7 |
+                        M05_HEIGHT_PERES_1 ==-5 | M05_HEIGHT_PERES_1==-7 |
+                        M05_HEIGHT_PERES_1 == -5 | M05_HEIGHT_PERES_1 ==-7, 55,
+                      ifelse(BMI <= 18.5 | BMI >= 30, 0, 
+                             ifelse(BMI > 18.5 & BMI < 30, 1, 77))
     ),
     # 4. MUAC mid-upper arm circumference 
     # MUAC
-    CRIT_MUAC = ifelse(M05_MUAC_PERES_1 <= 23, 0, 
-                ifelse(M05_MUAC_PERES_1 > 23, 1, 55)
+    
+    MUAC_TEMP = ifelse(M05_MUAC_PERES_1 <= 23, 0, 
+                       ifelse(M05_MUAC_PERES_1 > 23, 1, 
+                              ifelse(M05_MUAC_PERES_1 == -5 | M05_MUAC_PERES_1 == -7, 55, 77))
     ),
+    ## UPDATED 07/31 ##Q: does this new muac required a new description in the table?
+    CRIT_BMI_MUAC = ifelse(BMI_TEMP == 1 & MUAC_TEMP == 1, 1,
+                           ifelse(BMI_TEMP == 0 | MUAC_TEMP == 0, 0, 77)
+    ),
+    
     # 5. height
-    CRIT_HEIGHT = ifelse(M05_HEIGHT_PERES_1 <= 153, 0,
-                  ifelse(M05_HEIGHT_PERES_1 > 153, 1, 55)
+    ## UPDATE 07/31
+    CRIT_HEIGHT = ifelse(M05_HEIGHT_PERES_1 < 150, 0,
+                         ifelse(M05_HEIGHT_PERES_1 >= 150, 1,
+                                ifelse(M05_HEIGHT_PERES_1 == -5 | M05_HEIGHT_PERES_1 == -7, 55, 77))
     ),
     # 6. single fetus
     CRIT_SINGLEPREG = ifelse(M06_SINGLETON_PERES_1 == 0, 0,
-                      ifelse(M06_SINGLETON_PERES_1 == 1, 1, 55)
-    )) %>% 
+                             ifelse(M06_SINGLETON_PERES_1 == 1, 1, 77)
+    ),
+    
+    ## feritin
+    CRIT_IRON = ifelse(M08_FERRITIN_LBORRES_1 > 15*10, 1,
+                       ifelse(M08_FERRITIN_LBORRES_1 >0 & M08_FERRITIN_LBORRES_1 <= 15*10, 0,
+                              ifelse(M08_MN_LBPERF_8_1 == 0, 0,
+                                     ifelse(M08_MN_LBPERF_8_1 == 55 | M08_FERRITIN_LBORRES_1 == -5 | 
+                                              M08_MN_LBPERF_8_1 == 77 |M08_FERRITIN_LBORRES_1 == -7, 55, 77))) 
+    ),
+    # G. no subclinical inflammation (CRP???5 and/or AGP???1) ??? check unit (mg/L for CRP and g/L for AGP in dd) double check the calculation before use
+    CRIT_INFLAM = ifelse((M08_CRP_LBORRES_1 > 0 & M08_CRP_LBORRES_1 <= 5) &
+                           (M08_AGP_LBORRES_1 >0 & M08_AGP_LBORRES_1 <= 1), 1,
+                         ifelse(M08_CRP_LBORRES_1 > 5 | M08_AGP_LBORRES_1 > 1, 0,
+                                ifelse(M08_MN_LBPERF_12_1 == 0 | M08_MN_LBPERF_13_1 == 0, 0,
+                                       ifelse(M08_MN_LBPERF_12_1 == 55 | M08_MN_LBPERF_13_1 == 55 |
+                                                M08_CRP_LBORRES_1 == -5 | M08_AGP_LBORRES_1 == -5, 55,
+                                              ifelse(M08_MN_LBPERF_12_1 == 77 | M08_MN_LBPERF_13_1 == 7 |
+                                                       M08_CRP_LBORRES_1 == -7 | M08_AGP_LBORRES_1 == -7, 55, 77))))
+    )
+  ) %>%
   rowwise() %>% 
   mutate(
     # 7. blood pressure
@@ -701,157 +733,153 @@ vars_criteria <- MatData_Anc_Visits %>%
     M06_BP_DIA_1 = mean(c(M06_BP_DIA_VSORRES_1_1, M06_BP_DIA_VSORRES_2_1, M06_BP_DIA_VSORRES_3_1), na.rm = TRUE),
     
     CRIT_BP = ifelse(M06_BP_SYS_1 > 0 & M06_BP_SYS_1 < 140 & M06_BP_DIA_1 > 0 & M06_BP_DIA_1 < 90, 1,
-              ifelse(M06_BP_SYS_1 >= 140 | M06_BP_DIA_1 >= 90, 0, 55)
+                     ifelse(M06_BP_SYS_1 >= 140 | M06_BP_DIA_1 >= 90, 0,
+                            ifelse(M06_BP_SYS_1 == -5 | M06_BP_DIA_1 == -5 |
+                                     M06_BP_SYS_1 == -7 | M06_BP_DIA_1 == -7, 55, 77))
     )) %>% 
   ungroup() %>% 
   mutate( 
-    # 8. <= 1 miscarriage in two consecutive pregnancies (any previous pregnancy) skip patter not follow correctly
-    CRIT_PREV_MISCARR = ifelse(M04_MISCARRIAGE_RPORRES_1 == 1 & M04_MISCARRIAGE_CT_RPORRES_1 > 1, 0,
-                        ifelse(M04_PH_PREV_RPORRES_1 == 0 | # no previous pregnancy (Have you ever been pregnant? Include all live births, stillbirths, miscarriages, or abortions. Do not include the current pregnancy.)
-                               M04_PH_OTH_RPORRES_1 == 0 | # How many of these pregnancies ended in a loss? This includes pregnancies that ended in a stillbirth, miscarriage, or an abortion? 
-                               M04_MISCARRIAGE_RPORRES_1 == 0 | #(During any of your previous pregnancies or births, did you experience a spontaneous miscarriage (pregnancy loss before 20 weeks GA)
-                              (M04_MISCARRIAGE_RPORRES_1 == 1 & M04_MISCARRIAGE_CT_RPORRES_1 <= 1), 1, 55)#(Specify total # of spontaneous miscarriage: )
+    
+    # H.b. no previous low birth weight delivery
+    CRIT_LBW = ifelse(M04_LOWBIRTHWT_RPORRES_1 == 1, 0,
+                      ifelse(M04_PH_PREV_RPORRES_1 == 0 | M04_LOWBIRTHWT_RPORRES_1 == 0, 1,
+                             ifelse(M04_LOWBIRTHWT_RPORRES_1 == 99, 0,
+                                    ifelse(M04_PH_PREV_RPORRES_1 == 55 | M04_LOWBIRTHWT_RPORRES_1 == 55 |
+                                             M04_PH_PREV_RPORRES_1 == 77 | M04_LOWBIRTHWT_RPORRES_1 == 77, 55, 77)))
     ),
-    # # 9. no previous preterm or low birth weight delivery
-    CRIT_PREV_PRETERM_LBW = ifelse(M04_PRETERM_RPORRES_1 == 1 | M04_LOWBIRTHWT_RPORRES_1 == 1, 0,
-                            ifelse(M04_PH_PREV_RPORRES_1 == 0 | (M04_PRETERM_RPORRES_1 == 0 & M04_LOWBIRTHWT_RPORRES_1 == 0), 1,
-                            ifelse(M04_PRETERM_RPORRES_1 == 99 | M04_LOWBIRTHWT_RPORRES_1 == 99, 0, 55))
+    
+    # H.c. No previous reported stillbirth
+    CRIT_STILLBIRTH = ifelse(M04_STILLBIRTH_RPORRES_1 == 1, 0, #stillbirth,
+                             ifelse(M04_PH_PREV_RPORRES_1 == 0 | M04_STILLBIRTH_RPORRES_1 == 0, 1,
+                                    ifelse(M04_STILLBIRTH_RPORRES_1 == 99, 0,
+                                           ifelse(M04_STILLBIRTH_RPORRES_1 == 55 | M04_STILLBIRTH_RPORRES_1 == 77, 55, 77)))
     ),
-    ## to include below once we finalize the healthy cohort 
-    # # 10. no previous preterm 
-    # CRIT_PRETERM = ifelse(M04_PRETERM_RPORRES_1 == 1, 0,
-    #                ifelse(M04_PH_PREV_RPORRES_1 == 0 | M04_PRETERM_RPORRES_1 == 0,1,
-    #                ifelse(M04_PRETERM_RPORRES_1 == 99, 0, 55))
-    # ),
-    # # 11. no previous low birth weight delivery
-    # CRIT_LBW = ifelse(M04_LOWBIRTHWT_RPORRES_1 == 1,0,
-    #            ifelse(M04_PH_PREV_RPORRES_1 == 0 | M04_LOWBIRTHWT_RPORRES_1 == 0, 1,
-    #            ifelse(M04_LOWBIRTHWT_RPORRES_1 == 99, 0, 55))
-    # ),
-    # 12. No previous neonatal or fetal death (stillbirth/neonatal death within first 28 days of live)
-      ## update naming from  CRIT_PREV_NEODEATH to CRIT_FETALDEATH
-    CRIT_FETALDEATH = ifelse(M04_PH_OTH_RPORRES_1 > 0 | M04_STILLBIRTH_RPORRES_1 == 1, 0, #stillbirth,miscarriage or an abortion>0 or experienced a still birth
-                         ifelse(M04_PH_PREV_RPORRES_1 == 0 | #never pregnant
-                               (M04_PH_PREVN_RPORRES_1 >= 0 & M04_PH_LIVE_RPORRES_1 >=0 & M04_PH_PREVN_RPORRES_1 == M04_PH_LIVE_RPORRES_1) | #preg # = live preg #
-                                M04_PH_OTH_RPORRES_1 == 0, 1, 55)  #stillbirth,miscarriage or an abortion = 0 
+    # H.d. No previous reported unplanned cesarean delivery
+    CRIT_UNPL_CESARIAN = ifelse(M04_UNPL_CESARIAN_PROCCUR_1 == 1, 0,
+                                ifelse(M04_PH_PREV_RPORRES_1 == 0 | M04_UNPL_CESARIAN_PROCCUR_1 == 0, 1,
+                                       ifelse(M04_UNPL_CESARIAN_PROCCUR_1 == 99, 0,
+                                              ifelse(M04_UNPL_CESARIAN_PROCCUR_1 == 55 | M04_PH_PREV_RPORRES_1 == 55 |
+                                                       M04_UNPL_CESARIAN_PROCCUR_1 == 77 | M04_PH_PREV_RPORRES_1 == 77, 55, 77)))
+                                
     ),
-    # 13. combine complication
-    CRIT_COMPLICATION = ifelse(M04_UNPL_CESARIAN_PROCCUR_1 == 1 | M04_PREECLAMPSIA_RPORRES_1== 1 |  
-                               M04_GEST_DIAB_RPORRES_1 == 1 | M04_PREMATURE_RUPTURE_RPORRES_1 == 1 |  
-                               M04_MACROSOMIA_RPORRES_1 == 1 | M04_OLIGOHYDRAMNIOS_RPORRES_1 == 1 |  
-                               M04_APH_RPORRES_1 == 1 |  M04_PPH_RPORRES_1 == 1, 0,
-                        ifelse(M04_PH_PREV_RPORRES_1 == 0 |
-                              (M04_UNPL_CESARIAN_PROCCUR_1 == 0 & M04_PREECLAMPSIA_RPORRES_1 == 0 & 
-                               M04_GEST_DIAB_RPORRES_1 == 0 & M04_PREMATURE_RUPTURE_RPORRES_1 == 0 & 
-                               M04_MACROSOMIA_RPORRES_1 == 0 & M04_OLIGOHYDRAMNIOS_RPORRES_1 == 0 & 
-                               M04_APH_RPORRES_1 == 0 & M04_PPH_RPORRES_1 == 0), 1,
-                        ifelse(M04_UNPL_CESARIAN_PROCCUR_1 == 99 | M04_PREECLAMPSIA_RPORRES_1 == 99 |  
-                               M04_GEST_DIAB_RPORRES_1 == 99 | M04_PREMATURE_RUPTURE_RPORRES_1== 99 |    
-                               M04_MACROSOMIA_RPORRES_1== 99 | M04_OLIGOHYDRAMNIOS_RPORRES_1 == 99 |    
-                               M04_APH_RPORRES_1 == 99 | M04_PPH_RPORRES_1 == 99, 0, 55))
-    ),
-    # 14. no cigarette smoking
-    CRIT_SMOKE = ifelse(M03_SMOKE_OECOCCUR_1 == 1 | M03_CHEW_BNUT_OECOCCUR_1 == 1 | M03_CHEW_OECOCCUR_1 == 1, 0,
-                 ifelse(M03_SMOKE_OECOCCUR_1 == 0 & M03_CHEW_BNUT_OECOCCUR_1 == 0 & M03_CHEW_OECOCCUR_1 == 0, 1, 55)
-    ),
-    # 15. no heavy alcohol use (>3 drinks per day, or >7 drinks per week)
-    CRIT_DRINK = ifelse(SITE == "Pakistan", 666,
-                 ifelse(M03_DRINK_OECOCCUR_1 == 1, 0,
-                 ifelse(M03_DRINK_OECOCCUR_1 == 0, 1,
-                 ifelse(M03_DRINK_OECOCCUR_1 == 66, 0,
-                 ifelse(M03_DRINK_OECOCCUR_1 == 77, 0, 55)))) #temporary code for Kenya, check for other country
-    ),
-    # 16. no HIV M04_HIV_MHOCCUR_1(1,0.99): M06_HIV_POC_LBPERF_V, M06_HIV_POC_LBORRES_1(1.0)
-    CRIT_HIV = ifelse(M06_HIV_POC_LBORRES_1 == 1, 0,#Record HIV results (1,0)
-               ifelse(M06_HIV_POC_LBORRES_1 == 0, 1, 
-               ifelse(M04_HIV_EVER_MHOCCUR_1 == 1 | #Have you ever been diagnosed with HIV? (1,0,99)
-                      M04_HIV_MHOCCUR_1 == 1, 0, #had HIV since becoming pregnant with the current pregnancy (1,0,99)
-               ifelse(M04_HIV_EVER_MHOCCUR_1 == 0 & M04_HIV_MHOCCUR_1 == 0 & M06_HIV_POC_LBPERF_1 == 0, 1,
-               ifelse(M04_HIV_EVER_MHOCCUR_1 == 99 | M04_HIV_MHOCCUR_1 == 99 | 
-                      M06_HIV_POC_LBPERF_1 == 0, 0, #Was point-of-care HIV test performed at this visit? (1,0)
-               ifelse(M04_HIV_EVER_MHOCCUR_1 == 77 | M04_HIV_MHOCCUR_1 == 77 | 
-                      M06_HIV_POC_LBPERF_1 == 77 | M06_HIV_POC_LBORRES_1 == 77, 0, 55))))) #Was point-of-care HIV test performed at this visit? (1,0)
-    ),
-    # 17. no cancer, kidney disease, cardiac disease
-    CRIT_CHRONIC = ifelse(M04_CANCER_EVER_MHOCCUR_1 == 1 | M04_KIDNEY_EVER_MHOCCUR_1 == 1 | 
-                          M04_CARDIAC_EVER_MHOCCUR_1 == 1, 0,
-                   ifelse(M04_CANCER_EVER_MHOCCUR_1 == 0 & M04_KIDNEY_EVER_MHOCCUR_1 == 0 & 
-                          M04_CARDIAC_EVER_MHOCCUR_1 == 0, 1,
-                   ifelse(M04_CANCER_EVER_MHOCCUR_1 == 99 | M04_KIDNEY_EVER_MHOCCUR_1 == 99 | 
-                          M04_CARDIAC_EVER_MHOCCUR_1 == 99, 0, 55))
-    ),
-    # 18. no current malaria infection (per RDT)
-    CRIT_MALARIA = ifelse(M04_MALARIA_EVER_MHOCCUR_1 == 0, 1,
-                   ifelse(M04_MALARIA_EVER_MHOCCUR_1 == 1, 0,
-                   ifelse(M04_MALARIA_EVER_MHOCCUR_1 == 99, 99, 55))
-    ),
-    # 19. no Hepatitis B virus infection
-    CRIT_HEPATITISB = ifelse(M06_HBV_POC_LBORRES_1 == 1, 0,
-                      ifelse(M06_HBV_POC_LBORRES_1 == 0, 1,
-                      ifelse(M06_HBV_POC_LBPERF_1 == 0, 0, 55))
-    ),
-    # 20. no Hepatitis C virus infection
-    CRIT_HEPATITISC = ifelse(M06_HCV_POC_LBORRES_1 == 1, 0,
-                      ifelse(M06_HCV_POC_LBORRES_1 == 0, 1,
-                      ifelse(M06_HCV_POC_LBPERF_1 == 0, 0, 55))
-    ),
-    # 21. no hemoglobinopathies (include glucose-6-phosphate dehydrogenase deficiency or not?)
+    
+    # I. No hemoglobinopathies: SS, SC, SE, EE, CC, SD-Punjab, S??thal, E??thal,
+    #C??thal, CD-Punjab, ED-Punjab, D-D-Punjab, D-Punjab??thal, Thalassemia major,
+    #Thalassemia intermedia, glucose-6-phosphate dehydrogenase deficiency,
+    #or Alpha thalassemia
     CRIT_HEMOGLOBINOPATHIES = ifelse(M08_RBC_THALA_LBORRES_1 == 0 & M08_RBC_GLUC6_LBORRES_1 == 0, 1,
-                              ifelse(M08_RBC_THALA_LBORRES_1 == 1 | M08_RBC_GLUC6_LBORRES_1 == 1, 0,
-                              ifelse(M08_RBC_LBPERF_2_1 == 0 | M08_RBC_LBPERF_3_1 == 0, 0, 55))
+                                     ifelse(M08_RBC_THALA_LBORRES_1 == 1 | M08_RBC_GLUC6_LBORRES_1 == 1, 0,
+                                            ifelse(M08_RBC_LBPERF_2_1 == 0 | M08_RBC_LBPERF_3_1 == 0, 0,
+                                                   ifelse(M08_RBC_LBPERF_2_1 == 55 | M08_RBC_LBPERF_3_1 == 55 |
+                                                            M08_RBC_THALA_LBORRES_1==55 |  M08_RBC_GLUC6_LBORRES_1 == 55, 55,
+                                                          ## remove below once sites start using 55 notation
+                                                          ifelse(M08_RBC_LBPERF_2_1 == 77 | M08_RBC_LBPERF_3_1 == 77 |
+                                                                   M08_RBC_THALA_LBORRES_1==77 |  M08_RBC_GLUC6_LBORRES_1 == 77, 55,77))))
     ),
-    # 22. no iron deficiency (not iron deficient: serum ferritin > 15 mcg/L) data unit is ??g/dL couble check before use
-    CRIT_IRON = ifelse(M08_FERRITIN_LBORRES_1 > 15*10, 1,
-                ifelse(M08_FERRITIN_LBORRES_1 >0 & M08_FERRITIN_LBORRES_1 <= 15*10, 0,
-                ifelse(M08_MN_LBPERF_8_1 == 0, 0, 55))
+    
+    #J. No reported cigarette smoking, tobacco chewing, or betel nut use during pregnancy
+    CRIT_SMOKE = ifelse(M03_SMOKE_OECOCCUR_1 == 1 | M03_CHEW_BNUT_OECOCCUR_1 == 1 | M03_CHEW_OECOCCUR_1 == 1, 0,
+                        ifelse(M03_SMOKE_OECOCCUR_1 == 0 & M03_CHEW_BNUT_OECOCCUR_1 == 0 & M03_CHEW_OECOCCUR_1 == 0, 1,
+                               ifelse(M03_SMOKE_OECOCCUR_1 == 77 & M03_CHEW_BNUT_OECOCCUR_1 == 77 & M03_CHEW_OECOCCUR_1 == 77, 55 , 77))
     ),
-    # 23. no subclinical inflammation (CRP???5 and/or AGP???1) ??? check unit (mg/L for CRP and g/L for AGP in dd) double check the calculation before use
-    CRIT_INFLAM = ifelse(M08_CRP_LBORRES_1 > 0 & M08_CRP_LBORRES_1 <= 5 & 
-                         M08_AGP_LBORRES_1 >0 & M08_AGP_LBORRES_1 <= 1, 1,
-                  ifelse(M08_CRP_LBORRES_1 > 5 | M08_AGP_LBORRES_1 > 1, 0,
-                  ifelse(M08_MN_LBPERF_12_1 == 0 | M08_MN_LBPERF_13_1 == 0, 0, 55)) 
-    ))# %>%
- # select(SCRNID, MOMID, PREGID, SITE, ENROLL, #REMAPP_LAUNCH,
-#      starts_with("CRIT_"))
+    
+    #K. No reported alcohol consumption during pregnancy
+    CRIT_DRINK = ifelse(SITE == "Pakistan", 666,
+                        ifelse(M03_DRINK_OECOCCUR_1 == 1, 0,
+                               ifelse(M03_DRINK_OECOCCUR_1 == 0, 1,
+                                      ifelse(M03_DRINK_OECOCCUR_1 == 66, 0,
+                                             ifelse(M03_DRINK_OECOCCUR_1 == 77, 55, 77)))) #temporary code for Kenya, check for other country
+    ),
+    
+    #L. No known history or current chronic disease including cancer, kidney disease, and cardiac conditions
+    CRIT_CHRONIC = ifelse(M04_CANCER_EVER_MHOCCUR_1 == 1 | M04_KIDNEY_EVER_MHOCCUR_1 == 1 |
+                            M04_CARDIAC_EVER_MHOCCUR_1 == 1, 0,
+                          ifelse(M04_CANCER_EVER_MHOCCUR_1 == 0 & M04_KIDNEY_EVER_MHOCCUR_1 == 0 &
+                                   M04_CARDIAC_EVER_MHOCCUR_1 == 0, 1,
+                                 ifelse(M04_CANCER_EVER_MHOCCUR_1 == 99 | M04_KIDNEY_EVER_MHOCCUR_1 == 99 |
+                                          M04_CARDIAC_EVER_MHOCCUR_1 == 99, 0, 
+                                        ifelse(M04_CANCER_EVER_MHOCCUR_1 == 55 | M04_CARDIAC_EVER_MHOCCUR_1 == 55 | M04_KIDNEY_EVER_MHOCCUR_1 ==55 |
+                                                 M04_CANCER_EVER_MHOCCUR_1 == 77 | M04_CARDIAC_EVER_MHOCCUR_1 == 77 |M04_KIDNEY_EVER_MHOCCUR_1==77 , 55, 77)))
+    ),
+    #M. No known history or current HIV
+    CRIT_HIV = ifelse(M06_HIV_POC_LBORRES_1 == 1, 0,#Record HIV results (1,0)
+                      ifelse(M06_HIV_POC_LBORRES_1 == 0, 1,
+                             ifelse(M04_HIV_EVER_MHOCCUR_1 == 1 | #Have you ever been diagnosed with HIV? (1,0,99)
+                                      M04_HIV_MHOCCUR_1 == 1, 0, #had HIV since becoming pregnant with the current pregnancy (1,0,99)
+                                    ifelse(M04_HIV_EVER_MHOCCUR_1 == 0 & M04_HIV_MHOCCUR_1 == 0 & M06_HIV_POC_LBPERF_1 == 0, 1,
+                                           ifelse(M04_HIV_EVER_MHOCCUR_1 == 99 | M04_HIV_MHOCCUR_1 == 99 |
+                                                    M06_HIV_POC_LBPERF_1 == 0, 0, #Was point-of-care HIV test performed at this visit? (1,0)
+                                                  ifelse(M04_HIV_EVER_MHOCCUR_1 == 77 | M04_HIV_MHOCCUR_1 == 77 |
+                                                           M06_HIV_POC_LBPERF_1 == 77 | M06_HIV_POC_LBORRES_1 == 77, 0,  #Was point-of-care HIV test performed at this visit? (1,0)
+                                                         ifelse(M06_HIV_POC_LBPERF_1 == 55 | M06_HIV_POC_LBORRES_1 == 55 |
+                                                                  M06_HIV_POC_LBPERF_1 == 77 | M06_HIV_POC_LBORRES_1 == 77, 55, 77))))))
+    ),
+    #N. No current malaria infection (per rapid diagnostic test)
+    CRIT_MALARIA = ifelse(M06_MALARIA_POC_LBORRES_1 == 1, 0,
+                          ifelse(M06_MALARIA_POC_LBORRES_1 == 0, 1,
+                                 ifelse(M06_MALARIA_POC_LBPERF_1 == 0, 0,
+                                        ifelse(M04_MALARIA_EVER_MHOCCUR_1 == 55 | M04_MALARIA_EVER_MHOCCUR_1 == 77, 55, 77)))
+    ),
+    
+    #O. No current Hepatitis B virus infection (per rapid diagnostic test)
+    CRIT_HEPATITISB = ifelse(M06_HBV_POC_LBORRES_1 == 1, 0,
+                             ifelse(M06_HBV_POC_LBORRES_1 == 0, 1,
+                                    ifelse(M06_HBV_POC_LBPERF_1 == 0, 0,
+                                           ifelse(M06_HBV_POC_LBPERF_1 == 55 | M06_HBV_POC_LBORRES_1 == -5|
+                                                    M06_HBV_POC_LBPERF_1 == 77 | M06_HBV_POC_LBORRES_1 == -7, 55, 77)))
+    ),
+    #P. No current Hepatitis C virus infection (per rapid diagnostic test)
+    CRIT_HEPATITISC = ifelse(M06_HCV_POC_LBORRES_1 == 1, 0,
+                             ifelse(M06_HCV_POC_LBORRES_1 == 0, 1,
+                                    ifelse(M06_HCV_POC_LBPERF_1 == 0, 0, 
+                                           ifelse(M06_HCV_POC_LBPERF_1 == 55 | M06_HCV_POC_LBORRES_1 == -5 |
+                                                    M06_HCV_POC_LBPERF_1 == 77 | M06_HCV_POC_LBORRES_1 == -7, 55, 77)))
+    )
+  )
 
-setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
-#dt=format(Sys.time(), "%Y-%m-%d")
-save(vars_criteria, file= paste("vars_criteria_FullData","_", UploadDate, ".RData",sep = ""))
+# )) %>%
+#select(SCRNID, MOMID, PREGID, SITE, ENROLL,
+#       starts_with("CRIT_"))
 
-vars_criteria <- vars_criteria %>% 
-          mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT_1 >= "2023-04-10") |
-                                          (SITE == "Pakistan" & M02_SCRN_OBSSTDAT_1 >= "2022-09-22") |
-                                          (SITE == "Ghana" & M02_SCRN_OBSSTDAT_1 >= "2022-12-28") | 
-                                          (SITE == "Zambia" & M02_SCRN_OBSSTDAT_1 >= "2022-12-15"), 1, 0)) %>%
-            filter(REMAPP_LAUNCH ==1)  
-  
-
-setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
-#dt=format(Sys.time(), "%Y-%m-%d")
-save(vars_criteria, file= paste("vars_criteria","_", UploadDate, ".RData",sep = ""))
+# setwd("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned")
+# dt=format(Sys.time(), "%Y-%m-%d")
+# save(vars_criteria, file= paste("vars_criteria_full","_", dt, ".RData",sep = ""))
 
 #**************************************************************************************
 #*check eligibility and save data
 #**************************************************************************************
+
 #code 666 for any not applicable by site
 healthyOutcome <- vars_criteria %>% 
   rowwise() %>%
-  mutate(HEALTHY_CHECK = sum(across(starts_with("CRIT_"), ~ .x %in% c(1, 0, 666)), na.rm = TRUE)) %>% 
+  mutate(HEALTHY_CHECK = sum(across(starts_with("CRIT_"), ~ .x %in% c(1, 0, 666)), na.rm = TRUE),
+         HEALTHY_PENDING = sum(across(starts_with("CRIT_"), ~ .x == 55), na.rm = TRUE)
+  ) %>% 
   mutate(
     HEALTHY_ELIGIBLE = case_when(
       if_all(starts_with("CRIT_"), ~.x %in% c(1, 666)) ~ 1, #eligible
       if_any(starts_with("CRIT_"), ~.x == 0) ~ 0, #Not eligible
-      HEALTHY_CHECK < 21 ~ 3 #pending (21) 
-    ) )%>%
+      HEALTHY_PENDING >= 1 ~ 3, # pending
+      #if_any(starts_with("CRIT_"), ~.x == 55) ~ 55 #Pending 
+      #HEALTHY_CHECK < 21 ~ 3 #pending (21)
+    )) %>% 
   ungroup() 
+
+healthyOutcome_1 <- healthyOutcome %>% 
+  mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT_1 >= "2023-04-10") |
+                                  (SITE == "Pakistan" & M02_SCRN_OBSSTDAT_1 >= "2022-09-22") |
+                                  (SITE == "Ghana" & M02_SCRN_OBSSTDAT_1 >= "2022-12-28") | 
+                                  (SITE == "Zambia" & M02_SCRN_OBSSTDAT_1 >= "2022-12-15"), 1, 0)) %>%
+  filter(REMAPP_LAUNCH ==1)  
+
+
+out <- healthyOutcome_1 %>% select(SITE, HEALTHY_ELIGIBLE, HEALTHY_PENDING, starts_with("CRIT"),
+                                   M05_WEIGHT_PERES_1 , M05_HEIGHT_PERES_1, M05_HEIGHT_PERES_1 , BMI_TEMP)
 
 
 setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
 #dt=format(Sys.time(), "%Y-%m-%d")
-save(healthyOutcome, file= paste("healthyOutcome","_", UploadDate, ".RData",sep = ""))
-
-# save as full cohort when we don't exclude particpants enrolled following remapp launch
-save(healthyOutcome, file= paste("healthyOutcome","_FullCohort_", UploadDate, ".RData",sep = ""))
+save(healthyOutcome_1, file= paste("healthyOutcome_test","_", UploadDate, ".RData",sep = ""))
 
 #**************************************************************************************
 #### VISIT COMPLETION #### 
@@ -1067,36 +1095,35 @@ Form_Completion_Pnc <- MatData_Pnc_Visits %>%
 save(Form_Completion_Pnc, file= paste("Form_Completion_Pnc","_", UploadDate, ".RData",sep = ""))
 
 #**************************************************************************************
-#* PNC Infant Protocol Compliance - to work on 
-#* Are all expected forms for the visit complete? 
-
-#* Num: For each form: visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
-#* Denom: Any form with visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
-#**************************************************************************************
-
-
-
-
-
-#**************************************************************************************
 ## export as .CSV into network drive
 #**************************************************************************************
 
 # 1. place all merged datasets into list
-files_list <- mget(ls(c("MatData_Wide", "MatData_Pnc_Visits", "MatData_Anc_Visits")))
+#files_list <- mget(ls(c("MatData_Wide", "MatData_Pnc_Visits", "MatData_Anc_Visits")))
+
+files_list <- list(MatData_Wide,MatData_Pnc_Visits,MatData_Anc_Visits)
 
 # 2. rename
-names(files_list) = str_replace(names(files_list),  "m", "mnh")
+names(files_list) = str_replace(c("MatData_Wide","MatData_Pnc_Visits","MatData_Anc_Visits"),  "m", "mnh")
 
 # 3. set working directory
 # first need to make subfolder with upload date
-maindir <- paste0("Z:/Stacked Data", sep = "")
+maindir <- paste0("Z:/Processed Data", sep = "")
 subdir = UploadDate
 dir.create(file.path(maindir, subdir), showWarnings = FALSE)
 
-setwd(paste("Z:/Stacked Data/", UploadDate, sep = ""))
+setwd(paste("Z:/Processed Data/", UploadDate, sep = ""))
 
 # 4. export
 lapply(1:length(files_list), function(i) write.csv(files_list[[i]], 
                                                    file = paste0(names(files_list[i]), ".csv"),
                                                    row.names = FALSE))
+
+
+#**************************************************************************************
+## export as .RData into network drive
+#**************************************************************************************
+save(MatData_Wide, file= paste("MatData_Wide","_", UploadDate, ".RData",sep = ""))
+save(MatData_Pnc_Visits, file= paste("MatData_Pnc_Visits","_",UploadDate,".RData",sep = ""))
+save(MatData_Anc_Visits, file= paste("MatData_Anc_Visits","_",UploadDate,".RData",sep = ""))
+
