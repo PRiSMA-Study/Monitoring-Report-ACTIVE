@@ -25,19 +25,15 @@
 #* 13. Merge ANC/IPC/PNC by SITE, SCRNID, MOMID, PREGID - MatData_Wide.RData
 
 ## LINES TO UPDATE EACH RUN: 
-## LINE 38 - set upload date
+## LINE 35 - set upload date
 
 #*****************************************************************************
-#rm(list = ls())
 
-library(tidyverse)
 library(lubridate)
 library(readxl)
 
-UploadDate = "2023-08-25"
+UploadDate = "2023-09-29"
 
-
-## 08/18 updates: 132-134 & 213-215
 #*****************************************************************************
 #* Import merged data 
 #*****************************************************************************
@@ -70,7 +66,7 @@ if (exists("m18_merged") == TRUE){ m18_merged <- m18_merged %>% mutate(VISIT_DAT
 if (exists("m19_merged") == TRUE){ m19_merged <- m19_merged %>% mutate(VISIT_DATE = M19_OBSSTDAT) }
 if (exists("m20_merged") == TRUE){ m20_merged <- m20_merged %>% mutate(VISIT_DATE = M20_OBSSTDAT) }
 if (exists("m21_merged") == TRUE){ m21_merged <- m21_merged %>% mutate(VISIT_DATE = M21_AESTDAT) }
-if (exists("m22_merged") == TRUE){ m22_merged <- m22_merged %>% mutate(VISIT_DATE = M22_DVSTDAT) }
+if (exists("m22_infantmerged") == TRUE){ m22_infantmerged <- m22_infantmerged %>% mutate(VISIT_DATE = M22_DVSTDAT) }
 #if (exists("m23_merged") == TRUE){ m23_merged <- m23_merged %>% mutate(VISIT_DATE = M23_CLOSE_DSSTDAT) }
 if (exists("m24_merged") == TRUE){ m24_merged <- m24_merged %>% mutate(VISIT_DATE = M24_CLOSE_DSSTDAT) }
 if (exists("m25_merged") == TRUE){ m25_merged <- m25_merged %>% mutate(VISIT_DATE = M25_OBSSTDAT) }
@@ -94,9 +90,7 @@ if (exists("m26_merged") == TRUE){ m26_merged <- m26_merged %>% select(-M26_SCRN
 
 
 ## only want to look at maternal adverse events 
-# if (exists("m19_merged") == TRUE){ m19_merged$INFANTID = NA }
 if (exists("m21_merged") == TRUE){ m21_merged <- m21_merged %>% filter(M21_AETERM %in% c(1,4,88)) }
-# if (exists("m22_merged") == TRUE){ m22_merged$INFANTID = NA }
 
 ## Remove momid and pregid from MNH00 to merge -- we are going to only have the momid and pregid as defined in m02
 m01_wide <- m01_merged %>% filter(M01_TYPE_VISIT == 1) %>% ## only want enrollment visit 
@@ -128,15 +122,6 @@ m01_wide <- m01_merged %>% select(-c(MOMID, PREGID)) %>% filter(SCRNID != "n/a")
 
 
 enroll_bind_all <- left_join(m00_wide, m02_merged, by = c("SITE", "SCRNID", "TYPE_VISIT")) %>% distinct()
-
-#08/18 update: to full join
-# enroll_bind_all <- full_join(m00_wide, m02_merged, by = c("SITE", "SCRNID", "TYPE_VISIT")) %>% distinct()
-# enroll_bind_all <- enroll_bind_all %>% relocate(c(MOMID,PREGID), .after = SCRNID) 
-
-# ## update for 08/18 becuase zambia did not upload m00 -- remove once they upload 
-# enroll_bind_all_m00 = enroll_bind_all %>% select(SITE, SCRNID, MOMID, PREGID, TYPE_VISIT, contains("M00_")) 
-# enroll_bind_all_m02 = enroll_bind_all %>% select(SITE, SCRNID, MOMID, PREGID, TYPE_VISIT, contains("M02_")) 
-
 
 ## Compile all merged forms into list  
 all_out <- mget(ls(pattern = "_merged*"))
@@ -215,10 +200,6 @@ anc_data_wide <- anc_visit_out %>% reduce(full_join, by =  c("SITE","SCRNID", "M
 # Merge MNH00, MNH02 back into the data using the full merged dataset created above (dataframe name = enroll_bind_all)
 anc_data_wide <- full_join(anc_data_wide, enroll_bind_all, by =  c("SITE","MOMID","SCRNID", "PREGID", "TYPE_VISIT")) %>% distinct()
 
-## update for 08/18 because zambia does not have M00 -- remove after they upload
-# anc_data_wide <- full_join(anc_data_wide, enroll_bind_all_m00, by =  c("SITE","MOMID","SCRNID", "PREGID", "TYPE_VISIT")) %>% distinct()
-# anc_data_wide <- full_join(anc_data_wide, enroll_bind_all_m02, by =  c("SITE","MOMID","SCRNID", "PREGID", "TYPE_VISIT")) %>% distinct()
-
 ## Generate visit complete variables for M01 & rename visit type for merging
 m01_merged <- m01_merged %>% 
   mutate(M01_VISIT_COMPLETE = ifelse(M01_MAT_VISIT_MNH01 == 1 | M01_MAT_VISIT_MNH01 == 2, 1, 0)) %>% 
@@ -229,9 +210,6 @@ m01_merged <- m01_merged %>%
 anc_data_wide <- full_join(anc_data_wide, m01_merged, by = c("SITE","SCRNID", "TYPE_VISIT"), multiple = "all") %>% distinct()
 
 ## THE FOLLOWING CODE WILL GENERATE A WIDE DATASET WITH ONE ROW FOR EACH MOM FOR EACH VISIT 
-## Merge all ultrasound data back into full dataset
-#anc_data_wide_visit <- left_join(anc_data_wide_visit, m01_data_to_merge, by = c("SITE", "SCRNID", "MOMID", "PREGID", "TYPE_VISIT")) %>% distinct()
-
 anc_data_wide_visit = anc_data_wide
 
 ## Move MNH00 data to the front the dataframe 
@@ -310,10 +288,6 @@ anc_visit_out <- mget(ls(pattern = "visit_anc_"))
 
 # Merge all forms together 
 anc_data_wide <- anc_visit_out %>% reduce(full_join, by =  c("SITE","SCRNID", "MOMID", "PREGID")) %>% distinct()
-
-# test <- anc_data_wide %>% filter(SITE == "Kenya")
-# dim(test)
-# table(test$M26_TYPE_VISIT_2)
 
 #*****************************************************************************
 #* IPC 
@@ -463,6 +437,7 @@ for(i in names(pnc_data)){
 ## THE FOLLOWING CODE WILL GENERATE A WIDE DATASET WITH ONE ROW FOR EACH MOM FOR EACH VISIT 
 pnc_data_wide_visit <- pnc_data_out %>% reduce(full_join, by =  c("SITE","MOMID", "PREGID", "TYPE_VISIT", "DOB"))
 
+out <- pnc_data_wide_visit %>% filter(SITE == "Zambia")
 ## Final maternal wide dataset by visit type == pnc_data_wide_visit 
 
 ## IN ORDER TO MAKE THE DATA WIDE WITH ONE ROW FOR EACH WOMAN, WE NEED TO ADD A PREFIX TO ALL FORMS THAT ARE FILLED OUT AT MULTIPLE VISITS 
@@ -649,7 +624,7 @@ if (exists("m21_merged") == TRUE){
 
 if (exists("m22_merged") == TRUE){ 
   ## since mnh22 also can be for infants -- we include infantid here but still merge on momid/pregid
-  non_sched_m22 <- m22_merged %>% 
+  non_sched_m22 <- m22_infantmerged %>% 
     ## since this form can be filled out for maternal or infant adverse events -- only filter for maternal events 
     mutate(VISIT_1 = 1) %>% 
     group_by(SITE, MOMID, PREGID, INFANTID) %>%
@@ -697,6 +672,8 @@ MatData_Wide <- left_join(MatData_Wide, non_sched_form_wide_all, by =c("SITE", "
   relocate(any_of(c("SCRNID", "MOMID", "PREGID", "INFANTID")), .after = SITE) %>% 
   distinct()
 
+## remove any gesational ages >=20wks at enrollment ultrasound -- this should be flagged in queries 
+#MatData_Wide <- MatData_Wide %>% filter(GA_US_DAYS_1 < 140 | is.na(GA_US_DAYS_1))
 #*****************************************************************************
 #* Export wide dataset 
 #*****************************************************************************
@@ -706,6 +683,11 @@ setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/"
 save(MatData_Wide, file= paste("MatData_Wide","_", UploadDate,".RData",sep = ""))
 
 # export to shared  
+# first need to make subfolder with upload date
+maindir <- paste0("Z:/Processed Data", sep = "")
+subdir = UploadDate
+dir.create(file.path(maindir, subdir), showWarnings = FALSE)
+
 setwd(paste("Z:/Processed Data/",UploadDate, sep = ""))
 #dt=format(Sys.time(), "%Y-%m-%d")
 save(MatData_Wide, file= paste("MatData_Wide","_", UploadDate,".RData",sep = ""))

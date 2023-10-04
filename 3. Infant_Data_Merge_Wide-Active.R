@@ -25,7 +25,7 @@ rm(list = ls())
 library(tidyverse)
 library(lubridate)
 library(readxl)
-UploadDate = "2023-08-25"
+UploadDate = "2023-09-29"
 
 #*****************************************************************************
 #* Import merged data 
@@ -334,20 +334,12 @@ table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_8)
 #* Export wide dataset 
 #*****************************************************************************
 ## export to personal
-setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
-#dt=format(Sys.time(), "%Y-%m-%d")
-save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
+# setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
+# #dt=format(Sys.time(), "%Y-%m-%d")
+# save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
 
-# export to shared  
-setwd(paste("Z:/Processed Data/",UploadDate, sep = ""))
-#dt=format(Sys.time(), "%Y-%m-%d")
-save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
-
-# out <- m09_merged %>% select(SITE, MOMID, PREGID,M09_INFANTID_INF1, M09_BIRTH_DSTERM_INF1,
-#                              M09_INFANTID_INF2, M09_BIRTH_DSTERM_INF2,
-#                              M09_INFANTID_INF3, M09_BIRTH_DSTERM_INF3,
-#                              M09_INFANTID_INF4, M09_BIRTH_DSTERM_INF4)
-# 
-# out <- out %>% filter(M09_BIRTH_DSTERM_INF1== 2)
-# test <- m24_infantmerged 
+# # export to shared  
+# setwd(paste("Z:/Processed Data/",UploadDate, sep = ""))
+# #dt=format(Sys.time(), "%Y-%m-%d")
+# save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
 # 

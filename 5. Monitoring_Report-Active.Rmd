@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2023-08-28)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2023-10-03)"
 output:
   html_document:
     df_print: paged
@@ -13,6 +13,10 @@ output:
     toc_depth: '4'
     df_print: kable
 always_allow_html: true
+header-includes:
+   - \usepackage{booktabs}
+   
+fontsize: 10pt
 ---
   
 ```{r updates, include=FALSE}
@@ -34,29 +38,20 @@ always_allow_html: true
 }
 ```
 
-<center>
-##### PRISMA MNH and ReMAPP Monitoring Report {.unlisted .unnumbered}
-</center>
-
-&nbsp;
-
 #####  **PRISMA MNH:** Pregnancy Risk and Infant Surveillance and Measurement Alliance Maternal and Newborn Health (PRISMA MNH) Study: A multi-center, prospective cohort study of maternal, newborn, and infant health {.unlisted .unnumbered}
 
 &nbsp;
 
 #####  **ReMAPP:** Redefining Maternal Anemia in Pregnancy and Postpartum (ReMAPP) Study {.unlisted .unnumbered}
 
-<!-- &nbsp; -->
-
-<!-- ##### **Date report issued:** `r Sys.Date()` {.unlisted .unnumbered} -->
-
 &nbsp;
 
 ##### **Includes data from synapse last updated:** {.unlisted .unnumbered}
-##### Kenya : 2023-08-25 {.unlisted .unnumbered}
-##### Pakistan : 2023-08-25 {.unlisted .unnumbered}
-##### Ghana : 2023-08-25 {.unlisted .unnumbered}
-##### Zambia : 2023-08-25 {.unlisted .unnumbered}
+##### Kenya : 2023-09-15 {.unlisted .unnumbered}
+##### Pakistan : 2023-09-15 {.unlisted .unnumbered}
+##### Ghana : 2023-09-15 {.unlisted .unnumbered}
+##### Zambia : 2023-09-15 {.unlisted .unnumbered}
+##### India CMC : 2023-09-15 {.unlisted .unnumbered}
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
@@ -71,13 +66,17 @@ library(naniar)
 #library(dplyr)
 library(RColorBrewer)
 
-UploadDate = "2023-08-25" 
+UploadDate = "2023-09-15" 
 
 setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
 
 ## import all rda files 
 rda_files = list.files(pattern="*.RData")
 walk(rda_files, ~ load(.x, .GlobalEnv))
+
+rm(MatData_Wide)
+rm(InfData_Wide)
+
 
 ```
 
@@ -106,13 +105,15 @@ date_last_enrll_pak <- lastenroll %>% filter(SITE == "Pakistan") %>% select(last
 date_last_enrll_ke <- lastenroll %>% filter(SITE == "Kenya") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_ga <- lastenroll %>% filter(SITE == "Ghana") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_za <- lastenroll %>% filter(SITE == "Zambia") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
+date_last_enrll_cmc <- lastenroll %>% filter(SITE == "India-CMC") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 
 ```
 ##### **Last Enrollment Date: ** 
-##### Kenya : 2023-08-24 {.unlisted .unnumbered}
-##### Pakistan : 2023-08-18 {.unlisted .unnumbered}
-##### Ghana : 2023-08-07 {.unlisted .unnumbered}
-##### Zambia : 2023-08-21 {.unlisted .unnumbered}
+##### Kenya : 2023-09-29 {.unlisted .unnumbered}
+##### Pakistan : 2023-09-29 {.unlisted .unnumbered}
+##### Ghana : 2023-09-29 {.unlisted .unnumbered}
+##### Zambia : 2023-09-29 {.unlisted .unnumbered}
+##### India CMC : 2023-09-29 {.unlisted .unnumbered}
 
 ```{r Table1}
 ## Prescreening and enrollment in the most recent one week 
@@ -121,13 +122,15 @@ MatData_Screen_Enroll$date_last_enrll_pak = date_last_enrll_pak
 MatData_Screen_Enroll$date_last_enrll_ke = date_last_enrll_ke
 MatData_Screen_Enroll$date_last_enrll_ga = date_last_enrll_ga
 MatData_Screen_Enroll$date_last_enrll_za = date_last_enrll_za
+MatData_Screen_Enroll$date_last_enrll_cmc = date_last_enrll_cmc
 
 tb_prescreen_enroll <- MatData_Screen_Enroll %>% 
   filter(
     SITE == "Pakistan" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_pak) |
     SITE == "Kenya" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ke) | 
     SITE == "Ghana" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ga) |
-    SITE == "Zambia" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_za) 
+    SITE == "Zambia" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_za) | 
+    SITE == "India-CMC" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_cmc)  
   ) %>% 
   group_by(SITE) %>% 
   summarise("Pre-screened for PRISMA, n" = sum(PRESCREEN == 1),
@@ -147,7 +150,8 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
     SITE == "Pakistan" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_pak) |
     SITE == "Kenya" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ke) | 
     SITE == "Ghana" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_ga) |
-    SITE == "Zambia" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_za) 
+    SITE == "Zambia" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_za) |
+    SITE == "India-CMC" & (M00_SCRN_OBSSTDAT_1 > date_last_enrll_cmc) 
 
 
   ) %>% 
@@ -165,7 +169,6 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
 # 
 ```
 
-\newpage
 ### **1. PRISMA**
 
 &nbsp;
@@ -188,6 +191,7 @@ bind_rows(tb_prescreen_enroll) %>%
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = "hold_position") %>% 
+  kable_styling(font_size = 13) %>% 
   footnote(alphabet = c("Denominator is pre-screened (MNH00 completed)",
                         "Denominator is n screened (MNH02 completed)"))  %>% 
   pack_rows("Pre-screening (MNH00)", 1, 2, label_row_css = "color: steelblue;")  %>% 
@@ -198,6 +202,8 @@ bind_rows(tb_prescreen_enroll) %>%
 
 &nbsp;
 &nbsp;
+
+\newpage
 
 #### `r emo::ji("pushpin")` Table 2: <span style="text-decoration:underline">Cumulative</span>  pre-screening numbers for PRISMA
 *Value: look at cumulative pre-screening distributions since the start of relaunch. If ineligible, distributions by exclusion criteria are listed below.*
@@ -260,12 +266,15 @@ bind_rows(tb_prescreen_all
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = "hold_position") %>% 
+  kable_styling(font_size = 13) %>%
   footnote(alphabet = c("Denominator is pre- screened (MNH00 completed)"),
            number = c("Other reasons for exclusion include: not feasible to collect the minimal required dataset, medical contraindication, comes from outside the catchment area, refusal to be screened, not interested, deferred, needs to seek spousal consent, or does not have time to proceed with enrollment process"), 
           footnote_order = c( "number", "alphabet"))  %>% 
   pack_rows("Pre-screening", 1, 2, label_row_css = "color: steelblue;")  %>% 
   pack_rows("Reason for exclusion in pre-screening, n(%)^a^", 3, 8, label_row_css = "color: steelblue;") 
 ```
+
+\newpage
 
 &nbsp;
 &nbsp;
@@ -353,6 +362,7 @@ bind_rows(tb_enroll#,
   footnote(alphabet = c("denominator is n screened (MNH02 completed)", 
                         "denominator is n enrolled")
           )  %>% 
+  kable_styling(font_size = 13) %>%
   pack_rows("Enrollment", 1, 4, label_row_css = "color: steelblue;")  %>% 
   pack_rows("Reason not enrolled, n(%)^a^", 5, 8, label_row_css = "color: steelblue;") 
 ```
@@ -556,6 +566,45 @@ enroll_cum_ZA %>%
   ggtitle("Zambia") 
 
 
+# India CMC
+enroll_cum_CMC <- MatData_Screen_Enroll %>% 
+  arrange("", by_group=START_DATE_MOM_WK) %>% 
+  filter(SCREEN == 1 & SITE == "India-CMC" & !is.na(START_DATE_MOM_WK), 
+         START_DATE_MOM_WK > dmy("18/07/2023")) %>% 
+  group_by(START_DATE_MOM_WK) %>% 
+  summarise(enroll_n=sum(ENROLL==1),
+            expect_n=mean(EXPECT)) %>% 
+  mutate(
+  gap = as.numeric(ymd(START_DATE_MOM_WK)-lag(ymd(START_DATE_MOM_WK))),
+  expect_n = case_when(
+    gap <= 1 ~ expect_n,
+    gap > 1 ~ expect_n*gap,
+    is.na(gap) ~ expect_n
+  )) %>% 
+  mutate(expect_cum=cumsum(expect_n),
+         enroll_cum=cumsum(enroll_n))%>% 
+  ungroup() 
+
+enroll_cum_CMC$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_CMC$START_DATE_MOM_WK))
+
+enroll_cum_CMC %>% 
+  ggplot(aes(x = START_DATE_MOM_WK)) +
+  geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
+  geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
+  geom_line(aes(y = expect_cum, color = "Expected")) +
+  geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  scale_color_manual("",
+                     breaks=c("Expected","Enrolled"),
+                     values = c("orange", "royalblue1")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position="bottom",
+        panel.grid.minor = element_blank()) +
+  scale_x_date(date_breaks = "1 week", date_labels = ("%m-%d"), limits = c(dmy("18-07-2023"), UploadDate)) + 
+  xlab("Enrollment Week") +
+  ylab("Site Participant Expected and Enrolled") +
+  ggtitle("India-CMC") 
+
 ```
 
 \newpage
@@ -563,7 +612,7 @@ enroll_cum_ZA %>%
 #### `r emo::ji("pushpin")` Table 4: Study Status for PRISMA MNH Study 
 *Value: look at current status of enrolled women. Each column should sum to 100%.*
 
-```{r Table3}
+```{r Table4}
 ## study status 
 # denominator: c = n all enrolled
 
@@ -594,9 +643,6 @@ tb_status <- MatData_Screen_Enroll %>%
   add_column(
     .before = 1,
     "All sites" = MatData_Screen_Enroll %>% 
-  # left_join(statusOutcome %>% 
-  #             select(SCRNID, MOMID, PREGID, ENROLL), by = c("SCRNID", "MOMID", "PREGID")) %>%
-      mutate(M23_CLOSE_DSDECOD = NA) %>% #remove this after we have data
       filter(ENROLL == 1) %>% 
   plyr::summarise(
     " " = paste0("(n=", sum(c == 1), ")"),
@@ -620,12 +666,13 @@ tb_status <- MatData_Screen_Enroll %>%
   ) 
 ```
 
-```{r Table3Out}
+```{r Table4Out}
 tb_status %>% 
   kbl(caption = "") %>%
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = "hold_position") %>% 
+  kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
   row_spec(0:1, extra_css = "padding: 0px") %>% 
   footnote(alphabet = c("denominator is n enrolled"
@@ -636,8 +683,7 @@ tb_status %>%
 \newpage
 
 #### `r emo::ji("pushpin")` Table 5a: PRISMA Visit Completion (On-Time Windows)
-*Value: Are forms completed for each visit? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).*
-<br>
+*Value: Are forms completed for each visit? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). Goal: 80% completion (100% completion for enrollment).*
 <br>
 
 *Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed on-time window for visit type = i 
@@ -655,51 +701,51 @@ VISIT_COMPLETE_ANC <- Visit_Complete_Anc %>%
       "Enrollment" = paste0(
         format(sum(VC_ENROLL_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ENROLL_NUM == 1, na.rm = TRUE)/sum(ENROLL_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ENROLL_NUM == 1, na.rm = TRUE)/sum(VC_ENROLL_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "Denominator,n" = paste0(
-        format(sum(ENROLL_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ENROLL_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 20" = paste0(
         format(sum(VC_ANC20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC20_NUM == 1, na.rm = TRUE)/sum(ANC20_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC20_NUM == 1, na.rm = TRUE)/sum(VC_ANC20_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
       "Denominator,n " = paste0(
-        format(sum(ANC20_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC20_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
       
       "ANC = 28" = paste0(
         format(sum(VC_ANC28_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC28_NUM == 1, na.rm = TRUE)/sum(ANC28_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC28_NUM == 1, na.rm = TRUE)/sum(VC_ANC28_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
             
       "Denominator,n  " = paste0(
-        format(sum(ANC28_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC28_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
       
       "ANC = 32" = paste0(
         format(sum(VC_ANC32_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC32_NUM == 1, na.rm = TRUE)/sum(ANC32_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC32_NUM == 1, na.rm = TRUE)/sum(VC_ANC32_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
             
       "Denominator,n   " = paste0(
-        format(sum(ANC32_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC32_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 36" = paste0(
         format(sum(VC_ANC36_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC36_NUM == 1, na.rm = TRUE)/sum(ANC36_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC36_NUM == 1, na.rm = TRUE)/sum(VC_ANC36_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
             
       "Denominator,n    " = paste0(
-        format(sum(ANC36_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC36_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
         )
       ) %>%
   t() %>% as.data.frame() %>% 
@@ -713,51 +759,51 @@ VISIT_COMPLETE_ANC <- Visit_Complete_Anc %>%
       "Enrollment" = paste0(
         format(sum(VC_ENROLL_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ENROLL_NUM == 1, na.rm = TRUE)/sum(ENROLL_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ENROLL_NUM == 1, na.rm = TRUE)/sum(VC_ENROLL_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
             
       "Denominator,n" = paste0(
-        format(sum(ENROLL_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ENROLL_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
       
       "ANC = 20" = paste0(
         format(sum(VC_ANC20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC20_NUM == 1, na.rm = TRUE)/sum(ANC20_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC20_NUM == 1, na.rm = TRUE)/sum(VC_ANC20_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
             
       "Denominator,n " = paste0(
-        format(sum(ANC20_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC20_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 28" = paste0(
         format(sum(VC_ANC28_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC28_NUM == 1, na.rm = TRUE)/sum(ANC28_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC28_NUM == 1, na.rm = TRUE)/sum(VC_ANC28_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
             
       "Denominator,n  " = paste0(
-        format(sum(ANC28_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC28_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 32" = paste0(
         format(sum(VC_ANC32_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC32_NUM == 1, na.rm = TRUE)/sum(ANC32_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC32_NUM == 1, na.rm = TRUE)/sum(VC_ANC32_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
             
       "Denominator,n   " = paste0(
-        format(sum(ANC32_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC32_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 36" = paste0(
         format(sum(VC_ANC36_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC36_NUM == 1, na.rm = TRUE)/sum(ANC36_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC36_NUM == 1, na.rm = TRUE)/sum(VC_ANC36_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
             
       "Denominator,n    " = paste0(
-        format(sum(ANC36_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC36_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
         )
       
       ) %>% 
@@ -776,61 +822,61 @@ VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>%
       "PNC = 0" = paste0(
         format(sum(VC_PNC0_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC0_NUM == 1, na.rm = TRUE)/sum(PNC0_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC0_NUM == 1, na.rm = TRUE)/sum(VC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                   
       "Denominator,n" = paste0(
-        format(sum(PNC0_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC0_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 1" = paste0(
         format(sum(VC_PNC1_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC1_NUM == 1, na.rm = TRUE)/sum(PNC1_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC1_NUM == 1, na.rm = TRUE)/sum(VC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                         
       "Denominator,n " = paste0(
-        format(sum(PNC1_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC1_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 4" = paste0(
         format(sum(VC_PNC4_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC4_NUM == 1, na.rm = TRUE)/sum(PNC4_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC4_NUM == 1, na.rm = TRUE)/sum(VC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                         
       "Denominator,n  " = paste0(
-        format(sum(PNC4_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC4_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
       
       "PNC = 6" = paste0(
         format(sum(VC_PNC6_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC6_NUM == 1, na.rm = TRUE)/sum(PNC6_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC6_NUM == 1, na.rm = TRUE)/sum(VC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                         
       "Denominator,n   " = paste0(
-        format(sum(PNC6_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
       
       "PNC = 26" = paste0(
         format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(PNC26_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(VC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                         
       "Denominator,n    " = paste0(
-        format(sum(PNC26_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC26_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
       
       "PNC = 52" = paste0(
         format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(PNC52_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(VC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                         
       "Denominator,n     " = paste0(
-        format(sum(PNC52_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC52_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         )
       ) %>%
   t() %>% as.data.frame() %>% 
@@ -844,61 +890,61 @@ VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>%
       "PNC = 0" = paste0(
         format(sum(VC_PNC0_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC0_NUM == 1, na.rm = TRUE)/sum(PNC0_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC0_NUM == 1, na.rm = TRUE)/sum(VC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                   
       "Denominator,n" = paste0(
-        format(sum(PNC0_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC0_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 1" = paste0(
         format(sum(VC_PNC1_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC1_NUM == 1, na.rm = TRUE)/sum(PNC1_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC1_NUM == 1, na.rm = TRUE)/sum(VC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                         
       "Denominator,n " = paste0(
-        format(sum(PNC1_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC1_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 4" = paste0(
         format(sum(VC_PNC4_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC4_NUM == 1, na.rm = TRUE)/sum(PNC4_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC4_NUM == 1, na.rm = TRUE)/sum(VC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                         
       "Denominator,n  " = paste0(
-        format(sum(PNC4_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC4_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
       
       "PNC = 6" = paste0(
         format(sum(VC_PNC6_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC6_NUM == 1, na.rm = TRUE)/sum(PNC6_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC6_NUM == 1, na.rm = TRUE)/sum(VC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                         
       "Denominator,n   " = paste0(
-        format(sum(PNC6_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 26" = paste0(
         format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(PNC26_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(VC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                         
       "Denominator,n    " = paste0(
-        format(sum(PNC26_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC26_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
       
       "PNC = 52" = paste0(
         format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(PNC52_PASS==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(VC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
                         
       "Denominator,n     " = paste0(
-        format(sum(PNC52_PASS==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC52_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         )
       ) %>% 
         t() %>% 
@@ -944,13 +990,13 @@ bind_rows(VISIT_COMPLETE_ANC,
                  )
                 ) %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
-  kbl(caption = "") %>%
-    footnote(alphabet = c("denominator is n passed window for visit type=i"),
-             general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.", 
-             footnote_order = c("alphabet", "general")) %>% 
+  kbl(caption = "", booktabs = TRUE) %>%
+    footnote(general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.", 
+             footnote_order = "general") %>% 
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = c("repeat_header", "HOLD_position")) %>% 
+  kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
   row_spec(c(1,3,5,7,9,11,13,15,17,19,21), extra_css = "border-bottom: 0px white;") %>% 
   #row_spec(c(2, 4, 6,8,10, 12, 14,16,18,20,22), italic = TRUE) %>% 
@@ -960,12 +1006,10 @@ bind_rows(VISIT_COMPLETE_ANC,
 
 ```
 
-<br>
-<br>
+\newpage
 
 #### `r emo::ji("pushpin")` Table 5b: PRISMA Visit Completion (Late Windows) 
-*Value: Are forms completed for each visit? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). If there is no late window for a visit, the on-time windows are used.*
-<br>
+*Value: Are forms completed for each visit? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). If there is no late window for a visit, the on-time windows are used. Goal: 90% completion (100% completion for enrollment)*
 <br>
 
 *Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i
@@ -983,51 +1027,51 @@ VISIT_COMPLETE_ANC <- Visit_Complete_Anc %>%
       "Enrollment" = paste0(
         format(sum(VC_ENROLL_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ENROLL_NUM_LATE == 1, na.rm = TRUE)/sum(ENROLL_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ENROLL_NUM_LATE == 1, na.rm = TRUE)/sum(VC_ENROLL_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n" = paste0(
-        format(sum(ENROLL_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ENROLL_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 20" = paste0(
         format(sum(VC_ANC20_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC20_NUM_LATE == 1, na.rm = TRUE)/sum(ANC20_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC20_NUM_LATE == 1, na.rm = TRUE)/sum(VC_ANC20_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n " = paste0(
-        format(sum(ANC20_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC20_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 28" = paste0(
         format(sum(VC_ANC28_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC28_NUM_LATE == 1, na.rm = TRUE)/sum(ANC28_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC28_NUM_LATE == 1, na.rm = TRUE)/sum(VC_ANC28_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n  " = paste0(
-        format(sum(ANC28_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC28_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 32" = paste0(
         format(sum(VC_ANC32_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC32_NUM_LATE == 1, na.rm = TRUE)/sum(ANC32_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC32_NUM_LATE == 1, na.rm = TRUE)/sum(VC_ANC32_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n   " = paste0(
-        format(sum(ANC32_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC32_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 36" = paste0(
         format(sum(VC_ANC36_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC36_NUM_LATE == 1, na.rm = TRUE)/sum(ANC36_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC36_NUM_LATE == 1, na.rm = TRUE)/sum(VC_ANC36_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n    " = paste0(
-        format(sum(ANC36_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC36_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         )
       ) %>%
   t() %>% as.data.frame() %>%
@@ -1041,51 +1085,51 @@ VISIT_COMPLETE_ANC <- Visit_Complete_Anc %>%
       "Enrollment" = paste0(
         format(sum(VC_ENROLL_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ENROLL_NUM_LATE == 1, na.rm = TRUE)/sum(ENROLL_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ENROLL_NUM_LATE == 1, na.rm = TRUE)/sum(VC_ENROLL_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n" = paste0(
-        format(sum(ENROLL_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ENROLL_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 20" = paste0(
         format(sum(VC_ANC20_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC20_NUM_LATE == 1, na.rm = TRUE)/sum(ANC20_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC20_NUM_LATE == 1, na.rm = TRUE)/sum(VC_ANC20_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n " = paste0(
-        format(sum(ANC20_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC20_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 28" = paste0(
         format(sum(VC_ANC28_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC28_NUM_LATE == 1, na.rm = TRUE)/sum(ANC28_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC28_NUM_LATE == 1, na.rm = TRUE)/sum(VC_ANC28_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n  " = paste0(
-        format(sum(ANC28_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC28_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 32" = paste0(
         format(sum(VC_ANC32_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC32_NUM_LATE == 1, na.rm = TRUE)/sum(ANC32_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC32_NUM_LATE == 1, na.rm = TRUE)/sum(VC_ANC32_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n   " = paste0(
-        format(sum(ANC32_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC32_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "ANC = 36" = paste0(
         format(sum(VC_ANC36_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_ANC36_NUM_LATE == 1, na.rm = TRUE)/sum(ANC36_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_ANC36_NUM_LATE == 1, na.rm = TRUE)/sum(VC_ANC36_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n    " = paste0(
-        format(sum(ANC36_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_ANC36_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         )
 
       ) %>%
@@ -1104,61 +1148,61 @@ VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>%
       "PNC = 0" = paste0(
         format(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE)/sum(PNC0_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC0_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n" = paste0(
-        format(sum(PNC0_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC0_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 1" = paste0(
         format(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE)/sum(PNC1_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC1_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n " = paste0(
-        format(sum(PNC1_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC1_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 4" = paste0(
         format(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE)/sum(PNC4_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC4_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n  " = paste0(
-        format(sum(PNC4_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC4_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 6" = paste0(
         format(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE)/sum(PNC6_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n   " = paste0(
-        format(sum(PNC6_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC6_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 26" = paste0(
         format(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(PNC26_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n    " = paste0(
-        format(sum(PNC26_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC26_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 52" = paste0(
         format(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(PNC52_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC52_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n     " = paste0(
-        format(sum(PNC52_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC52_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         )
       ) %>%
   t() %>% as.data.frame() %>%
@@ -1172,61 +1216,61 @@ VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>%
       "PNC = 0" = paste0(
         format(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE)/sum(PNC0_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC0_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n" = paste0(
-        format(sum(PNC0_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC0_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 1" = paste0(
         format(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE)/sum(PNC1_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC1_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n " = paste0(
-        format(sum(PNC1_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC1_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 4" = paste0(
         format(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE)/sum(PNC4_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC4_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n  " = paste0(
-        format(sum(PNC4_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC4_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 6" = paste0(
         format(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE)/sum(PNC6_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n   " = paste0(
-        format(sum(PNC6_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC6_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 26" = paste0(
         format(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(PNC26_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n    " = paste0(
-        format(sum(PNC26_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC26_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
       "PNC = 52" = paste0(
         format(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
-        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(PNC52_PASS_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+        format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC52_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "Denominator,n     " = paste0(
-        format(sum(PNC52_PASS_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        format(sum(VC_PNC52_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         )
       ) %>%
         t() %>%
@@ -1272,13 +1316,13 @@ bind_rows(VISIT_COMPLETE_ANC,
                  )
                 ) %>%
   mutate_all(funs(str_replace(., "NaN", "0"))) %>%
-  kbl(caption = "") %>%
-    footnote(alphabet = c("denominator is n passed window for visit type=i"),
-             general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.",
-             footnote_order = c("alphabet", "general")) %>%
+  kbl(caption = "", booktable = TRUE) %>%
+    footnote(general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.",
+             footnote_order = "general") %>%
   kable_paper(bootstrap_options = "striped",
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = c("repeat_header", "HOLD_position")) %>%
+  kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>%
   row_spec(c(1,3,5,7,9,11,13,15,17,19,21), extra_css = "border-bottom: 0px white;") %>%
   #row_spec(c(2, 4, 6,8,10, 12, 14,16,18,20,22), italic = TRUE) %>%
@@ -1288,12 +1332,10 @@ bind_rows(VISIT_COMPLETE_ANC,
 
 ```
 
-
 \newpage
 
 #### `r emo::ji("pushpin")` Table 6: ANC Protocol Compliance
-*Value: Among women successfully contacted during the ANC period, are all expected forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).*
-<br>
+*Value: Among women successfully contacted during the ANC period, are all expected forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). Goal: 100% completion for all forms, except MNH08 where lab results are expected to lag.*
 <br>
 
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
@@ -1504,19 +1546,21 @@ ANC20 <- Prot_Compliance_Anc %>%
         format(sum(M08_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(M08_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
+        ")")
 
-      "MNH25 Maternal Depression" = paste0(
-        format(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-
-       "MNH26 Maternal Fatigue" = paste0(
-        format(sum(!is.na(M26_VISIT_COMPLETE_2)  & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(!is.na(M26_VISIT_COMPLETE_2)  & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")")) %>%
+      # "MNH25 Maternal Depression" = paste0(
+      #   format(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      #   " (",
+      #   format(round(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      #   ")"),
+      # 
+      #  "MNH26 Maternal Fatigue" = paste0(
+      #   format(sum(!is.na(M26_VISIT_COMPLETE_2)  & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      #   " (",
+      #   format(round(sum(!is.na(M26_VISIT_COMPLETE_2)  & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      #   ")")
+      # 
+    ) %>%
     t() %>% 
     as.data.frame() %>%    
         `colnames<-`(c(.[1,])) %>% 
@@ -1564,19 +1608,20 @@ ANC20 <- Prot_Compliance_Anc %>%
         format(sum(M08_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(M08_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
+        ")")
 
-      "MNH25 Maternal Depression" = paste0(
-        format(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-
-       "MNH26 Maternal Fatigue" = paste0(
-        format(sum(!is.na(M26_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(!is.na(M26_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")")) %>%
+      # "MNH25 Maternal Depression" = paste0(
+      #   format(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      #   " (",
+      #   format(round(sum(M25_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      #   ")"),
+      # 
+      #  "MNH26 Maternal Fatigue" = paste0(
+      #   format(sum(!is.na(M26_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      #   " (",
+      #   format(round(sum(!is.na(M26_VISIT_COMPLETE_2) & ANC20_PASS == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      #   ")")
+      ) %>%
         
         t() %>% as.data.frame() %>% unlist() 
 )
@@ -1732,17 +1777,19 @@ ANC32 <- Prot_Compliance_Anc %>%
         format(round(sum(M08_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
       
-      "MNH25 Maternal Lab" = paste0(
-        format(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"), 
-   
-      "MNH26 Maternal Fatigue" = paste0(
-        format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")")) %>%
+      # "MNH25 Maternal Lab" = paste0(
+      #   format(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      #   " (",
+      #   format(round(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      #   ")"), 
+      # 
+      # "MNH26 Maternal Fatigue" = paste0(
+      #   format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      #   " (",
+      #   format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      #   ")")
+  
+  ) %>%
 
   t() %>% as.data.frame() %>% 
   `colnames<-`(c(.[1,]))  %>% 
@@ -1790,18 +1837,20 @@ ANC32 <- Prot_Compliance_Anc %>%
         format(sum(M08_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(M08_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-      "MNH25 Maternal Lab" = paste0(
-        format(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-      
-      "MNH26 Maternal Fatigue" = paste0(
-        format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")")) %>%
+        ")")
+      # "MNH25 Maternal Lab" = paste0(
+      #   format(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      #   " (",
+      #   format(round(sum(M25_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      #   ")"),
+      # 
+      # "MNH26 Maternal Fatigue" = paste0(
+      #   format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      #   " (",
+      #   format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS == 1, na.rm = TRUE)/sum(PC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      #   ")")
+  
+  ) %>%
 
         t() %>% 
         as.data.frame() %>% 
@@ -1931,7 +1980,7 @@ bind_rows(ga_tb,
                  "MNH06 Maternal POC",
                  "MNH07 Maternal Specimen",
                  "MNH08 Maternal Lab",
-                 ## ANC20 (11-19)
+                 ## ANC20 (11-17)
                  "Denominator, n ",                 
                  "MNH01 Ultrasound (optional) ",
                  "MNH04 ANC Clinical Status ",
@@ -1939,9 +1988,9 @@ bind_rows(ga_tb,
                  "MNH06 Maternal POC ",
                  "MNH07 Maternal Specimen ",
                  "MNH08 Maternal Lab ",
-                 "MNH25 Maternal Depression ",
-                 "MNH26 Maternal Fatigue^1^ ",
-                 ## ANC28 (20-26)
+                 #"MNH25 Maternal Depression ",
+                 #"MNH26 Maternal Fatigue^1^ ",
+                 ## ANC28 (18-24)
                  "Denominator, n  ",                 
                  "MNH01 Ultrasound (optional)  ",
                  "MNH04 ANC Clinical Status  ",
@@ -1949,7 +1998,7 @@ bind_rows(ga_tb,
                  "MNH06 Maternal POC  ",
                  "MNH07 Maternal Specimen  ",
                  "MNH08 Maternal Lab  ",
-                 ## ANC32 (27-35)
+                 ## ANC32 (25-31)
                  "Denominator, n   ",                 
                  "MNH01 Ultrasound   ",
                  "MNH04 ANC Clinical Status   ",
@@ -1957,9 +2006,9 @@ bind_rows(ga_tb,
                  "MNH06 Maternal POC   ",
                  "MNH07 Maternal Specimen   ",
                  "MNH08 Maternal Lab   ",
-                 "MNH25 Maternal Depression   ",
-                 "MNH26 Maternal Fatigue^1^   ",
-                 ##ANC36 (36-42)
+                 #"MNH25 Maternal Depression   ",
+                 #"MNH26 Maternal Fatigue^1^   ",
+                 ##ANC36 (32-38)
                  "Denominator, n    ",                 
                  "MNH01 Ultrasound (optional)    ",
                  "MNH04 ANC Clinical Status    ",
@@ -1970,9 +2019,8 @@ bind_rows(ga_tb,
                  )
                )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
-  kbl(caption = "", longtable = T) %>%
-    footnote(alphabet = c("denominator is n enrolled", 
-                      "denominator is n completed any form with visit status=complete AND visit type=Enrollment AND passed on-time window with >19 weeks gestation",
+  kbl(caption = "", booktabs = TRUE) %>%  
+    footnote(alphabet = c("denominator is n completed any form with visit status=complete AND visit type=Enrollment AND passed on-time window with >19 weeks gestation",
                       "denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed on-time window with >22 weeks gestation",
                       "denominator is n completed any form with visit status=complete ANDvisit type=ANC28  AND passed on-time window with >30 weeks gestation",
                       "denominator is n completed any form with visit status=complete AND visit type=ANC32  AND passed on-time window with>33 weeks gestation",
@@ -1983,20 +2031,19 @@ bind_rows(ga_tb,
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = c("repeat_header", "HOLD_position")) %>% 
-              #latex_options = "hold_position") %>% 
+  kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
   row_spec(0:1, extra_css = "padding: 0.1px") %>% 
-  row_spec(c(2,11,20,27,36), bold = TRUE) %>% 
-  #pack_rows("MNH01 Ultrasound", 2, 5, label_row_css = "color: steelblue;") %>%
+  row_spec(c(2,11,18,25,32), bold = TRUE) %>% 
   pack_rows(paste0("Enrollment, n(%)^b^ \nTarget window: <20wks"),2, 10, 
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("ANC = 20, n(%)^c^ \nTarget window: 18 to 22wks", 11, 19, 
+  pack_rows("ANC = 20, n(%)^c^ \nTarget window: 18 to 22wks", 11, 17, 
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("ANC = 28, n(%)^d^ \nTarget window: 26 to 30wks", 20, 26,
+  pack_rows("ANC = 28, n(%)^d^ \nTarget window: 26 to 30wks", 18, 24,
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("ANC = 32, n(%)^e^ \nTarget window: 31 to 33wks", 27, 35,
+  pack_rows("ANC = 32, n(%)^e^ \nTarget window: 31 to 33wks", 25, 31,
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("ANC = 36, n(%)^f^ \nTarget window: 34 to 38wks", 36, 42,
+  pack_rows("ANC = 36, n(%)^f^ \nTarget window: 34 to 38wks", 32, 38,
             label_row_css = "color: steelblue;") 
 
 ```
@@ -2004,8 +2051,7 @@ bind_rows(ga_tb,
 \newpage
 
 #### `r emo::ji("pushpin")` Table 7: ANC Form Completion
-*Value: Are forms completed regardless of visit status?*
-<br>
+*Value: Are forms completed regardless of visit status? Goal: 100% completion for all forms, except MNH08 where lab results are expected to lag.*
 <br>
 
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
@@ -2678,9 +2724,8 @@ bind_rows(ga_tb,
                  )
                )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
-  kbl(caption = "", longtable = T) %>%
-    footnote(alphabet = c("denominator is n enrolled", 
-                      "denominator is n completed any form with any visit status AND visit type=Enrollment AND passed on-time window with >19 weeks gestation",
+  kbl(caption = "", booktabs = TRUE) %>% #longtable = TRUE, 
+    footnote(alphabet = c("denominator is n completed any form with any visit status AND visit type=Enrollment AND passed on-time window with >19 weeks gestation",
                       "denominator is n completed any form with any visit status AND visit type=ANC20 AND passed on-time window with >22 weeks gestation",
                       "denominator is n completed any form with any visit status AND visit type=ANC28 AND passed on-time window with >30 weeks gestation",
                       "denominator is n completed any form with any visit status AND visit type=ANC32 AND passed on-time window with>33 weeks gestation",
@@ -2692,6 +2737,7 @@ bind_rows(ga_tb,
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = c("repeat_header", "HOLD_position")) %>% 
               #latex_options = "hold_position") %>% 
+  kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
   row_spec(0:1, extra_css = "padding: 0.1px") %>% 
   row_spec(c(2,11,20,27,36), bold = TRUE) %>% 
@@ -2711,9 +2757,8 @@ bind_rows(ga_tb,
 
 \newpage
 
-#### `r emo::ji("pushpin")` Table 8a: Maternal PNC Protocol Compliance (On-Time Windows)
-*Value: Among women successfully contacted during the PNC period, are all expected forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).*
-<br>
+#### `r emo::ji("pushpin")` Table 8: PNC Protocol Compliance
+*Value: Among women successfully contacted during the PNC period, are all expected forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). Goal: 100% completion for all forms, except MNH08 where lab results are expected to lag*
 <br>
 
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i
@@ -3222,7 +3267,7 @@ bind_rows(birthoutcome,
                  )
                )  %>%
   mutate_all(funs(str_replace(., "NaN", "0"))) %>%
-  kbl(caption = "", longtable = T) %>%
+  kbl(caption = "",  booktabs = TRUE) %>% #longtable = TRUE,
     footnote(alphabet = c("denominator is n completed any form with visit status=complete AND visit type=PNC0 AND passed on-time window with >5 days postpartum",
                       "denominator is n completed any form with visit status=complete AND visit type=PNC1 AND passed on-time window with 14 days postpartum",
                       "denominator is n completed any form with visit status=complete AND visit type=PNC4 AND passed on-time window with >35 days postpartum",
@@ -3235,6 +3280,7 @@ bind_rows(birthoutcome,
   kable_paper(bootstrap_options = "striped",
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = c("repeat_header", "HOLD_position")) %>%
+  kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>%
   row_spec(0:1, extra_css = "padding: 0.1px") %>%
   row_spec(c(2,5,8,11,18,24 ), bold = TRUE) %>%
@@ -3256,9 +3302,8 @@ bind_rows(birthoutcome,
 
 \newpage
 
-#### `r emo::ji("pushpin")` Table 9: Maternal PNC Form Completion
-*Value: Are forms completed regardless of visit status?*
-<br>
+#### `r emo::ji("pushpin")` Table 9: PNC Form Completion
+*Value: Are forms completed regardless of visit status? Goal: 100% completion for all forms, except MNH08 where lab results are expected to lag.*
 <br>
 
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i
@@ -4005,7 +4050,7 @@ bind_rows(birthoutcome,
                  )
                )  %>%
   mutate_all(funs(str_replace(., "NaN", "0"))) %>%
-  kbl(caption = "", longtable = T) %>%
+  kbl(caption = "", booktabs = TRUE) %>% #longtable = TRUE, 
     footnote(alphabet = c("denominator is n completed any form with any visit status AND visit type=PNC0 AND passed on-time window with >5 days postpartum",
                       "denominator is n completed any form with any visit status AND visit type=PNC1 AND passed on-time window with 14 days postpartum",
                       "denominator is n completed any form with any visit status AND visit type=PNC4 AND passed on-time window with >35 days postpartum",
@@ -4018,6 +4063,7 @@ bind_rows(birthoutcome,
   kable_paper(bootstrap_options = "striped",
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = c("repeat_header", "HOLD_position")) %>%
+  kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>%
   row_spec(0:1, extra_css = "padding: 0.1px") %>%
   row_spec(c(2,5,8,11,18,24 ), bold = TRUE) %>%
@@ -4037,8 +4083,6 @@ bind_rows(birthoutcome,
 
 ```
 
-
-\newpage
 
 <!-- #### `r emo::ji("pushpin")` Table 9: Infant PNC Form Completion -->
 <!-- *Value: Are forms completed regardless of visit status?* -->
@@ -4534,7 +4578,7 @@ bind_rows(birthoutcome,
 <!--                  ) -->
 <!--                )  %>% -->
 <!--   mutate_all(funs(str_replace(., "NaN", "0"))) %>% -->
-<!--   kbl(caption = "", longtable = T) %>% -->
+<!--   kbl(caption = "", longtable = TRUE, booktabs = TRUE) %>% -->
 <!--     footnote(alphabet = c("denominator is n completed any form with any visit status AND visit type=PNC0 AND passed on-time window with >5 days following birth", -->
 <!--                       "denominator is n completed any form with any visit status AND visit type=PNC1 AND passed on-time window with 14 days following birth", -->
 <!--                       "denominator is n completed any form with any visit status AND visit type=PNC4 AND passed on-time window with >35 days following birth", -->
@@ -4564,13 +4608,191 @@ bind_rows(birthoutcome,
 <!--             label_row_css = "color: steelblue;") -->
 
 
-<!-- ``` -->
-
-<!-- \newpage -->
+\newpage
 
 ### **2. ReMAPP** 
 
-#### `r emo::ji("pushpin")` Table 1: ReMAPP healthy cohort eligibility
+
+#### `r emo::ji("pushpin")` Table 1: ReMAPP Protocol Compliance (MNH25 and MNH26) 
+*Value: Among women successfully contacted during the ANC or PNC period, are all expected MNH25 Maternal Depression and MNH26 Maternal Fatigue forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). The table below shows protocol compliance distributions for MNH25 and MNH26 forms following site launch of ReMAPP. These forms can be filled out either during individual visits (e.g., ANC20) or during combined visits after the gestational age window has passed (e.g., combined Enrollment and ANC20 visits).*
+<br>
+<br>
+  
+  *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+  <br>
+    *Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+    ```{r ENROLLMENT OR ANC20 PC}
+    
+    #* Num (hard code in monitoring report rmd): For each form: visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
+    #* Denom: Any form with visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
+    
+    out_tb <- Prot_Compliance_MNH25_MNH26 %>% 
+      rowwise() %>% 
+      group_by(SITE) %>% 
+      summarise(
+        
+        "Denominator, n" = paste0(
+          format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+
+        "MNH25 at ANC20" = paste0(
+          format(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "MNH26 at ANC20" = paste0(
+          format(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+      ## ANC 32
+              
+        "Denominator, n " = paste0(
+          format(sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+
+        "MNH25 at ANC32" = paste0(
+          format(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        "MNH26 at ANC32" = paste0(
+          format(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        ### PNC 6 VISIT 
+        "Denominator, n  " = paste0(
+          format(sum(PC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+
+        "MNH25 at PNC6" = paste0(
+          format(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "MNH26 at PNC6" = paste0(
+          format(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+      )  %>%
+      t() %>% as.data.frame() %>% 
+      `colnames<-`(c(.[1,])) %>% 
+      slice(-1) %>% 
+      add_column(
+        .before = 1,
+        "All sites" = Prot_Compliance_MNH25_MNH26 %>% 
+          plyr::summarise(
+            
+            "Denominator, n" = paste0(
+              format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+
+            "MNH25 at ANC20" = paste0(
+              format(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+              " (",
+              format(round(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+              ")"),
+
+            "MNH26 at ANC20" = paste0(
+              format(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+              " (",
+              format(round(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+              ")"),
+            
+            ## ANC 32
+            "Denominator, n " = paste0(
+              format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+
+            "MNH25 at ANC32" = paste0(
+              format(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+              " (",
+              format(round(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+              ")"),
+            
+            "MNH26 at ANC32" = paste0(
+              format(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+              " (",
+              format(round(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+              ")"),
+
+            ### PNC 6 VISIT 
+                        
+            "Denominator, n   " = paste0(
+              format(sum(PC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+
+            "MNH25 at PNC6" = paste0(
+              format(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+              " (",
+              format(round(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+              ")"),
+            
+            "MNH26 at PNC6" = paste0(
+              format(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+              " (",
+              format(round(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+              ")")
+            
+          ) %>% 
+          t() %>% 
+          as.data.frame() %>% 
+          `colnames<-`(c(.[1,])) %>% unlist() 
+      )
+    
+    
+    ```
+    
+```{r REMAPP table 1 OUT}
+out_tb %>%
+    `rownames<-`(c( ## ANC20 (1-3)
+                   "Denominator, n",
+                   "MNH25 Maternal Depression",
+                   "MNH26 Maternal Fatigue",
+                   ## ANC32 (4-6)
+                   "Denominator, n ",
+                   "MNH25 Maternal Depression ",
+                   "MNH26 Maternal Fatigue ",
+                   ## PNC6 (7-9)
+                   "Denominator, n   ",
+                   "MNH25 Maternal Depression  ",
+                   "MNH26 Maternal Fatigue  "
+                   )
+               )  %>%
+  mutate_all(funs(str_replace(., "NaN", "0"))) %>%
+  kbl(caption = "", booktabs = TRUE) %>% #longtable = TRUE, 
+    footnote(alphabet = c("denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed on-time window with >22 weeks gestation \nOR\n completed any form with visit status=complete AND visit type=ENROLLMENT (if combined ENROLLEMNT visit) AND passed on-time window with >19 weeks gestation",
+                          
+                  "denominator is n completed any form with visit status=complete AND visit type=ANC32 AND passed on-time window with >33 weeks gestation \nOR\n completed any form with visit status=complete AND visit type=ANC36 (if missed ANC32) AND passed on-time window with >38 weeks gestation",
+                  
+                  "denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed on-time window with >7 weeks postpartum"),
+             general = c("Passed window denominators for ANC visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.",
+               "Passed window denominators for PNC visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table."),
+             number = "n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09",
+             footnote_order = c("alphabet", "general")) %>%
+  kable_paper(bootstrap_options = "striped",
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = c("repeat_header", "HOLD_position")) %>%
+  kable_styling(font_size = 13) %>%
+  row_spec(0, extra_css = "border-bottom: 0px white;") %>%
+  #row_spec(0:1, extra_css = "padding: 0.1px") %>%
+  row_spec(c(1,4,7), bold = TRUE) %>%
+  pack_rows(paste0("ANC = 20, n(%)^a^"),1, 3,
+            label_row_css = "color: steelblue;") %>%
+  pack_rows("ANC = 32, n(%)^b^", 4, 6,
+            label_row_css = "color: steelblue;") %>%
+  pack_rows("PNC = 6, n(%)^c^", 7, 9,
+            label_row_css = "color: steelblue;") 
+
+
+```
+
+
+\newpage
+
+#### `r emo::ji("pushpin")` Table 2: ReMAPP healthy cohort eligibility
 *Value: This table will be updated as lab measurements are updated and reported. Those who are unknown may move into eligible or ineligible categories based on updated lab reports. Those who are eligible were enrolled in PRISMA following the launch of ReMAPP at each site. Distributions of eligibility criteria are outlined in Table 2 below.*
 
 ```{r}
@@ -4616,13 +4838,13 @@ healthy_enroll <- healthyOutcome_1 %>%
   ) 
 ```
 
-
 ```{r}
 bind_rows(healthy_enroll) %>% 
   kbl(caption = "") %>%
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = "hold_position") %>% 
+  kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
   row_spec(0:1, extra_css = "padding: 0px") %>% 
   footnote(alphabet = c("denominator is n enrolled in PRISMA")) 
@@ -4631,7 +4853,7 @@ bind_rows(healthy_enroll) %>%
 &nbsp;
 &nbsp;
 
-#### `r emo::ji("pushpin")` Table 2: Proportion of women eligible for ReMAPP healthy cohort by eligibility criteria. 
+#### `r emo::ji("pushpin")` Table 3: Proportion of women eligible for ReMAPP healthy cohort by eligibility criteria. 
 *Value: This table will show the eligible number and percentage of all ReMAPP enrolled women for each criteria at baseline*
 
 ```{r}
@@ -4656,7 +4878,7 @@ criteria_names <- c('Aged 18 to 34 years',
                     # 'Mid-upper arm circumference \n(MUAC) > 23cm',
                     # 'BMI at baseline of >18.5 and <30 kg/m2',
                     'BMI at baseline of >18.5 and <30 kg/m2 \nand Mid-upper arm circumference \n(MUAC) > 23cm',
-                    'Height >=150 cm',
+                    'Height >=153 cm',
                     'Singleton pregnancy',
                     'Not iron deficient (serum ferritin >15 mcg/L– \nadjusted for inflammation)',
                     'No subclinical inflammation \n(CRP > 5 mg/L and/or AGP > 1 g/L)',
@@ -4737,10 +4959,11 @@ enroll_tb <- healthyOutcome_1 %>%
 ## JULY 2023
 enroll_tb %>%
   bind_rows(healthy_tb) %>%
-  kbl(caption = "", longtable = T) %>%
+  kbl(caption = "",  booktabs = TRUE) %>% #longtable = TRUE,
   kable_paper(bootstrap_options = c("striped", "hover"),
               full_width = T, html_font = "Cambria", position = "left",
               latex_option = "hold position") %>%
+  kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>%
   row_spec(0:1, extra_css = "padding: 0px") %>%
   pack_rows("Eligible for ReMAPP Aim 1 enrollment, n(%)^a^", 2, 20, label_row_css = "color: steelblue;") %>%
@@ -4751,16 +4974,15 @@ enroll_tb %>%
 
 \newpage
 
-#### `r emo::ji("pushpin")` Table 3: CBC Hemoglobin measurements for participants in ReMAPP per visit 
+#### `r emo::ji("pushpin")` Table 4: CBC Hemoglobin measurements for participants in ReMAPP per visit 
 *Value: Were all the required CBC hemoglobin measurements taken as directed by the protocol?* 
 
-```{r REMAPP Table 3}
+```{r REMAPP Table 4}
 ## denominators: 
   # DenHBV1 = MNH08 completed with visit type = 1 AND visit status = 1/2 OR enrollment overdue
   # DenHBV2 = MNH08 completed with visit type = 2 AND visit status = 1/2 AND GA at enrollment <= 17wks OR ANC20 overdue
   # DenHBV3 = MNH08 completed with visit type = 3 AND visit status = 1/2 OR ANC28 overdue
   # DenHBV5 = MNH08 completed with visit type = 5 AND visit status = 1/2 OR ANC36 overdue
-
 
 remapp_table3 <- MatData_Hb_Visit %>%
   group_by(SITE) %>%
@@ -4811,7 +5033,7 @@ remapp_table3 <- MatData_Hb_Visit %>%
 
 ```
 
-```{r REMAPP Table 3 Out}
+```{r REMAPP Table 4 Out}
 remapp_table3 %>% 
     `rownames<-`(c(" ",
                   "ANC < 20, n(%)^a^",
@@ -4823,6 +5045,7 @@ remapp_table3 %>%
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = "hold_position") %>% 
+  kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
   row_spec(0:1, extra_css = "padding: 0px") %>% 
   footnote(alphabet = c("denominator is n enrolled", 
@@ -4841,9 +5064,9 @@ remapp_table3 %>%
 &nbsp;
 &nbsp;
 
-#### `r emo::ji("pushpin")` Table 4: Hemoglobin descriptive statistics for participants in ReMAPP cohort
+#### `r emo::ji("pushpin")` Table 5: Hemoglobin descriptive statistics for participants in ReMAPP cohort
 
-```{r REMAPP Table 4}
+```{r REMAPP Table 5}
 
 MatData_Hb_Visit <- MatData_Hb_Visit %>% 
   mutate(M08_CBC_HB_LBORRES_1 = replace(M08_CBC_HB_LBORRES_1, M08_CBC_HB_LBORRES_1 == -7, NA),
@@ -4963,7 +5186,7 @@ remapp_table4 <- MatData_Hb_Visit %>%
 
 ```
 
-```{r REMAPP Table 4 Out}
+```{r REMAPP Table 5 Out}
 
 remapp_table4 %>% 
     `rownames<-`(c(" ", "  ",
@@ -4979,6 +5202,7 @@ remapp_table4 %>%
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = "hold_position") %>% 
+  kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
   row_spec(0:1, extra_css = "padding: 0px") %>% 
   footnote(alphabet = c("denominator is n enrolled", 
@@ -5037,28 +5261,6 @@ ggplot(data = MatData_Hb_GA_Visit,
 
 ```
 
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
-<!-- </br> -->
 \newpage
 
 #### `r emo::ji("pushpin")` Figure 2: ANC hemoglobin values (CBC) by trimester for participants
@@ -5184,4 +5386,3 @@ ggplot() +
 
 
 ```
-

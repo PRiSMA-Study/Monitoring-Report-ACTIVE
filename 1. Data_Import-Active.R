@@ -36,11 +36,14 @@ library(readxl)
 
 # UPDATE EACH RUN # 
 # set upload date 
-UploadDate = "2023-08-25"
+UploadDate = "2023-09-29"
 
 # UPDATE EACH RUN # 
 # create vector of all sites with data in the upload 
-site_vec <- c("Pakistan", "Kenya", "Ghana", "Zambia")
+site_vec <- c("Pakistan", "Kenya", "Ghana", "Zambia", "India-CMC")
+
+# set path to save 
+path_to_save = paste0("~/Monitoring Report/data/merged/" ,UploadDate, "/")
 
 ## import data dictionary -- this will be used to pull field types for each variable  
 data_dict <-read_excel("~/PRiSMAv2Data/Queries/PRiSMA-MNH-Data-Dictionary-Repository-V.2.3-MAR272023.xlsx")
@@ -97,16 +100,15 @@ myfiles <- lapply(myfiles, function (x){
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
-## in order to calculate ga at visit for mnh26, we need to merge in m01 data, but can't do it because ke does not have momid/preig in m01
-## can remove once we have type visit in mnh26 -- we only need this step because we have to calculate gestational ages
+## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
 mnh02_ids <- mnh02_Kenya %>% select(MOMID,PREGID, SCRNID)
 mnh01_Kenya <- mnh01_Kenya %>% select(-MOMID, -PREGID) %>%
   left_join(mnh02_ids, by = c("SCRNID")) 
 
 rm(mnh02_ids)
 
+# rename infantid variable in mnh28
 mnh28_Kenya <- mnh28_Kenya %>% rename("INFANTID" = "INFANTID_INF")
-
 #************************Zambia************************
 site = "Zambia"
 setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
@@ -125,14 +127,27 @@ myfiles <- lapply(myfiles, function (x){
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
-## issue with Zambia pregnancy ids in mnh05 -- just replace with pregnancy ids in mnh02
-mnh02_ids <- mnh02_Zambia %>% select(MOMID,PREGID)
-mnh05_Zambia <- mnh05_Zambia %>% select(-PREGID) %>%
-  left_join(mnh02_ids, by = c("MOMID")) 
-
-rm(mnh02_ids)
 #************************Ghana************************
 site = "Ghana"
+setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+
+## import raw .CSVs in wide format 
+temp = list.files(pattern="*.csv")
+myfiles = lapply(temp, read.csv)
+
+#  ## make sure all column names are uppercase 
+myfiles <- lapply(myfiles, function (x){
+  upper <- toupper(names(x))
+  setnames(x, upper)
+})
+
+## convert to individual dataframes 
+names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+list2env(myfiles, globalenv())
+
+#************************India-CMC************************
+site = "India-CMC"
+
 setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
 
 ## import raw .CSVs in wide format 
@@ -180,7 +195,8 @@ if (exists("m00") == TRUE) {
   date <- lapply(numeric, function(df) {
     m00_dd_date <- data_dict_m00 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m00_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -223,9 +239,7 @@ if (exists("m00") == TRUE) {
   
   
   # Export data in .RData format
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m00_merged, file= paste("m00_merged",".RData",sep = ""))
-  
+  save(m00_merged, file= paste0(path_to_save, "m00_merged",".RData",sep = ""))
   
 }
 
@@ -255,7 +269,8 @@ if (exists("m01") == TRUE) {
   date <- lapply(numeric, function(df) {
     m01_dd_date <- data_dict_m01 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m01_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -297,8 +312,7 @@ if (exists("m01") == TRUE) {
   m01_missing <- lapply(m01_rbind, function(x) setdiff(allNms, colnames(x)))
   
   # Export data in .RData format
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m01_merged, file= paste("m01_merged",".RData",sep = ""))
+  save(m01_merged, file= paste0(path_to_save, "m01_merged",".RData",sep = ""))
   
 }
 
@@ -332,7 +346,8 @@ if (exists("m02") == TRUE) {
   date <- lapply(numeric, function(df) {
     m02_dd_date <- data_dict_m02 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m02_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -373,8 +388,7 @@ if (exists("m02") == TRUE) {
   m02_missing <- lapply(m02_rbind, function(x) setdiff(allNms, colnames(x)))
   
   # Export data in .RData format
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m02_merged, file= paste("m02_merged",".RData",sep = ""))
+  save(m02_merged, file= paste0(path_to_save, "m02_merged",".RData",sep = ""))
   
 }
 
@@ -407,7 +421,8 @@ if (exists("m03") == TRUE) {
   date <- lapply(numeric, function(df) {
     m03_dd_date <- data_dict_m03 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m03_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -446,8 +461,7 @@ if (exists("m03") == TRUE) {
   m03_missing <- lapply(m03_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m03_merged, file= paste("m03_merged",".RData",sep = ""))
+  save(m03_merged, file= paste0(path_to_save, "m03_merged",".RData",sep = ""))
   
 }
 
@@ -483,7 +497,8 @@ if (exists("m04") == TRUE) {
     m04_dd_date <- data_dict_m04 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m04_dd_date
     #date <- lapply(df, function(x) x %>% select(matches(str_c(paste("^",m04_dd_date,"$", sep = "")))))
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -520,8 +535,7 @@ if (exists("m04") == TRUE) {
   m04_missing <- lapply(m04_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m04_merged, file= paste("m04_merged",".RData",sep = ""))
+  save(m04_merged, file= paste0(path_to_save, "m04_merged",".RData",sep = ""))
   
 }
 
@@ -553,7 +567,8 @@ if (exists("m05") == TRUE) {
   date <- lapply(numeric, function(df) {
     m05_dd_date <- data_dict_m05 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m05_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -588,8 +603,7 @@ if (exists("m05") == TRUE) {
   m05_missing <- lapply(m05_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m05_merged, file= paste("m05_merged",".RData",sep = ""))
+  save(m05_merged, file= paste0(path_to_save, "m05_merged",".RData",sep = ""))
   
 }
 
@@ -622,7 +636,8 @@ if (exists("m06") == TRUE) {
   date <- lapply(numeric, function(df) {
     m06_dd_date <- data_dict_m06 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m06_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -632,7 +647,7 @@ if (exists("m06") == TRUE) {
   # remove duplicates and add prefix  
   m06_rbind <- lapply(m06, function(x) x %>% 
                         #add  "M##_"
-                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
+                       #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M06_", .), -c(1:2)) %>% 
                         distinct()
@@ -658,8 +673,7 @@ if (exists("m06") == TRUE) {
   m06_missing <- lapply(m06_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m06_merged, file= paste("m06_merged",".RData",sep = ""))
+  save(m06_merged, file= paste0(path_to_save, "m06_merged",".RData",sep = ""))
   
 }
 
@@ -692,7 +706,8 @@ if (exists("m07") == TRUE) {
   date <- lapply(numeric, function(df) {
     m07_dd_date <- data_dict_m07 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m07_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -702,7 +717,7 @@ if (exists("m07") == TRUE) {
   # remove duplicates and add prefix  
   m07_rbind <- lapply(m07, function(x) x %>% 
                         #add  "M##_"
-                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
+                       #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M07_", .), -c(1:2)) %>% 
                         #remove previous case for duplicates
@@ -733,8 +748,7 @@ if (exists("m07") == TRUE) {
   m07_missing <- lapply(m07_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m07_merged, file= paste("m07_merged",".RData",sep = ""))
+  save(m07_merged, file= paste0(path_to_save, "m07_merged",".RData",sep = ""))
   
 }
 
@@ -766,7 +780,8 @@ if (exists("m08") == TRUE) {
   date <- lapply(numeric, function(df) {
     m08_dd_date <- data_dict_m08 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m08_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -777,7 +792,7 @@ if (exists("m08") == TRUE) {
   # remove duplicates and add prefix  
   m08_rbind <- lapply(m08, function(x) x %>% 
                         #add  "M##_"
-                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
+                       #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M08_", .), -c(1:2)) %>% 
                         #remove previous case for duplicates
@@ -808,8 +823,7 @@ if (exists("m08") == TRUE) {
   m08_missing <- lapply(m08_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m08_merged, file= paste("m08_merged",".RData",sep = ""))
+  save(m08_merged, file= paste0(path_to_save, "m08_merged",".RData",sep = ""))
   
 }
 
@@ -840,7 +854,8 @@ if (exists("m09") == TRUE) {
   date <- lapply(numeric, function(df) {
     m09_dd_date <- data_dict_m09 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m09_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -876,8 +891,7 @@ if (exists("m09") == TRUE) {
   m09_missing <- lapply(m09_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m09_merged, file= paste("m09_merged",".RData",sep = ""))
+  save(m09_merged, file= paste0(path_to_save, "m09_merged",".RData",sep = ""))
   
 }
 
@@ -912,7 +926,8 @@ if (exists("m10") == TRUE) {
   date <- lapply(numeric, function(df) {
     m10_dd_date <- data_dict_m10 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m10_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -922,7 +937,7 @@ if (exists("m10") == TRUE) {
   # remove duplicates and add prefix  
   m10_rbind <- lapply(m10, function(x) x %>% 
                         #add  "M##_"
-                        # filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
+                        #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M10_", .), -c(1:2)) %>% 
                         distinct()
@@ -948,8 +963,7 @@ if (exists("m10") == TRUE) {
   m10_missing <- lapply(m10_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m10_merged, file= paste("m10_merged",".RData",sep = ""))
+  save(m10_merged, file= paste0(path_to_save, "m10_merged",".RData",sep = ""))
   
 }
 
@@ -982,7 +996,8 @@ if (exists("m11") == TRUE) {
   date <- lapply(numeric, function(df) {
     m11_dd_date <- data_dict_m11 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m11_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1019,8 +1034,7 @@ if (exists("m11") == TRUE) {
   m11_missing <- lapply(m11_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m11_merged, file= paste("m11_merged",".RData",sep = ""))
+  save(m11_merged, file= paste0(path_to_save, "m11_merged",".RData",sep = ""))
   
 }
 
@@ -1052,7 +1066,8 @@ if (exists("m12") == TRUE) {
   date <- lapply(numeric, function(df) {
     m12_dd_date <- data_dict_m12 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m12_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1063,7 +1078,7 @@ if (exists("m12") == TRUE) {
   # remove duplicates and add prefix  
   m12_rbind <- lapply(m12, function(x) x %>% 
                         #add  "M##_"
-                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
+                       #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M12_", .), -c(1:3)) %>% 
                         distinct()
@@ -1094,8 +1109,7 @@ if (exists("m12") == TRUE) {
   m12_missing <- lapply(m12_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m12_merged, file= paste("m12_merged",".RData",sep = ""))
+  save(m12_merged, file= paste0(path_to_save, "m12_merged",".RData",sep = ""))
   
 }
 
@@ -1128,7 +1142,8 @@ if (exists("m13") == TRUE) {
   date <- lapply(numeric, function(df) {
     m13_dd_date <- data_dict_m13 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m13_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1139,7 +1154,7 @@ if (exists("m13") == TRUE) {
   # remove duplicates and add prefix
   m13_rbind <- lapply(m13, function(x) x %>%
                         #add  "M##_"
-                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
+                        #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, INFANTID, everything()) %>%
                         rename_with( ~ paste0("M13_", .), -c(1:3)) %>%
                         # group_by(MOMID, PREGID, INFANTID, M13_PNC_N_VISIT) %>%
@@ -1169,8 +1184,7 @@ if (exists("m13") == TRUE) {
   m13_missing <- lapply(m13_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m13_infantmerged, file= paste("m13_infantmerged",".RData",sep = ""))
+  save(m13_infantmerged, file= paste0(path_to_save, "m13_infantmerged",".RData",sep = ""))
   
 }
 
@@ -1204,7 +1218,8 @@ if (exists("m14") == TRUE) {
   date <- lapply(numeric, function(df) {
     m14_dd_date <- data_dict_m14 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m14_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1215,7 +1230,7 @@ if (exists("m14") == TRUE) {
   # remove duplicates and add prefix
   m14_rbind <- lapply(m14, function(x) x %>%
                         #add  "M##_"
-                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
+                        #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID,INFANTID, everything()) %>%
                         rename_with( ~ paste0("M14_", .), -c(1:3)) %>%
                         # group_by(MOMID, PREGID,INFANTID, M14_POC_VISIT) %>%
@@ -1245,8 +1260,7 @@ if (exists("m14") == TRUE) {
   m14_missing <- lapply(m14_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m14_infantmerged, file= paste("m14_infantmerged",".RData",sep = ""))
+  save(m14_infantmerged, file= paste0(path_to_save, "m14_infantmerged",".RData",sep = ""))
   
 }
 
@@ -1279,7 +1293,8 @@ if (exists("m15") == TRUE) {
   date <- lapply(numeric, function(df) {
     m15_dd_date <- data_dict_m15 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m15_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1290,7 +1305,7 @@ if (exists("m15") == TRUE) {
   # remove duplicates and add prefix
   m15_rbind <- lapply(m15, function(x) x %>%
                         #add  "M##_"
-                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
+                       #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID,INFANTID, everything()) %>%
                         rename_with( ~ paste0("M15_", .), -c(1:3)) %>%
                         # group_by(MOMID, PREGID,INFANTID, M15_OBSTERM) %>%
@@ -1320,8 +1335,7 @@ if (exists("m15") == TRUE) {
   m15_missing <- lapply(m15_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m15_infantmerged, file= paste("m15_infantmerged",".RData",sep = ""))
+  save(m15_infantmerged, file= paste0(path_to_save, "m15_infantmerged",".RData",sep = ""))
   
 }
 
@@ -1353,7 +1367,8 @@ if (exists("m16") == TRUE) {
   date <- lapply(numeric, function(df) {
     m16_dd_date <- data_dict_m16 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m16_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1389,8 +1404,7 @@ if (exists("m16") == TRUE) {
   m16_missing <- lapply(m16_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m16_merged, file= paste("m16_merged",".RData",sep = ""))
+  save(m16_merged, file= paste0(path_to_save, "m16_merged",".RData",sep = ""))
   
 }
 
@@ -1422,7 +1436,8 @@ if (exists("m17") == TRUE) {
   date <- lapply(numeric, function(df) {
     m17_dd_date <- data_dict_m17 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m17_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1432,7 +1447,7 @@ if (exists("m17") == TRUE) {
   # remove duplicates and add prefix  
   m17_rbind <- lapply(m17, function(x) x %>% 
                         #add  "M##_"
-                        # filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
+                        #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M17_", .), -c(1:2)) %>% 
                         distinct()
@@ -1458,8 +1473,7 @@ if (exists("m17") == TRUE) {
   m17_missing <- lapply(m17_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m17_merged, file= paste("m17_merged",".RData",sep = ""))
+  save(m17_merged, file= paste0(path_to_save, "m17_merged",".RData",sep = ""))
   
 }
 
@@ -1492,7 +1506,8 @@ if (exists("m18") == TRUE) {
   date <- lapply(numeric, function(df) {
     m18_dd_date <- data_dict_m18 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m18_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1502,7 +1517,7 @@ if (exists("m18") == TRUE) {
   # remove duplicates and add prefix  
   m18_rbind <- lapply(m18, function(x) x %>% 
                         #add  "M##_"
-                        filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
+                        #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M18_", .), -c(1:2)) %>% 
                         distinct()
@@ -1528,8 +1543,7 @@ if (exists("m18") == TRUE) {
   m18_missing <- lapply(m18_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m18_merged, file= paste("m18_merged",".RData",sep = ""))
+  save(m18_merged, file= paste0(path_to_save, "m18_merged",".RData",sep = ""))
   
 }
 
@@ -1562,7 +1576,8 @@ if (exists("m19") == TRUE) {
   date <- lapply(numeric, function(df) {
     m19_dd_date <- data_dict_m19 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m19_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1573,7 +1588,7 @@ if (exists("m19") == TRUE) {
   # remove duplicates and add prefix  
   m19_rbind <- lapply(m19, function(x) x %>% 
                         #add  "M##_"
-                        #  filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
+                        #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
                         rename_with( ~ paste0("M19_", .), -c(1:2)) %>% 
                         distinct()
@@ -1599,8 +1614,7 @@ if (exists("m19") == TRUE) {
   m19_missing <- lapply(m19_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m19_merged, file= paste("m19_merged",".RData",sep = ""))
+  save(m19_merged, file= paste0(path_to_save, "m19_merged",".RData",sep = ""))
   
 }
 
@@ -1633,7 +1647,8 @@ if (exists("m20") == TRUE) {
   date <- lapply(numeric, function(df) {
     m20_dd_date <- data_dict_m20 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m20_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1673,8 +1688,7 @@ if (exists("m20") == TRUE) {
   m20_missing <- lapply(m20_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m20_infantmerged, file= paste("m20_infantmerged",".RData",sep = ""))
+  save(m20_infantmerged, file= paste0(path_to_save, "m20_infantmerged",".RData",sep = ""))
   
 }
 
@@ -1708,7 +1722,8 @@ if (exists("m21") == TRUE) {
   date <- lapply(numeric, function(df) {
     m21_dd_date <- data_dict_m21 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m21_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1744,8 +1759,7 @@ if (exists("m21") == TRUE) {
   m21_missing <- lapply(m21_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m21_merged, file= paste("m21_merged",".RData",sep = ""))
+  save(m21_merged, file= paste0(path_to_save, "m21_merged",".RData",sep = ""))
   
 }
 
@@ -1778,7 +1792,8 @@ if (exists("m22") == TRUE) {
   date <- lapply(numeric, function(df) {
     m22_dd_date <- data_dict_m22 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m22_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1790,7 +1805,7 @@ if (exists("m22") == TRUE) {
   m22_rbind <- lapply(m22, function(x) x %>%
                         #add  "M##_"
                         select(INFANTID, MOMID, PREGID, everything()) %>%
-                        rename_with( ~ paste0("M22_", .), -c(1:2)) %>%
+                        rename_with( ~ paste0("M22_", .), -c(1:3)) %>%
                         # group_by(INFANTID) %>%
                         # arrange(desc(M22_DVSTDAT)) %>%
                         # slice(1) %>%
@@ -1818,8 +1833,7 @@ if (exists("m22") == TRUE) {
   m22_missing <- lapply(m22_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m22_infantmerged, file= paste("m22_infantmerged",".RData",sep = ""))
+  save(m22_merged, file= paste0(path_to_save, "m22_infantmerged",".RData",sep = ""))
   
 }
 
@@ -1850,7 +1864,8 @@ if (exists("m23") == TRUE) {
   date <- lapply(numeric, function(df) {
     m23_dd_date <- data_dict_m23 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m23_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1886,8 +1901,7 @@ if (exists("m23") == TRUE) {
   m23_missing <- lapply(m23_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m23_merged, file= paste("m23_merged",".RData",sep = ""))
+  save(m23_merged, file= paste0(path_to_save, "m23_merged",".RData",sep = ""))
   
 }
 
@@ -1919,7 +1933,8 @@ if (exists("m24") == TRUE) {
   date <- lapply(numeric, function(df) {
     m24_dd_date <- data_dict_m24 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m24_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1959,8 +1974,7 @@ if (exists("m24") == TRUE) {
   m24_missing <- lapply(m24_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m24_infantmerged, file= paste("m24_infantmerged",".RData",sep = ""))
+  save(m24_infantmerged, file= paste0(path_to_save, "m24_infantmerged",".RData",sep = ""))
   
 }
 
@@ -1992,7 +2006,8 @@ if (exists("m25") == TRUE) {
   date <- lapply(numeric, function(df) {
     m25_dd_date <- data_dict_m25 %>% filter(FieldType == "Date")%>% distinct(`Variable Name`) %>% pull(`Variable Name`)
     date <- colnames(df) %in% m25_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -2027,8 +2042,7 @@ if (exists("m25") == TRUE) {
   m25_missing <- lapply(m25_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m25_merged, file= paste("m25_merged",".RData",sep = ""))
+  save(m25_merged, file= paste0(path_to_save, "m25_merged",".RData",sep = ""))
   
 }
 
@@ -2062,8 +2076,9 @@ if (exists("m26") == TRUE) {
   # date <- lapply(numeric, function(df) {
   #   m26_dd_date <- data_dict_m26 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
   #   date <- colnames(df) %in% m26_dd_date
-  #   df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%m/%d/%Y %H:%M"))
-  #   df[date] <- lapply(df[date], ymd)
+  #   df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
+  # df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+  # df[date] <- lapply(df[date], ymd)
   #   df
   # })
   # 
@@ -2097,8 +2112,7 @@ if (exists("m26") == TRUE) {
   m26_missing <- lapply(m26_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m26_merged, file= paste("m26_merged",".RData",sep = ""))
+  save(m26_merged, file= paste0(path_to_save, "m26_merged",".RData",sep = ""))
   
 }
 
@@ -2146,8 +2160,7 @@ if (exists("m28") == TRUE) {
   m28_missing <- lapply(m28_rbind, function(x) setdiff(allNms, colnames(x)))
   
   ## export data 
-  setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
-  save(m28_merged, file= paste("m28_merged",".RData",sep = ""))
+  save(m28_merged, file= paste0(path_to_save, "m28_merged",".RData",sep = ""))
   
 }
 
@@ -2155,11 +2168,9 @@ if (exists("m28") == TRUE) {
 
 ## get table by form - this will show which sites have imported each form 
 form_site <- mget(ls(pattern = "_names*"))
-#View(form_site)
 
 # get list of all missing variables - this will show all the missing variables by form and site 
 varname_missing <- mget(ls(pattern = "._missing*"))
-#View(varname_missing)
 
 # get list of all merged data 
 #mat_data_merged <- mget(ls(pattern = "._merged*")) 
@@ -2182,24 +2193,23 @@ table(m05_merged$SITE, m05_merged$M05_TYPE_VISIT)
 table(m26_merged$SITE, m26_merged$M26_TYPE_VISIT)
 
 ## export as .CSV into network drive
-# 1. place all merged datasets into list
-files_list <- mget(ls(pattern = "_merged"))
-
-#names(files_list) = str_replace(names(files_list),  "_merged", "")
-# 2. rename
-names(files_list) = str_replace(names(files_list),  "m", "mnh")
-
-# 3. set working directory
-# first need to make subfolder with upload date
-maindir <- paste0("Z:/Stacked Data", sep = "")
-subdir = UploadDate
-dir.create(file.path(maindir, subdir), showWarnings = FALSE)
-
-setwd(paste("Z:/Stacked Data/", UploadDate, sep = ""))
-
-# 4. export
-lapply(1:length(files_list), function(i) write.csv(files_list[[i]], 
-                                                   file = paste0(names(files_list[i]), ".csv"),
-                                                   row.names = FALSE))
-
-
+# # 1. place all merged datasets into list
+# files_list <- mget(ls(pattern = "_merged"))
+# 
+# # 2. rename
+# names(files_list) = str_replace(names(files_list),  "m", "mnh")
+# 
+# # 3. set working directory
+# # first need to make subfolder with upload date
+# maindir <- paste0("Z:/Stacked Data", sep = "")
+# subdir = UploadDate
+# dir.create(file.path(maindir, subdir), showWarnings = FALSE)
+# 
+# setwd(paste("Z:/Stacked Data/", UploadDate, sep = ""))
+# 
+# # 4. export
+# lapply(1:length(files_list), function(i) write.csv(files_list[[i]], 
+#                                                    file = paste0(names(files_list[i]), ".csv"),
+#                                                    row.names = FALSE))
+# 
+# 
