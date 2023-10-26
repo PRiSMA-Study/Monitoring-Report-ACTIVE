@@ -2,7 +2,7 @@
 #* INFANT WIDE DATASET by VISIT 
 #*Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #*Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 1 July 2023
+#* Last updated: 25 October 2023
 
 #*Output:   
 #* 1. InfData_Wide.RData wide dataset by INFANTID and visit type (one row for each infant at each visit)
@@ -20,12 +20,12 @@
 #* 8. Make data wide using SITE, INFANTID, VISIT TYPE - InfData_Wide_Visit.RData
 #* 9. Make data wide using SITE, INFANTID - InfData_Wide.RData
 #*****************************************************************************
-rm(list = ls())
+#rm(list = ls())
 
 library(tidyverse)
 library(lubridate)
 library(readxl)
-UploadDate = "2023-09-29"
+UploadDate = "2023-10-13"
 
 #*****************************************************************************
 #* Import merged data 
@@ -37,12 +37,15 @@ rdata_files = list.files(pattern="*.RData")
 walk(rdata_files, ~ load(.x, .GlobalEnv))
 
 #*****************************************************************************
-## rename visit date
+## rename visit date and remove empty infant ids
 if (exists("m09_merged") == TRUE){ m09_merged <- m09_merged %>% mutate(VISIT_DATE = M09_MAT_LD_OHOSTDAT) }
 #if (exists("m11_merged") == TRUE){ m11_merged <- m11_merged %>% mutate(VISIT_DATE = M11_VISIT_OBSSTDAT) }
-if (exists("m13_infantmerged") == TRUE){ m13_infantmerged <- m13_infantmerged %>% mutate(VISIT_DATE = M13_VISIT_OBSSTDAT) }
-if (exists("m14_infantmerged") == TRUE){ m14_infantmerged <- m14_infantmerged %>% mutate(VISIT_DATE = M14_VISIT_OBSSTDAT) }
-if (exists("m15_infantmerged") == TRUE){ m15_infantmerged <- m15_infantmerged %>% mutate(VISIT_DATE = M15_OBSSTDAT) }
+if (exists("m13_infantmerged") == TRUE){ m13_infantmerged <- m13_infantmerged %>% mutate(VISIT_DATE = M13_VISIT_OBSSTDAT) %>% 
+  filter(!is.na(INFANTID))}
+if (exists("m14_infantmerged") == TRUE){ m14_infantmerged <- m14_infantmerged %>% mutate(VISIT_DATE = M14_VISIT_OBSSTDAT) %>% 
+  filter(!is.na(INFANTID))}
+if (exists("m15_infantmerged") == TRUE){ m15_infantmerged <- m15_infantmerged %>% mutate(VISIT_DATE = M15_OBSSTDAT) %>% 
+  filter(!is.na(INFANTID))}
 if (exists("m20_infantmerged") == TRUE){ m20_infantmerged <- m20_infantmerged %>% mutate(VISIT_DATE = M20_OBSSTDAT) }
 if (exists("m21_merged") == TRUE){ m21_merged <- m21_merged %>% mutate(VISIT_DATE = M21_AESTDAT) }
 if (exists("m24_infantmerged") == TRUE){ m24_infantmerged <- m24_infantmerged %>% mutate(VISIT_DATE = M24_CLOSE_DSSTDAT) }
@@ -165,7 +168,8 @@ inf_data_out_wide <- inf_data_out_wide %>% relocate(TYPE_VISIT, .after= INFANTID
 
 ## BY VISIT TYPE 
 ## Merge in MNH11 post-delivery outcomes 
-m11_merged_out <- m11_merged %>% select(-c("MOMID", "PREGID"))
+m11_merged_out <- m11_merged %>% select(-c("MOMID", "PREGID")) %>% 
+  rename_with(~paste0(., "_", 6), .cols = -c("SITE", "INFANTID")) 
 InfData_Wide_Visit <- full_join(inf_data_out_wide, m11_merged_out, by = c("SITE", "INFANTID")) 
 
 ## export data 
@@ -174,7 +178,7 @@ setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/"
 save(InfData_Wide_Visit, file= paste("InfData_Wide_Visit","_", UploadDate,".RData",sep = ""))
 
 # ## NOTE: Forms that only get filled out at delivery (MNH11) will need to be removed from the other visit data as to not have duplicates
-# 
+
 visit_pnc_7 <- inf_data_out_wide %>% 
   filter(TYPE_VISIT == 7) %>% 
   select(-TYPE_VISIT) %>% 
@@ -218,7 +222,9 @@ m24_infantmerged <- m24_infantmerged %>%
 InfData_Wide <- full_join(InfData_Wide, m24_infantmerged, by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% distinct()
 
 ## Merge in MNH11 post-delivery outcomes 
-m11_merged_out <- m11_merged %>% select(-c("MOMID", "PREGID"))
+m11_merged_out <- m11_merged %>% select(-c("MOMID", "PREGID")) %>% 
+  mutate(M11_VISIT_COMPLETE = ifelse(M11_INF_VISIT_MNH11 %in% c(1,2,3), 1, 0)) %>% 
+  rename_with(~paste0(., "_", 6), .cols = -c("SITE", "INFANTID")) 
 InfData_Wide <- full_join(InfData_Wide, m11_merged_out, by = c("SITE","INFANTID")) %>% distinct()
 
 ## Merge in MNH28 infant VA
@@ -326,7 +332,10 @@ InfData_Wide <- left_join(InfData_Wide, non_sched_form_wide_all, by =c("SITE", "
   distinct()
 
 
-
+# out <- all_out[["m15"]] %>%  filter(MOMID == "PF1ceda003-fbc5-4afd-acb9-06d76c5f86a1") %>% 
+#   select(SITE, MOMID, PREGID, INFANTID, M15_TYPE_VISIT)
+# 
+# table(InfData_Wide$INFANTID, useNA = "ifany")
 table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_7)
 table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_8)
 
@@ -334,12 +343,10 @@ table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_8)
 #* Export wide dataset 
 #*****************************************************************************
 ## export to personal
-# setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
-# #dt=format(Sys.time(), "%Y-%m-%d")
-# save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
+setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
+save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
 
 # # export to shared  
-# setwd(paste("Z:/Processed Data/",UploadDate, sep = ""))
-# #dt=format(Sys.time(), "%Y-%m-%d")
-# save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
-# 
+setwd(paste("Z:/Processed Data/",UploadDate, sep = ""))
+save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
+
