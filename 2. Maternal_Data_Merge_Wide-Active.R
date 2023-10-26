@@ -2,7 +2,7 @@
 #* MATERNAL WIDE DATASET BY VISIT 
 #*Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #*Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 17 April 2023
+#* Last updated: 25 October 2023
 
 #*Output:   
 #* 1. MatData_Wide.RData wide dataset by MOMID and visit type (one row for each woman at each visit)
@@ -31,8 +31,9 @@
 
 library(lubridate)
 library(readxl)
+library(tidyverse)
 
-UploadDate = "2023-09-29"
+UploadDate = "2023-10-13"
 
 #*****************************************************************************
 #* Import merged data 
@@ -46,7 +47,11 @@ walk(rdata_files, ~ load(.x, .GlobalEnv))
 #*****************************************************************************
 #* Assign expected visit type and rename "date" varnames 
 #*****************************************************************************
+#* Remove MNH08 variables from MNH07 (Zambia has additional variables)
+m07_merged <- m07_merged %>% select(-contains("MNH08"))
+
 ## Add date variable with consistent naming across forms 
+if (exists("m01_merged") == TRUE){ m01_merged <- m01_merged %>% mutate(VISIT_DATE = M01_US_OHOSTDAT) }
 if (exists("m03_merged") == TRUE){ m03_merged <- m03_merged %>% mutate(VISIT_DATE = M03_SD_OBSSTDAT) }
 if (exists("m04_merged") == TRUE){ m04_merged <- m04_merged %>% mutate(VISIT_DATE = M04_ANC_OBSSTDAT) }
 if (exists("m05_merged") == TRUE){ m05_merged <- m05_merged %>% mutate(VISIT_DATE = M05_ANT_PEDAT) }
@@ -66,7 +71,7 @@ if (exists("m18_merged") == TRUE){ m18_merged <- m18_merged %>% mutate(VISIT_DAT
 if (exists("m19_merged") == TRUE){ m19_merged <- m19_merged %>% mutate(VISIT_DATE = M19_OBSSTDAT) }
 if (exists("m20_merged") == TRUE){ m20_merged <- m20_merged %>% mutate(VISIT_DATE = M20_OBSSTDAT) }
 if (exists("m21_merged") == TRUE){ m21_merged <- m21_merged %>% mutate(VISIT_DATE = M21_AESTDAT) }
-if (exists("m22_infantmerged") == TRUE){ m22_infantmerged <- m22_infantmerged %>% mutate(VISIT_DATE = M22_DVSTDAT) }
+if (exists("m22_merged") == TRUE){ m22_merged <- m22_merged %>% mutate(VISIT_DATE = M22_DVSTDAT) }
 #if (exists("m23_merged") == TRUE){ m23_merged <- m23_merged %>% mutate(VISIT_DATE = M23_CLOSE_DSSTDAT) }
 if (exists("m24_merged") == TRUE){ m24_merged <- m24_merged %>% mutate(VISIT_DATE = M24_CLOSE_DSSTDAT) }
 if (exists("m25_merged") == TRUE){ m25_merged <- m25_merged %>% mutate(VISIT_DATE = M25_OBSSTDAT) }
@@ -93,60 +98,128 @@ if (exists("m26_merged") == TRUE){ m26_merged <- m26_merged %>% select(-M26_SCRN
 if (exists("m21_merged") == TRUE){ m21_merged <- m21_merged %>% filter(M21_AETERM %in% c(1,4,88)) }
 
 ## Remove momid and pregid from MNH00 to merge -- we are going to only have the momid and pregid as defined in m02
-m01_wide <- m01_merged %>% filter(M01_TYPE_VISIT == 1) %>% ## only want enrollment visit 
-  ## count the number of enrollment visits a woman has (screening IDs should be different for mnh01, but some sites are not doing that)
-  group_by(SITE,SCRNID, MOMID, PREGID) %>% 
-  mutate(N_VISITS = n()) %>%
-  slice_max(M01_US_OHOSTDAT) %>% 
-  ungroup() %>% 
-  select(SITE, SCRNID,
-         M01_US_GA_WKS_AGE_FTS1,M01_US_GA_DAYS_AGE_FTS1,
-         M01_US_GA_WKS_AGE_FTS2,M01_US_GA_DAYS_AGE_FTS2,
-         M01_US_GA_WKS_AGE_FTS3,M01_US_GA_DAYS_AGE_FTS3,
-         M01_US_GA_WKS_AGE_FTS4,M01_US_GA_DAYS_AGE_FTS4,
-         M01_GA_LMP_WEEKS_SCORRES, M01_GA_LMP_DAYS_SCORRES,
-         M01_US_OHOSTDAT, -N_VISITS) %>% 
-  filter(SCRNID != "n/a")   ## remove scrnid == n/a for pakistan 
+m01_enroll <- m01_merged %>% filter(M01_TYPE_VISIT == 1) %>% ## only want enrollment visit 
+  select(-MOMID, -PREGID) %>%  # merge in MOMID and PREGID from mnh02 later 
+  rename("TYPE_VISIT" = M01_TYPE_VISIT) %>% 
+  # filter out any ultrasound visit dates that are 07-07-1907
+  filter(M01_US_OHOSTDAT != ymd("1907-07-07")) %>%   
+  # calculate us ga in days with reported ga in wks + days. if ga is -7 or -5, replace with NA
+  ## combine ga weeks and days variables to get a single gestational age variable
+  mutate(GA_US_DAYS_FTS1 =  ifelse(SITE!="India-CMC" & M01_US_GA_WKS_AGE_FTS1!= -7 & M01_US_GA_DAYS_AGE_FTS1 != -7,  (M01_US_GA_WKS_AGE_FTS1 * 7 + M01_US_GA_DAYS_AGE_FTS1), NA), 
+         GA_US_DAYS_FTS2 =  ifelse(SITE!="India-CMC" & M01_US_GA_WKS_AGE_FTS2!= -7 & M01_US_GA_DAYS_AGE_FTS2 != -7,  (M01_US_GA_WKS_AGE_FTS2 * 7 + M01_US_GA_DAYS_AGE_FTS2), NA),
+         GA_US_DAYS_FTS3 =  ifelse(SITE!="India-CMC" & M01_US_GA_WKS_AGE_FTS3!= -7 & M01_US_GA_DAYS_AGE_FTS3 != -7,  (M01_US_GA_WKS_AGE_FTS3 * 7 + M01_US_GA_DAYS_AGE_FTS3), NA),
+         GA_US_DAYS_FTS4 =  ifelse(SITE!="India-CMC" & M01_US_GA_WKS_AGE_FTS4!= -7 & M01_US_GA_DAYS_AGE_FTS4 != -7,  (M01_US_GA_WKS_AGE_FTS4 * 7 + M01_US_GA_DAYS_AGE_FTS4), NA)) %>% 
+  ## combine ga weeks and days variables to get a single gestational age variable - CMC is using acog - use this here 
+  mutate(GA_US_DAYS_FTS1 =  ifelse(SITE=="India-CMC" & M01_CAL_GA_WKS_AGE_FTS1!= -7 & M01_CAL_GA_DAYS_AGE_FTS1 != -7,  (M01_CAL_GA_WKS_AGE_FTS1 * 7 + M01_CAL_GA_DAYS_AGE_FTS1), GA_US_DAYS_FTS1), 
+         GA_US_DAYS_FTS2 =  ifelse(SITE=="India-CMC" & M01_CAL_GA_WKS_AGE_FTS2!= -7 & M01_CAL_GA_DAYS_AGE_FTS2 != -7,  (M01_CAL_GA_WKS_AGE_FTS2 * 7 + M01_CAL_GA_DAYS_AGE_FTS2), GA_US_DAYS_FTS2),
+         GA_US_DAYS_FTS3 =  ifelse(SITE=="India-CMC" & M01_CAL_GA_WKS_AGE_FTS3!= -7 & M01_CAL_GA_DAYS_AGE_FTS3 != -7,  (M01_CAL_GA_WKS_AGE_FTS3 * 7 + M01_CAL_GA_DAYS_AGE_FTS3), GA_US_DAYS_FTS3),
+         GA_US_DAYS_FTS4 =  ifelse(SITE=="India-CMC" & M01_CAL_GA_WKS_AGE_FTS4!= -7 & M01_CAL_GA_DAYS_AGE_FTS4 != -7,  (M01_CAL_GA_WKS_AGE_FTS4 * 7 + M01_CAL_GA_DAYS_AGE_FTS4), GA_US_DAYS_FTS4)) %>% 
+  #  pull the largest GA for multiple fetuses + convert to weeks
+  mutate(US_GA_DAYS = pmax(GA_US_DAYS_FTS1, GA_US_DAYS_FTS2, GA_US_DAYS_FTS3, GA_US_DAYS_FTS4, na.rm = TRUE)) %>% ## where GA_US_DAYS_FTSx is the reported GA by ultrasound (added together M01_US_GA_WKS_AGE_FTSx and M01_US_GA_DAYS_AGE_FTSx to get a single estimate in days)
+  mutate(US_GA_WKS = US_GA_DAYS %/% 7) %>% 
+  #  convert ga by LMP to days and wks
+  mutate(LMP_GA_DAYS =  ifelse(M01_GA_LMP_WEEKS_SCORRES != -7 & M01_GA_LMP_DAYS_SCORRES != -7,  (M01_GA_LMP_WEEKS_SCORRES * 7 + M01_GA_LMP_DAYS_SCORRES), NA)) %>% 
+  mutate(LMP_GA_WKS = LMP_GA_DAYS %/% 7) %>%
+  ## generate indicator variable for missing US 
+  mutate(MISSING_BOTH_US_LMP = ifelse((US_GA_WKS < 0 & LMP_GA_WKS < 0) | 
+                                        (is.na(US_GA_WKS) & is.na(LMP_GA_WKS)), 1, 0)) %>% 
+  #  calculate the difference in days between reported LMP and reported US
+  mutate(GA_DIFF_DAYS = LMP_GA_DAYS-US_GA_DAYS) %>%
+  #  obtain best obstetric estimate in weeks
+  mutate(BOE_GA_DAYS_ENROLL = case_when(LMP_GA_DAYS %/% 7 < 9 ~
+                                          if_else(abs(GA_DIFF_DAYS) <= 5,
+                                                  LMP_GA_DAYS,
+                                                  US_GA_DAYS),
+                                        LMP_GA_DAYS %/% 7 < 16 ~
+                                          if_else(abs(GA_DIFF_DAYS) <=7,
+                                                  LMP_GA_DAYS, US_GA_DAYS),
+                                        LMP_GA_DAYS %/% 7 >= 16 ~
+                                          if_else(abs(GA_DIFF_DAYS) <=10,
+                                                  LMP_GA_DAYS, US_GA_DAYS),
+                                        TRUE ~ US_GA_DAYS)) %>%
+  mutate(BOE_GA_WKS_ENROLL = BOE_GA_DAYS_ENROLL %/% 7) %>% 
+  # generate EDD based on BOE 
+  # "zero out" GA and obtain the estimated "date of conception" 
+  mutate(EST_CONCEP_DATE = M01_US_OHOSTDAT - BOE_GA_DAYS_ENROLL) %>% 
+  # add 280 days to EST_CONCEP_DATE to generate EDD based on BOE 
+  mutate(EDD_BOE = EST_CONCEP_DATE + 280) 
 
 ## Only select ID variables from MNH02 to merge into MNH01 
-m02_wide <- m02_merged %>% select(SITE, SCRNID, MOMID, PREGID, M02_SCRN_OBSSTDAT) %>%  filter(SCRNID != "n/a") ## remove scrnid == n/a for pakistan 
+m02_wide <- m02_merged %>% select(SITE, SCRNID, MOMID, PREGID, M02_SCRN_OBSSTDAT) 
 
 ## Merge enrollment form with US form to get GA at enrollment -- SUBSET OF DATA 
-enroll_bind <- left_join(m01_wide, m02_wide, by = c("SITE", "SCRNID")) %>% distinct()
-enroll_bind <- enroll_bind %>% relocate(c(MOMID,PREGID), .after = SCRNID) 
+enroll_bind <- full_join(m02_wide, m01_enroll, by = c("SITE", "SCRNID")) %>% distinct()
+enroll_bind <- enroll_bind %>% relocate(c(MOMID,PREGID), .after = SCRNID) %>% 
+  select(SITE,SCRNID, MOMID, PREGID, EST_CONCEP_DATE, BOE_GA_DAYS_ENROLL, 
+         BOE_GA_WKS_ENROLL, EDD_BOE, M02_SCRN_OBSSTDAT) %>% distinct()
+
+## merge momid and pregid into mnh01 to merge in later 
+m02_ids <- m02_merged %>% select(SITE, SCRNID, MOMID, PREGID) ## export mnh02 ids
+m01_merged_enroll <- m01_merged %>% filter(M01_TYPE_VISIT == 1)  %>% select(-MOMID, -PREGID) %>%
+  left_join(m02_ids, by = c("SITE", "SCRNID"))
+mnh01_all_visits <- m01_merged %>% filter(M01_TYPE_VISIT != 1)
+m01_merged <- bind_rows(m01_merged_enroll, mnh01_all_visits) # rebind data
+
+## generate sub datasets for MNH00, MNH01, MNH02, and MNH03 to bind in later 
+# (since these are filled out at only one visit, we want to merge them in separately )
+m01_to_bind <- m01_merged %>% 
+  # remove unscheduled visits 
+  filter(M01_TYPE_VISIT!=13, M01_TYPE_VISIT!=14) %>% 
+  # merge in enrollment data including BOE and EST_CONCEP_DATE
+  left_join(enroll_bind[c("SITE", "SCRNID", "MOMID", "PREGID", "EST_CONCEP_DATE")], by = c("SITE", "SCRNID", "MOMID", "PREGID")) %>% 
+  # generate gestational age at each visit 
+  mutate(M01_GESTAGE_AT_VISIT_DAYS = as.numeric(VISIT_DATE - EST_CONCEP_DATE, na.rm= TRUE)) %>% 
+  # add in variable for GA at visit in WEEKS 
+  mutate(M01_GESTAGE_AT_VISIT_WKS = as.numeric(VISIT_DATE - EST_CONCEP_DATE, na.rm= TRUE) %/% 7) %>% 
+  # generate visit complete variable 
+  mutate(M01_VISIT_COMPLETE = ifelse(M01_MAT_VISIT_MNH01 == 1 | M01_MAT_VISIT_MNH01 == 2, 1, 0)) %>%
+  # rename visit date 
+  rename("M01_VISIT_DATE" = VISIT_DATE,
+         "TYPE_VISIT" = M01_TYPE_VISIT) %>% 
+  select(-EST_CONCEP_DATE)
+
+m00_to_bind <- m00_merged %>% 
+  mutate(TYPE_VISIT = 1)
+
+m02_to_bind <- m02_merged %>% 
+  mutate(TYPE_VISIT = 1) %>% 
+  # remove visit date as we will have already included it in the enrollment data subset above
+  # leaving it in here will cause duplicates
+  select(-M02_SCRN_OBSSTDAT)
 
 
-## Merge enrollment for with US form -- FULL DATA (will bind this into ANC data later)
-m00_wide <- m00_merged %>% select(-c(MOMID, PREGID)) %>% filter(SCRNID != "n/a" | is.na(SCRNID)) ## remove momid and screening id 
-m01_wide <- m01_merged %>% select(-c(MOMID, PREGID)) %>% filter(SCRNID != "n/a") # can't do m01 because the visit type is off 
+m03_to_bind <- m03_merged %>% 
+  # merge in enrollment data including BOE and EST_CONCEP_DATE
+  left_join(enroll_bind[c("SITE", "MOMID", "PREGID", "EST_CONCEP_DATE")], by = c("SITE", "MOMID", "PREGID")) %>% 
+  # generate gestational age at each visit 
+  mutate(M03_GESTAGE_AT_VISIT_DAYS = as.numeric(VISIT_DATE - EST_CONCEP_DATE, na.rm= TRUE)) %>% 
+  # add in variable for GA at visit in WEEKS 
+  mutate(M03_GESTAGE_AT_VISIT_WKS = as.numeric(VISIT_DATE - EST_CONCEP_DATE, na.rm= TRUE) %/% 7) %>% 
+  # generate visit complete variable 
+  mutate(M03_VISIT_COMPLETE = ifelse(M03_MAT_VISIT_MNH03 == 1 | M03_MAT_VISIT_MNH03 == 2, 1, 0)) %>%
+  # rename visit date 
+  rename("M03_VISIT_DATE" = VISIT_DATE) %>% 
+  # add visit type 
+  mutate(TYPE_VISIT = 1) %>% 
+  select(-EST_CONCEP_DATE)
 
-
-enroll_bind_all <- left_join(m00_wide, m02_merged, by = c("SITE", "SCRNID", "TYPE_VISIT")) %>% distinct()
-
-## Compile all merged forms into list  
-all_out <- mget(ls(pattern = "_merged*"))
-
-form_vec <- as.vector(paste((gsub("_merged","", names(all_out)))))
-names(all_out) <- form_vec
 
 #*****************************************************************************
 #* ANC FORMS 
 #*****************************************************************************
-## Make Vector of ANC forms  
-anc_vec <- c("m00", "m01", "m02", "m03", "m04", "m05", "m06", "m07", "m08", "m16", "m25", "m26")
-
-# Make a vector of the forms that are included in the data uploaded 
-anc_vec_data <- anc_vec[anc_vec %in% form_vec]
+## Compile all ANC merged forms into list
+anc_out <- list(m04_merged, m05_merged, m06_merged, m07_merged, m08_merged, m25_merged, m26_merged)
+names(anc_out) <- c("m04", "m05", "m06", "m07", "m08", "m25", "m26")
 
 ## Merge enrollment forms with each of the other forms 
 anc_data <- list()
-for (i in anc_vec_data[-c(1:3)]) {
-  anc_data[[i]] <- full_join(all_out[[i]], enroll_bind, by = c("SITE", "MOMID", "PREGID"), multiple = "all") %>% distinct()
+for (i in names(anc_out)) {
+  anc_data[[i]] <- full_join(anc_out[[i]], enroll_bind, by = c("SITE", "MOMID", "PREGID"), multiple = "all") %>% distinct()
 }
 
 # Extract ANC visits in data 
 anc_visits <- c(1,2,3,4,5)
-for (i in anc_vec_data[-c(1:3)]) {
+for (i in names(anc_out)) {
   anc_data[[i]] <- anc_data[[i]] %>% mutate(TYPE_VISIT = if_all(matches("(.+)_TYPE_VISIT"))) %>% 
     filter(TYPE_VISIT %in% anc_visits)
 }
@@ -161,53 +234,38 @@ for (i in anc_vec_data[-c(1:3)]) {
 
 anc_visit_out <- list()
 for(i in names(anc_data)){
-  ## remove m01 variables now that we have GA at ultrasound 
-  m01_to_remove <- grep("M01_", names(anc_data[[i]]))
   
   anc_visit_out[[i]] <- anc_data[[i]] %>% 
     rowwise() %>%
-    ## extract the maximum gestational age for each woman 
-    mutate(GA_US_DAYS_FTS1 =  ifelse(M01_US_GA_WKS_AGE_FTS1!= -7 & M01_US_GA_DAYS_AGE_FTS1 != -7,  (M01_US_GA_WKS_AGE_FTS1 * 7 + M01_US_GA_DAYS_AGE_FTS1), NA), 
-           GA_US_DAYS_FTS2 =  ifelse(M01_US_GA_WKS_AGE_FTS2!= -7 & M01_US_GA_DAYS_AGE_FTS2 != -7,  (M01_US_GA_WKS_AGE_FTS2 * 7 + M01_US_GA_DAYS_AGE_FTS2), NA),
-           GA_US_DAYS_FTS3 =  ifelse(M01_US_GA_WKS_AGE_FTS3!= -7 & M01_US_GA_DAYS_AGE_FTS3 != -7,  (M01_US_GA_WKS_AGE_FTS3 * 7 + M01_US_GA_DAYS_AGE_FTS3), NA),
-           GA_US_DAYS_FTS4 =  ifelse(M01_US_GA_WKS_AGE_FTS4!= -7 & M01_US_GA_DAYS_AGE_FTS4 != -7,  (M01_US_GA_WKS_AGE_FTS4 * 7 + M01_US_GA_DAYS_AGE_FTS4), NA)) %>% 
-    mutate(GA_US_DAYS = pmax(GA_US_DAYS_FTS1, GA_US_DAYS_FTS2, GA_US_DAYS_FTS3, GA_US_DAYS_FTS4, na.rm = TRUE)) %>% 
-    # extract date of enrollment US visit  
-    mutate(BASELINEDATE = ymd(M02_SCRN_OBSSTDAT)) %>%
     group_by(SCRNID, MOMID, PREGID, SITE) %>% 
     ungroup() %>% 
     # add in variable for GA at visit in DAYS 
-    mutate(!!paste0(toupper(i),quo_name("_GA_AT_VISIT_DAYS")) := floor(as.numeric(difftime(VISIT_DATE,M01_US_OHOSTDAT, units = "days")) + GA_US_DAYS)) %>% 
+    mutate(!!paste0(toupper(i),quo_name("_GESTAGE_AT_VISIT_DAYS")) := as.numeric(VISIT_DATE - EST_CONCEP_DATE, na.rm= TRUE)) %>% 
     # add in variable for GA at visit in WEEKS 
-    mutate(!!paste0(toupper(i),quo_name("_GA_AT_VISIT_WKS")) := floor(as.numeric((difftime(VISIT_DATE,M01_US_OHOSTDAT, units = "days")) + GA_US_DAYS)/7)) %>% 
+    mutate(!!paste0(toupper(i),quo_name("_GESTAGE_AT_VISIT_WKS")) := as.numeric(VISIT_DATE - EST_CONCEP_DATE, na.rm= TRUE) %/% 7) %>% 
     # add in binary variable for ANC (Yes == 1, No == 0) 
     mutate(!!paste0(toupper(i),quo_name("_ANC_YN")) := 1) %>% 
     # add in binary variable if visit is complete 
     mutate(!!paste0(toupper(i),quo_name("_VISIT_COMPLETE")) := ifelse(if_all(matches("(.+)_MAT_VISIT_MNH(.+)")) == 1 | if_all(matches("(.+)_MAT_VISIT_MNH(.+)")) == 2, 1, 0)) %>% 
     ## add prefix to new variables 
     rename(!!paste0(toupper(i),quo_name("_VISIT_DATE")) := "VISIT_DATE")  %>%
-    ## remove m01 variables now that we have GA at ultrasound 
-    select(-any_of(m01_to_remove)) %>%
-    select(-c("GA_US_DAYS_FTS1", "GA_US_DAYS_FTS2", "GA_US_DAYS_FTS3", "GA_US_DAYS_FTS4", "M02_SCRN_OBSSTDAT")) %>% 
     ## move type_visit to the front of each dataset
-    relocate(c("TYPE_VISIT", "GA_US_DAYS", "BASELINEDATE"), .after = PREGID) %>% 
-    filter(TYPE_VISIT != 13)
+    relocate(c("TYPE_VISIT"), .after = PREGID) %>% 
+    filter(TYPE_VISIT != 13, TYPE_VISIT != 14) 
 }
 
 # Merge all ANC (minus MNH00-03) forms together 
-anc_data_wide <- anc_visit_out %>% reduce(full_join, by =  c("SITE","SCRNID", "MOMID", "PREGID", "TYPE_VISIT", "GA_US_DAYS", "BASELINEDATE")) %>% distinct()
+anc_data_wide <- anc_visit_out %>% reduce(full_join, by =  c("SITE","SCRNID", "MOMID", "PREGID", "TYPE_VISIT",
+                                                             "BOE_GA_DAYS_ENROLL", "BOE_GA_WKS_ENROLL", "EST_CONCEP_DATE",
+                                                             "M02_SCRN_OBSSTDAT", "EDD_BOE")) %>% distinct()
 
-# Merge MNH00, MNH02 back into the data using the full merged dataset created above (dataframe name = enroll_bind_all)
-anc_data_wide <- full_join(anc_data_wide, enroll_bind_all, by =  c("SITE","MOMID","SCRNID", "PREGID", "TYPE_VISIT")) %>% distinct()
-
-## Generate visit complete variables for M01 & rename visit type for merging
-m01_merged <- m01_merged %>% 
-  mutate(M01_VISIT_COMPLETE = ifelse(M01_MAT_VISIT_MNH01 == 1 | M01_MAT_VISIT_MNH01 == 2, 1, 0)) %>% 
-  rename("TYPE_VISIT" = "M01_TYPE_VISIT")  %>% 
-  select(-c(MOMID, PREGID)) ## since not all sites have momid and pregid for all US visits, remove here and merge in momid+pregid as defined in m02
-
-# Merge MNH01 back into the data 
-anc_data_wide <- full_join(anc_data_wide, m01_merged, by = c("SITE","SCRNID", "TYPE_VISIT"), multiple = "all") %>% distinct()
+# Merge MNH00,MNH01, MNH02, and MNH03 back into the data using the full merged dataset created above (dataframe name = enroll_bind_all)
+anc_data_wide <- anc_data_wide %>% 
+  full_join(m01_to_bind, by = c("SITE", "SCRNID", "MOMID", "PREGID", "TYPE_VISIT")) %>%
+  full_join(m00_to_bind, by = c("SITE","SCRNID", "TYPE_VISIT")) %>%
+  full_join(m02_to_bind, by = c("SITE","SCRNID","MOMID", "PREGID", "TYPE_VISIT")) %>%
+  full_join(m03_to_bind, by = c("SITE","MOMID", "PREGID", "TYPE_VISIT")) %>%
+  distinct()
 
 ## THE FOLLOWING CODE WILL GENERATE A WIDE DATASET WITH ONE ROW FOR EACH MOM FOR EACH VISIT 
 anc_data_wide_visit = anc_data_wide
@@ -215,7 +273,7 @@ anc_data_wide_visit = anc_data_wide
 ## Move MNH00 data to the front the dataframe 
 m00_to_move <- grep("M00_", names(anc_data_wide_visit))
 anc_data_wide_visit<- anc_data_wide_visit %>% 
-  filter(SCRNID != "n/a") %>% 
+  #filter(SCRNID != "n/a") %>% 
   relocate(TYPE_VISIT, .after = PREGID) %>% 
   relocate(any_of(m00_to_move), .after = TYPE_VISIT)
 
@@ -228,6 +286,7 @@ anc_data_wide_visit<- anc_data_wide_visit %>%
 # 2. Add a suffix to the end of each variable to represent the visit type 
 ## Example: data from visit type = 1 would have variables named "HEIGHT_PERES_1" 
 
+
 ## Extract Visit 1 (ANC < 20)
 visit_anc_1 <- anc_data_wide_visit %>% 
   filter(TYPE_VISIT == 1) %>% 
@@ -236,12 +295,16 @@ visit_anc_1 <- anc_data_wide_visit %>%
          M02_VISIT_COMPLETE = case_when(
            !is.na(M02_SCRN_OBSSTDAT) ~ 1,
            is.na(M02_SCRN_OBSSTDAT) ~ 0)) %>% 
-  rename_with(~paste0(., "_", 1), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) 
+  rename_with(~paste0(., "_", 1), 
+              .cols = -c("SITE", "SCRNID", "MOMID", "PREGID", contains("M02"), contains("M00"), 
+                         "EST_CONCEP_DATE", "BOE_GA_DAYS_ENROLL", 
+                         "BOE_GA_WKS_ENROLL", "EDD_BOE")) 
 
 ## NOTE: Forms that only get filled out at enrollment (visit 1) (MNH00, MNH02, MNH03) will need to be removed from the other visit data as to not have duplicates
 m00_to_remove <- grep("M00_", names(anc_data_wide_visit))
 m02_to_remove <- grep("M02_", names(anc_data_wide_visit))
 m03_to_remove <- grep("M03_", names(anc_data_wide_visit))
+baseline_to_remove <- c("EST_CONCEP_DATE", "BOE_GA_DAYS_ENROLL", "BOE_GA_WKS_ENROLL", "EDD_BOE")
 
 ## Extract Visit 2 (ANC 20)
 visit_anc_2 <- anc_data_wide_visit %>% 
@@ -249,6 +312,7 @@ visit_anc_2 <- anc_data_wide_visit %>%
   select(-any_of(m00_to_remove),
          -any_of(m02_to_remove),
          -any_of(m03_to_remove), 
+         -any_of(baseline_to_remove), 
          -TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 2) %>% # US variable "TYPE_VISIT" exists, but does not have the "M01_" prefix -- add here 
   rename_with(~paste0(., "_", 2), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) 
@@ -259,6 +323,7 @@ visit_anc_3 <- anc_data_wide_visit %>%
   select(-any_of(m00_to_remove),
          -any_of(m02_to_remove),
          -any_of(m03_to_remove), 
+         -any_of(baseline_to_remove), 
          -TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 3) %>% # US variable "TYPE_VISIT" exists, but does not have the "M01_" prefix -- add here 
   rename_with(~paste0(., "_", 3), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) 
@@ -269,6 +334,7 @@ visit_anc_4 <- anc_data_wide_visit %>%
   select(-any_of(m00_to_remove),
          -any_of(m02_to_remove),
          -any_of(m03_to_remove), 
+         -any_of(baseline_to_remove),
          -TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 4) %>% # US variable "TYPE_VISIT" exists, but does not have the "M01_" prefix -- add here 
   rename_with(~paste0(., "_", 4), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) 
@@ -278,7 +344,8 @@ visit_anc_5 <- anc_data_wide_visit %>%
   filter(TYPE_VISIT == 5) %>% 
   select(-any_of(m00_to_remove),
          -any_of(m02_to_remove),
-         -any_of(m03_to_remove), 
+         -any_of(m03_to_remove),
+         -any_of(baseline_to_remove), 
          -TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 5) %>% # US variable "TYPE_VISIT" exists, but does not have the "M01_" prefix -- add here 
   rename_with(~paste0(., "_", 5), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) 
@@ -289,21 +356,22 @@ anc_visit_out <- mget(ls(pattern = "visit_anc_"))
 # Merge all forms together 
 anc_data_wide <- anc_visit_out %>% reduce(full_join, by =  c("SITE","SCRNID", "MOMID", "PREGID")) %>% distinct()
 
+# check for duplicates
+# test <- anc_data_wide %>%
+#   relocate(any_of(c("SCRNID", "MOMID", "PREGID")), .after = SITE)
+# out_IDS <- test[duplicated(test[,1:4]),]
+
 #*****************************************************************************
 #* IPC 
 #*****************************************************************************
-
-## Make Vector of IPC forms  
-ipc_vec <- c("m05", "m06", "m07","m09", "m10", "m17")
-
-# Make a vector of the forms that are included in the data uploaded 
-ipc_vec_data <- ipc_vec[ipc_vec %in% form_vec]
-
+## Compile all IPC merged forms into list
+ipc_out <- list(m05_merged, m06_merged, m07_merged, m08_merged, m09_merged, m10_merged, m17_merged)
+names(ipc_out) <- c("m05", "m06", "m07","m08", "m09", "m10", "m17")
 
 # Extract IPC visits in data 
 ipc_data <- list()
-for (i in ipc_vec_data) {
-  ipc_data[[i]] <- all_out[[i]] %>% mutate(TYPE_VISIT = if_all(matches("(.+)_TYPE_VISIT"))) %>% 
+for (i in names(ipc_out)) {
+  ipc_data[[i]] <- ipc_out[[i]] %>% mutate(TYPE_VISIT = if_all(matches("(.+)_TYPE_VISIT"))) %>% 
     filter(TYPE_VISIT == 6)
 }
 
@@ -323,38 +391,15 @@ for(i in names(ipc_data)){
     mutate(!!paste0(toupper(i),quo_name("_IPC_YN")) := 1) %>% 
     # add in binary variable if visit is complete 
     mutate(!!paste0(toupper(i),quo_name("_VISIT_COMPLETE")) := ifelse(if_all(matches("(.+)_MAT_VISIT_MNH(.+)")) == 1 | if_all(matches("(.+)_MAT_VISIT_MNH(.+)")) == 2, 1, 0)) %>% 
-    ## move type_visit to the front of each dataset
+    ## move type_visit to the front of each data set
     relocate(TYPE_VISIT, .after = PREGID)  
 }
+
 
 ## THE FOLLOWING CODE WILL GENERATE A WIDE DATASET WITH ONE ROW FOR EACH MOM FOR EACH VISIT 
 # Merge all forms together 
 ipc_data_wide_visit <- ipc_data_out %>% reduce(full_join, by =  c("SITE","MOMID", "PREGID", "TYPE_VISIT")) %>% distinct()
 
-## Final maternal wide dataset by visit type == ipc_data_wide_visit 
-
-## IF WE WANT TO HAVE A WIDE DATASET WITH 1 ROW FOR EACH WOMAN, THEN WE NEED TO ADD A SUFFIX TO EACH OF THE VARIABLE NAMES 
-## The code does the following:   
-# 1. remove visit type variable (a form-specific visit type variable remains, ex. M09_TYPE_VISIT = 6)
-# 2. Add suffix to the end of the varnames. Since IPC only happens at one time point, all suffixes are "6"
-ipc_data_out_wide <- list()
-for(i in names(ipc_data)){
-  ipc_data_out_wide[[i]] <- ipc_data_out[[i]] %>% 
-    select(-TYPE_VISIT) %>% 
-    rename_with(~paste0(., "_", 6), .cols = -c("SITE", "MOMID", "PREGID")) 
-}
-
-## Final maternal wide dataset == anc_data_wide 
-ipc_data_wide <- ipc_data_out_wide %>% reduce(full_join, by =  c("SITE","MOMID", "PREGID"))
-
-#*****************************************************************************
-#* PNC 
-#*****************************************************************************
-## Make Vector of PNC forms
-pnc_vec <- c("m05", "m06", "m07", "m08", "m12", "m18", "m25", "m26")
-
-# Make a vector of the forms that are included in the data uploaded
-pnc_vec_data <- pnc_vec[pnc_vec %in% form_vec]
 
 ## For each participant, extract the minimum delivery time and minimum delivery date 
 m09 <- m09_merged %>% select(SITE, MOMID, PREGID, M09_INFANTS_FAORRES, 
@@ -384,20 +429,60 @@ m09 <- m09_merged %>% select(SITE, MOMID, PREGID, M09_INFANTS_FAORRES,
          DELIVERY_DATETIME_INF3 = as.POSIXct(DELIVERY_DATETIME_INF3, format= "%Y-%m-%d %H:%M"),
          DELIVERY_DATETIME_INF4 = as.POSIXct(DELIVERY_DATETIME_INF4, format= "%Y-%m-%d %H:%M")) %>%
   # assign minimum dob and time of birth
-  mutate(DOB = 
+  mutate(DELIVERY_DATETIME = 
            pmin(DELIVERY_DATETIME_INF1, DELIVERY_DATETIME_INF2, 
                 DELIVERY_DATETIME_INF3, DELIVERY_DATETIME_INF4, na.rm = TRUE)) %>% 
-  select(SITE, MOMID, PREGID, DOB, M09_INFANTS_FAORRES)
+  mutate(DOB = 
+           pmin(ymd(M09_DELIV_DSSTDAT_INF1), ymd(M09_DELIV_DSSTDAT_INF2), 
+                ymd(M09_DELIV_DSSTDAT_INF3), ymd(M09_DELIV_DSSTDAT_INF4), na.rm = TRUE)) %>% 
+  # merge in mnh01 estimated date of conception variable to calculate age at birth
+  left_join(anc_data_wide[c("SITE", "MOMID", "PREGID", "EST_CONCEP_DATE")], by = c("SITE", "MOMID", "PREGID")) %>%
+  # calculate gestational age at birth
+  mutate(GESTAGE_AT_BIRTH_DAYS = as.numeric(DOB-EST_CONCEP_DATE),
+         GESTAGE_AT_BIRTH_WKS = as.numeric(DOB-EST_CONCEP_DATE) %/% 7) %>% 
+  select(SITE, MOMID, PREGID, DOB, GESTAGE_AT_BIRTH_DAYS, GESTAGE_AT_BIRTH_WKS)
 
-## Merge enrollment forms with each of the other forms 
+ipc_data_wide_visit <- ipc_data_wide_visit %>% left_join(m09, by = c("SITE", "MOMID", "PREGID"))
+
+## Final maternal wide dataset by visit type == ipc_data_wide_visit 
+
+## IF WE WANT TO HAVE A WIDE DATASET WITH 1 ROW FOR EACH WOMAN, THEN WE NEED TO ADD A SUFFIX TO EACH OF THE VARIABLE NAMES 
+## The code does the following:   
+# 1. remove visit type variable (a form-specific visit type variable remains, ex. M09_TYPE_VISIT = 6)
+# 2. Add suffix to the end of the varnames. Since IPC only happens at one time point, all suffixes are "6"
+# ipc_data_out_wide <- list()
+# for(i in names(ipc_data)){
+#   ipc_data_out_wide[[i]] <- ipc_data_out[[i]] %>% 
+#     select(-TYPE_VISIT) %>% 
+#     rename_with(~paste0(., "_", 6), .cols = -c("SITE", "MOMID", "PREGID","DOB", "GESTAGE_AT_BIRTH_DAYS", "GESTAGE_AT_BIRTH_WKS")) 
+# }
+
+ipc_data_wide <- ipc_data_wide_visit %>% select(-TYPE_VISIT) %>% 
+  rename_with(~paste0(., "_", 6), .cols = -c("SITE", "MOMID", "PREGID","DOB", "GESTAGE_AT_BIRTH_DAYS", "GESTAGE_AT_BIRTH_WKS")) 
+
+## Final maternal wide dataset == anc_data_wide 
+# ipc_data_wide <- ipc_data_out_wide %>% reduce(full_join, by =  c("SITE","MOMID", "PREGID"))
+
+# test <- ipc_data_wide %>%
+#   relocate(any_of(c("MOMID", "PREGID")), .after = SITE)
+# out_IDS <- test[duplicated(test[,1:3]),]
+# dim(out_IDS)
+#*****************************************************************************
+#* PNC 
+#*****************************************************************************
+## Compile all PNC merged forms into list
+pnc_out <- list(m05_merged, m06_merged, m07_merged, m08_merged, m12_merged, m25_merged, m26_merged)
+names(pnc_out) <- c("m05", "m06", "m07", "m08", "m12", "m25", "m26")
+
+## Merge m09 (subset of delivery form with gestage_at_birth variables) forms with each of the other forms 
 pnc_data <- list()
-for (i in pnc_vec_data) { 
-  pnc_data[[i]] <- left_join(all_out[[i]], m09, by = c("SITE", "MOMID", "PREGID")) %>% distinct()
+for (i in names(pnc_out)) { 
+  pnc_data[[i]] <- left_join(pnc_out[[i]], m09, by = c("SITE", "MOMID", "PREGID")) %>% distinct()
 }
 
 # Extract PNC visits in data 
 pnc_visits <- c(7,8,9,10,11,12)
-for (i in pnc_vec_data) {
+for (i in names(pnc_out)) {
   pnc_data[[i]] <- pnc_data[[i]] %>% mutate(TYPE_VISIT = if_all(matches("(.+)_TYPE_VISIT"))) %>% 
     filter(TYPE_VISIT %in% pnc_visits)
 }
@@ -417,9 +502,9 @@ for(i in names(pnc_data)){
   pnc_data_out[[i]] <- pnc_data[[i]] %>% 
     rowwise() %>%
     # calculate DAYS since delivery (MIGHT NEED TO CHANGE TO HOURS)
-    mutate(!!paste0(toupper(i),quo_name("_PNC_AT_VISIT_DAYS")) := floor(as.numeric(difftime(VISIT_DATE,DOB), units = "days"))) %>% 
+    mutate(!!paste0(toupper(i),quo_name("_PNC_AT_VISIT_DAYS")) := as.numeric(VISIT_DATE - DOB)) %>% 
     # calculate WEEKS since delivery 
-    mutate(!!paste0(toupper(i),quo_name("_PNC_AT_VISIT_WKS")) := floor(as.numeric(difftime(VISIT_DATE,DOB), units = "days")/7)) %>% 
+    mutate(!!paste0(toupper(i),quo_name("_PNC_AT_VISIT_WKS")) := as.numeric(VISIT_DATE - DOB) %/% 7) %>% 
     # add in binary variable for pnc (Yes == 1, No == 0) 
     mutate(!!paste0(toupper(i),quo_name("_PNC_YN")) := 1) %>% 
     # add in binary variable if visit is complete 
@@ -427,7 +512,7 @@ for(i in names(pnc_data)){
     ## add prefix in to all new variables 
     rename(!!paste0(toupper(i),quo_name("_VISIT_DATE")) := "VISIT_DATE")  %>% 
     ## remove m09 variables
-    select(-any_of(m09_to_remove)) %>% 
+    select(-any_of(m09_to_remove), -GESTAGE_AT_BIRTH_DAYS, -GESTAGE_AT_BIRTH_WKS, -DOB) %>% 
     ## move type_visit to the front of each dataset
     relocate(TYPE_VISIT, .after = PREGID) %>% 
     filter(TYPE_VISIT != 13, TYPE_VISIT!=14)
@@ -435,9 +520,8 @@ for(i in names(pnc_data)){
 
 
 ## THE FOLLOWING CODE WILL GENERATE A WIDE DATASET WITH ONE ROW FOR EACH MOM FOR EACH VISIT 
-pnc_data_wide_visit <- pnc_data_out %>% reduce(full_join, by =  c("SITE","MOMID", "PREGID", "TYPE_VISIT", "DOB"))
+pnc_data_wide_visit <- pnc_data_out %>% reduce(full_join, by =  c("SITE","MOMID", "PREGID", "TYPE_VISIT"))
 
-out <- pnc_data_wide_visit %>% filter(SITE == "Zambia")
 ## Final maternal wide dataset by visit type == pnc_data_wide_visit 
 
 ## IN ORDER TO MAKE THE DATA WIDE WITH ONE ROW FOR EACH WOMAN, WE NEED TO ADD A PREFIX TO ALL FORMS THAT ARE FILLED OUT AT MULTIPLE VISITS 
@@ -451,51 +535,56 @@ visit_pnc_7 <- pnc_data_wide_visit %>%
   filter(TYPE_VISIT == 7) %>% 
   select(-TYPE_VISIT) %>% 
   mutate(M07_TYPE_VISIT = 7) %>% 
-  rename_with(~paste0(., "_", 7), .cols = -c("SITE", "MOMID", "PREGID", "DOB")) 
+  rename_with(~paste0(., "_", 7), .cols = -c("SITE", "MOMID", "PREGID")) 
 
 ## Extract Visit 8 (PNC 1)
 visit_pnc_8 <- pnc_data_wide_visit %>% 
   filter(TYPE_VISIT == 8) %>% 
   select(-TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 8) %>% 
-  rename_with(~paste0(., "_", 8), .cols = -c("SITE", "MOMID", "PREGID", "DOB")) 
+  rename_with(~paste0(., "_", 8), .cols = -c("SITE", "MOMID", "PREGID")) 
 
 ## Extract Visit 9 (PNC 4)
 visit_pnc_9 <- pnc_data_wide_visit %>% 
   filter(TYPE_VISIT == 9) %>% 
   select(-TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 9) %>% 
-  rename_with(~paste0(., "_", 9), .cols = -c("SITE", "MOMID", "PREGID", "DOB")) 
+  rename_with(~paste0(., "_", 9), .cols = -c("SITE", "MOMID", "PREGID")) 
 
 ## Extract Visit 10 (PNC 6)
 visit_pnc_10 <- pnc_data_wide_visit %>% 
   filter(TYPE_VISIT == 10) %>% 
   select(-TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 10) %>% 
-  rename_with(~paste0(., "_", 10), .cols = -c("SITE", "MOMID", "PREGID", "DOB")) 
+  rename_with(~paste0(., "_", 10), .cols = -c("SITE", "MOMID", "PREGID")) 
 
 ## Extract Visit 11 (PNC 26)
 visit_pnc_11 <- pnc_data_wide_visit %>% 
   filter(TYPE_VISIT == 11) %>% 
   select(-TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 11) %>% 
-  rename_with(~paste0(., "_", 11), .cols = -c("SITE", "MOMID", "PREGID", "DOB")) 
+  rename_with(~paste0(., "_", 11), .cols = -c("SITE", "MOMID", "PREGID")) 
 
 ## Extract Visit 12 (PNC 52)
 visit_pnc_12 <- pnc_data_wide_visit %>% 
   filter(TYPE_VISIT == 12) %>% 
   select(-TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 12) %>% 
-  rename_with(~paste0(., "_", 12), .cols = -c("SITE", "MOMID", "PREGID", "DOB")) 
+  rename_with(~paste0(., "_", 12), .cols = -c("SITE", "MOMID", "PREGID")) 
 
 ## Compile all visit type datasets into a list 
 pnc_visit_out <- mget(ls(pattern = "visit_pnc_"))
 
 ## THE FOLLOWING CODE WILL GENERATE A WIDE DATASET WITH ONE ROW FOR EACH MOM FOR EACH VISIT 
 # Merge all forms together 
-pnc_data_wide <- pnc_visit_out %>% reduce(full_join, by =  c("SITE", "MOMID", "PREGID", "DOB")) %>% distinct()
+pnc_data_wide <- pnc_visit_out %>% reduce(full_join, by =  c("SITE", "MOMID", "PREGID")) %>% distinct()
 ## Final maternal wide dataset == pnc_data_wide 
 
+# check for duplicates:
+# test <- pnc_data_wide %>%
+#   relocate(any_of(c("MOMID", "PREGID")), .after = SITE)
+# out_IDS <- test[duplicated(test[,1:3]),]
+# dim(out_IDS)
 #*****************************************************************************
 #* Merge all ANC, IPC, PNC data to get wide dataset BY VISIT 
 #* One row for each mom at each visit 
@@ -518,21 +607,25 @@ MatData_Wide_Visit <- left_join(MatData_Wide_Visit, m23_merged, by =c("SITE", "M
 #*****************************************************************************
 ### MERGE ALL TOGETHER - BY MOMID, PREGID, SCRNID  
 out <- list(anc_data_wide, ipc_data_wide, pnc_data_wide)
-MatData_Wide <- out %>% reduce(full_join, by =  c("SITE", "MOMID", "PREGID"))  %>% relocate(DOB, .after = PREGID)%>% distinct()
+MatData_Wide <- out %>% reduce(full_join, by = c("SITE", "MOMID", "PREGID"))  %>%
+  relocate(DOB, .after = PREGID) %>% distinct()
 
 ## Merge in maternal closeout form (MNH23) -- only filled out once which is why we merge it at the end  
 MatData_Wide <- full_join(MatData_Wide, m23_merged, by =c("SITE", "MOMID", "PREGID")) %>% 
   relocate(any_of(c("SCRNID", "MOMID", "PREGID")), .after = SITE) %>% 
   distinct()
 
+# check for duplicates:
+# test <- MatData_Wide %>%
+#   relocate(any_of(c("SCRNID", "MOMID", "PREGID")), .after = SITE)
+# out_IDS <- test[duplicated(test[,1:4]),]
+# dim(out_IDS)
 
-
-## remove duplicates 8566 (n = 23 (15 unique IDs))
+table(MatData_Wide)
+## remove duplicates
 out_IDS <- MatData_Wide[duplicated(MatData_Wide[,1:4]),]
-out_duplicated_IDS <- out_IDS %>% distinct(SCRNID) %>%  pull(SCRNID)
-MatData_Wide <- MatData_Wide %>% filter(!(SCRNID %in% out_duplicated_IDS))
-
-
+out_duplicated_IDS_SCRNID <- out_IDS %>% distinct(SITE, SCRNID)
+MatData_Wide <- MatData_Wide %>% filter(!(SCRNID %in% out_duplicated_IDS_SCRNID))
 #*****************************************************************************
 #* Merge all forms that do not have visit type 
 #* Steps: 
@@ -624,7 +717,7 @@ if (exists("m21_merged") == TRUE){
 
 if (exists("m22_merged") == TRUE){ 
   ## since mnh22 also can be for infants -- we include infantid here but still merge on momid/pregid
-  non_sched_m22 <- m22_infantmerged %>% 
+  non_sched_m22 <- m22_merged %>% 
     ## since this form can be filled out for maternal or infant adverse events -- only filter for maternal events 
     mutate(VISIT_1 = 1) %>% 
     group_by(SITE, MOMID, PREGID, INFANTID) %>%
@@ -672,6 +765,12 @@ MatData_Wide <- left_join(MatData_Wide, non_sched_form_wide_all, by =c("SITE", "
   relocate(any_of(c("SCRNID", "MOMID", "PREGID", "INFANTID")), .after = SITE) %>% 
   distinct()
 
+# check for duplicates:
+# test <- MatData_Wide %>%
+#   relocate(any_of(c("SCRNID", "MOMID", "PREGID")), .after = SITE)
+# out_IDS <- test[duplicated(test[,1:4]),]
+# dim(out_IDS)
+
 ## remove any gesational ages >=20wks at enrollment ultrasound -- this should be flagged in queries 
 #MatData_Wide <- MatData_Wide %>% filter(GA_US_DAYS_1 < 140 | is.na(GA_US_DAYS_1))
 #*****************************************************************************
@@ -679,7 +778,6 @@ MatData_Wide <- left_join(MatData_Wide, non_sched_form_wide_all, by =c("SITE", "
 #*****************************************************************************
 # export to personal 
 setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
-#dt=format(Sys.time(), "%Y-%m-%d")
 save(MatData_Wide, file= paste("MatData_Wide","_", UploadDate,".RData",sep = ""))
 
 # export to shared  
