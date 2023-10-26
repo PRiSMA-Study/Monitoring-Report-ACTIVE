@@ -36,7 +36,7 @@ library(readxl)
 
 # UPDATE EACH RUN # 
 # set upload date 
-UploadDate = "2023-09-29"
+UploadDate = "2023-10-13"
 
 # UPDATE EACH RUN # 
 # create vector of all sites with data in the upload 
@@ -46,8 +46,7 @@ site_vec <- c("Pakistan", "Kenya", "Ghana", "Zambia", "India-CMC")
 path_to_save = paste0("~/Monitoring Report/data/merged/" ,UploadDate, "/")
 
 ## import data dictionary -- this will be used to pull field types for each variable  
-data_dict <-read_excel("~/PRiSMAv2Data/Queries/PRiSMA-MNH-Data-Dictionary-Repository-V.2.3-MAR272023.xlsx")
-
+data_dict <-read_excel("~/PRiSMAv2Data/PRISMA-Data-Queries-GW/R/PRiSMA-MNH-Data-Dictionary-Repository-V.2.3-MAR272023.xlsx")
 data_dict <- data_dict %>% 
   select(Form,`Variable Name`, `Field Type (Date, Time, Number, Text)`) %>% 
   rename("FieldType" = `Field Type (Date, Time, Number, Text)`)
@@ -82,6 +81,13 @@ myfiles <- lapply(myfiles, function (x){
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
+# replace empty momid and pregid with NA
+mnh02_Pakistan <- mnh02_Pakistan %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
+
+# rename MOMID variable in mnh28
+mnh28_Pakistan <- mnh28_Pakistan %>% rename("MOMID" = "VR.ID")
 #************************Kenya************************
 site = "Kenya"
 setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
@@ -101,11 +107,23 @@ names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
 ## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
-mnh02_ids <- mnh02_Kenya %>% select(MOMID,PREGID, SCRNID)
+mnh02_ids <- mnh02_Kenya %>% select(MOMID,PREGID, SCRNID) %>% 
+  mutate(MOMID = ifelse(MOMID == "N/A",NA, MOMID),
+         PREGID = ifelse(is.na(MOMID), NA, PREGID))
+
 mnh01_Kenya <- mnh01_Kenya %>% select(-MOMID, -PREGID) %>%
   left_join(mnh02_ids, by = c("SCRNID")) 
 
 rm(mnh02_ids)
+
+# replace empty momid and pregid with NA
+mnh01_Kenya <- mnh01_Kenya %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "k"), MOMID, NA),
+         PREGID = ifelse(str_detect(PREGID, "k"), PREGID, NA))
+
+mnh02_Kenya <- mnh02_Kenya %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "K"), MOMID, NA),
+         PREGID = ifelse(str_detect(PREGID, "K"), PREGID, NA))
 
 # rename infantid variable in mnh28
 mnh28_Kenya <- mnh28_Kenya %>% rename("INFANTID" = "INFANTID_INF")
@@ -127,6 +145,18 @@ myfiles <- lapply(myfiles, function (x){
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
+# replace empty momid and pregid with NA
+mnh01_Zambia <- mnh01_Zambia %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "Z"), MOMID, NA),
+         PREGID = ifelse(str_detect(PREGID, "Z"), PREGID, NA))
+
+mnh02_Zambia <- mnh02_Zambia %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "Z"), MOMID, NA),
+         PREGID = ifelse(str_detect(PREGID, "Z"), PREGID, NA))
+
+# rename MOMID variable in mnh28
+mnh28_Zambia <- mnh28_Zambia %>% rename("MOMID" = "PTID")
+
 #************************Ghana************************
 site = "Ghana"
 setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
@@ -146,7 +176,7 @@ names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
 #************************India-CMC************************
-site = "India-CMC"
+site = "India_CMC"
 
 setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
 
@@ -160,9 +190,28 @@ myfiles <- lapply(myfiles, function (x){
   setnames(x, upper)
 })
 
+site = "India-CMC"
+
 ## convert to individual dataframes 
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
+
+## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
+mnh02_ids <- `mnh02_India-CMC` %>% select(MOMID,PREGID, SCRNID)
+`mnh01_India-CMC` <- `mnh01_India-CMC` %>% select(-MOMID, -PREGID) %>%
+  left_join(mnh02_ids, by = c("SCRNID")) 
+
+rm(mnh02_ids)
+
+# replace empty momid and pregid with NA
+`mnh01_India-CMC` <- `mnh01_India-CMC` %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
+
+`mnh02_India-CMC` <- `mnh02_India-CMC` %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
+
 
 #*************************************************
 #* Merge all data by form and site 
@@ -214,6 +263,8 @@ if (exists("m00") == TRUE) {
                         arrange(desc(M00_SCRN_OBSSTDAT)) %>% 
                         slice(1) %>% 
                         ungroup() %>% 
+                        ## remove momid and pregid - only want scrnid in prescreening form
+                        select(-MOMID, -PREGID) %>% 
                         distinct() ## don't pull any duplicate rows -- will need to check to make sure this isn't pulling any duplicate IDs 
                       
   )
@@ -237,6 +288,16 @@ if (exists("m00") == TRUE) {
   # Extract missing varnames from site data
   m00_missing <- lapply(m00_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m00_duplicates <- m00_merged %>% 
+    group_by(SITE, SCRNID) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH00") %>% 
+    select(FORM, SITE, SCRNID, M00_SCRN_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m00_merged <- m00_merged %>% anti_join(m00_duplicates, by = c("SITE","SCRNID"))
   
   # Export data in .RData format
   save(m00_merged, file= paste0(path_to_save, "m00_merged",".RData",sep = ""))
@@ -270,7 +331,7 @@ if (exists("m01") == TRUE) {
     m01_dd_date <- data_dict_m01 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m01_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -311,6 +372,18 @@ if (exists("m01") == TRUE) {
   # Extract missing varnames from site data
   m01_missing <- lapply(m01_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  
+  # Extract duplicates into their own dataset
+  m01_duplicates <- m01_merged %>% 
+    group_by(SITE, SCRNID, MOMID, PREGID, M01_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M01_TYPE_VISIT != 13) %>% 
+    mutate(FORM = "MNH01") %>% 
+    select(FORM, SITE, SCRNID, MOMID, PREGID, M01_TYPE_VISIT, M01_US_OHOSTDAT)
+  
+  # Extract duplicates from merged data 
+  m01_merged <- m01_merged %>% anti_join(m01_duplicates, by = c("SITE","SCRNID", "MOMID", "PREGID", "M01_TYPE_VISIT"))
+
   # Export data in .RData format
   save(m01_merged, file= paste0(path_to_save, "m01_merged",".RData",sep = ""))
   
@@ -387,6 +460,17 @@ if (exists("m02") == TRUE) {
   # Extract missing varnames from site data
   m02_missing <- lapply(m02_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m02_duplicates <- m02_merged %>% 
+    group_by(SITE, SCRNID, MOMID, PREGID) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH02") %>% 
+    select(FORM, SITE, SCRNID, MOMID, PREGID, M02_SCRN_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m02_merged <- m02_merged %>% anti_join(m02_duplicates, by = c("SITE","SCRNID", "MOMID", "PREGID"))
+  
   # Export data in .RData format
   save(m02_merged, file= paste0(path_to_save, "m02_merged",".RData",sep = ""))
   
@@ -459,6 +543,18 @@ if (exists("m03") == TRUE) {
   
   ## get the variables that are missing from sites
   m03_missing <- lapply(m03_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Extract duplicates into their own dataset
+  m03_duplicates <- m03_merged %>% 
+    group_by(SITE, MOMID, PREGID) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH03") %>% 
+    select(FORM, SITE, MOMID, PREGID, M03_SD_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m03_merged <- m03_merged %>% anti_join(m03_duplicates, by = c("SITE", "MOMID", "PREGID"))
+  
   
   ## export data 
   save(m03_merged, file= paste0(path_to_save, "m03_merged",".RData",sep = ""))
@@ -534,6 +630,17 @@ if (exists("m04") == TRUE) {
   ## get the variables that are missing from sites
   m04_missing <- lapply(m04_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m04_duplicates <- m04_merged %>% 
+    group_by(SITE, MOMID, PREGID, M04_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M04_TYPE_VISIT != 13) %>% 
+    mutate(FORM = "MNH04") %>% 
+    select(FORM, SITE, MOMID, PREGID, M04_TYPE_VISIT, M04_ANC_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m04_merged <- m04_merged %>% anti_join(m04_duplicates, by = c("SITE", "MOMID", "PREGID", "M04_TYPE_VISIT"))
+  
   ## export data 
   save(m04_merged, file= paste0(path_to_save, "m04_merged",".RData",sep = ""))
   
@@ -601,6 +708,17 @@ if (exists("m05") == TRUE) {
   
   ## get the variables that are missing from sites
   m05_missing <- lapply(m05_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Extract duplicates into their own dataset
+  m05_duplicates <- m05_merged %>% 
+    group_by(SITE, MOMID, PREGID, M05_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M05_TYPE_VISIT != 13) %>% 
+    mutate(FORM = "MNH05") %>% 
+    select(FORM, SITE, MOMID, PREGID, M05_TYPE_VISIT, M05_ANT_PEDAT)
+  
+  # Extract duplicates from merged data 
+  m05_merged <- m05_merged %>% anti_join(m05_duplicates, by = c("SITE", "MOMID", "PREGID", "M05_TYPE_VISIT"))
   
   ## export data 
   save(m05_merged, file= paste0(path_to_save, "m05_merged",".RData",sep = ""))
@@ -671,6 +789,17 @@ if (exists("m06") == TRUE) {
   
   ## get the variables that are missing from sites
   m06_missing <- lapply(m06_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Extract duplicates into their own dataset
+  m06_duplicates <- m06_merged %>% 
+    group_by(SITE, MOMID, PREGID, M06_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M06_TYPE_VISIT != 13,  M06_TYPE_VISIT != 14) %>% 
+    mutate(FORM = "MNH06") %>% 
+    select(FORM, SITE, MOMID, PREGID, M06_TYPE_VISIT, M06_DIAG_VSDAT)
+  
+  # Extract duplicates from merged data 
+  m06_merged <- m06_merged %>% anti_join(m06_duplicates, by = c("SITE", "MOMID", "PREGID", "M06_TYPE_VISIT"))
   
   ## export data 
   save(m06_merged, file= paste0(path_to_save, "m06_merged",".RData",sep = ""))
@@ -747,6 +876,17 @@ if (exists("m07") == TRUE) {
   ## get the variables that are missing from sites
   m07_missing <- lapply(m07_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m07_duplicates <- m07_merged %>% 
+    group_by(SITE, MOMID, PREGID, M07_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M07_TYPE_VISIT != 13,  M07_TYPE_VISIT != 14) %>% 
+    mutate(FORM = "MNH07") %>% 
+    select(FORM, SITE, MOMID, PREGID, M07_TYPE_VISIT, M07_MAT_SPEC_COLLECT_DAT)
+  
+  # Extract duplicates from merged data 
+  m07_merged <- m07_merged %>% anti_join(m07_duplicates, by = c("SITE", "MOMID", "PREGID", "M07_TYPE_VISIT"))
+  
   ## export data 
   save(m07_merged, file= paste0(path_to_save, "m07_merged",".RData",sep = ""))
   
@@ -822,6 +962,17 @@ if (exists("m08") == TRUE) {
   ## get the variables that are missing from sites
   m08_missing <- lapply(m08_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m08_duplicates <- m08_merged %>% 
+    group_by(SITE, MOMID, PREGID, M08_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M08_TYPE_VISIT != 13,  M08_TYPE_VISIT != 14) %>% 
+    mutate(FORM = "MNH08") %>% 
+    select(FORM, SITE, MOMID, PREGID, M08_TYPE_VISIT, M08_LBSTDAT)
+  
+  # Extract duplicates from merged data 
+  m08_merged <- m08_merged %>% anti_join(m08_duplicates, by = c("SITE", "MOMID", "PREGID", "M08_TYPE_VISIT"))
+  
   ## export data 
   save(m08_merged, file= paste0(path_to_save, "m08_merged",".RData",sep = ""))
   
@@ -889,6 +1040,17 @@ if (exists("m09") == TRUE) {
   
   ## get the variables that are missing from sites
   m09_missing <- lapply(m09_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Extract duplicates into their own dataset
+  m09_duplicates <- m09_merged %>% 
+    group_by(SITE, MOMID, PREGID) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH09", M09_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID,M09_TYPE_VISIT, M09_MAT_LD_OHOSTDAT)
+  
+  # Extract duplicates from merged data 
+  m09_merged <- m09_merged %>% anti_join(m09_duplicates, by = c("SITE", "MOMID", "PREGID"))
   
   ## export data 
   save(m09_merged, file= paste0(path_to_save, "m09_merged",".RData",sep = ""))
@@ -962,6 +1124,17 @@ if (exists("m10") == TRUE) {
   ## get the variables that are missing from sites
   m10_missing <- lapply(m10_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m10_duplicates <- m10_merged %>% 
+    group_by(SITE, MOMID, PREGID) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH10", M10_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID, M10_TYPE_VISIT, M10_VISIT_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m10_merged <- m10_merged %>% anti_join(m10_duplicates, by = c("SITE", "MOMID", "PREGID"))
+  
   ## export data 
   save(m10_merged, file= paste0(path_to_save, "m10_merged",".RData",sep = ""))
   
@@ -1032,6 +1205,17 @@ if (exists("m11") == TRUE) {
   
   ## get the variables that are missing from sites
   m11_missing <- lapply(m11_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Extract duplicates into their own dataset
+  m11_duplicates <- m11_merged %>% 
+    group_by(SITE, MOMID, PREGID, INFANTID) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH11", M11_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID, M11_TYPE_VISIT, M11_VISIT_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m11_merged <- m11_merged %>% anti_join(m11_duplicates, by = c("SITE", "MOMID", "PREGID", "INFANTID"))
   
   ## export data 
   save(m11_merged, file= paste0(path_to_save, "m11_merged",".RData",sep = ""))
@@ -1108,6 +1292,18 @@ if (exists("m12") == TRUE) {
   ## get the variables that are missing from sites
   m12_missing <- lapply(m12_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m12_duplicates <- m12_merged %>% 
+    group_by(SITE, MOMID, PREGID, M12_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M12_TYPE_VISIT != 13,  M12_TYPE_VISIT != 14) %>% 
+    mutate(FORM = "MNH12") %>% 
+    select(FORM, SITE, MOMID, PREGID, M12_TYPE_VISIT, M12_VISIT_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m12_merged <- m12_merged %>% anti_join(m12_duplicates, by = c("SITE", "MOMID", "PREGID", "M12_TYPE_VISIT"))
+  
+  
   ## export data 
   save(m12_merged, file= paste0(path_to_save, "m12_merged",".RData",sep = ""))
   
@@ -1182,6 +1378,17 @@ if (exists("m13") == TRUE) {
   
   ## get the variables that are missing from sites
   m13_missing <- lapply(m13_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Extract duplicates into their own dataset
+  m13_duplicates <- m13_merged %>% 
+    group_by(SITE, MOMID, PREGID,INFANTID, M13_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M13_TYPE_VISIT != 13,  M13_TYPE_VISIT != 14) %>% 
+    mutate(FORM = "MNH13") %>% 
+    select(FORM, SITE, MOMID, PREGID, INFANTID, M13_TYPE_VISIT, M13_VISIT_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m13_infantmerged <- m13_infantmerged %>% anti_join(m13_duplicates, by = c("SITE", "MOMID", "PREGID","INFANTID", "M13_TYPE_VISIT"))
   
   ## export data
   save(m13_infantmerged, file= paste0(path_to_save, "m13_infantmerged",".RData",sep = ""))
@@ -1259,6 +1466,17 @@ if (exists("m14") == TRUE) {
   ## get the variables that are missing from sites
   m14_missing <- lapply(m14_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m14_duplicates <- m14_merged %>% 
+    group_by(SITE, MOMID, PREGID,INFANTID, M14_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M14_TYPE_VISIT != 13,  M14_TYPE_VISIT != 14) %>% 
+    mutate(FORM = "MNH14") %>% 
+    select(FORM, SITE, MOMID, PREGID, INFANTID, M14_TYPE_VISIT, M14_VISIT_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m14_infantmerged <- m14_infantmerged %>% anti_join(m14_duplicates, by = c("SITE", "MOMID", "PREGID","INFANTID", "M14_TYPE_VISIT"))
+  
   ## export data
   save(m14_infantmerged, file= paste0(path_to_save, "m14_infantmerged",".RData",sep = ""))
   
@@ -1334,6 +1552,17 @@ if (exists("m15") == TRUE) {
   ## get the variables that are missing from sites
   m15_missing <- lapply(m15_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m15_duplicates <- m15_merged %>% 
+    group_by(SITE, MOMID, PREGID,INFANTID, M15_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M15_TYPE_VISIT != 13,  M15_TYPE_VISIT != 14) %>% 
+    mutate(FORM = "MNH15") %>% 
+    select(FORM, SITE, MOMID, PREGID, INFANTID, M15_TYPE_VISIT, M15_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m15_infantmerged <- m15_infantmerged %>% anti_join(m15_duplicates, by = c("SITE", "MOMID", "PREGID","INFANTID", "M15_TYPE_VISIT"))
+  
   ## export data
   save(m15_infantmerged, file= paste0(path_to_save, "m15_infantmerged",".RData",sep = ""))
   
@@ -1403,6 +1632,17 @@ if (exists("m16") == TRUE) {
   ## get the variables that are missing from sites
   m16_missing <- lapply(m16_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m16_duplicates <- m16_merged %>% 
+    group_by(SITE, MOMID, PREGID) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH16", M16_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID, M16_TYPE_VISIT, M16_VISDAT)
+  
+  # Extract duplicates from merged data 
+  m16_merged <- m16_merged %>% anti_join(m16_duplicates, by = c("SITE", "MOMID", "PREGID"))
+  
   ## export data 
   save(m16_merged, file= paste0(path_to_save, "m16_merged",".RData",sep = ""))
   
@@ -1471,6 +1711,18 @@ if (exists("m17") == TRUE) {
   
   ## get the variables that are missing from sites
   m17_missing <- lapply(m17_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Extract duplicates into their own dataset
+  m17_duplicates <- m17_merged %>% 
+    group_by(SITE, MOMID, PREGID) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH17", M17_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID, M17_TYPE_VISIT, M17_VISDAT)
+  
+  # Extract duplicates from merged data 
+  m17_merged <- m17_merged %>% anti_join(m17_duplicates, by = c("SITE", "MOMID", "PREGID"))
+  
   
   ## export data 
   save(m17_merged, file= paste0(path_to_save, "m17_merged",".RData",sep = ""))
@@ -1542,6 +1794,17 @@ if (exists("m18") == TRUE) {
   ## get the variables that are missing from sites
   m18_missing <- lapply(m18_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m18_duplicates <- m18_merged %>% 
+    group_by(SITE, MOMID, PREGID) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH18", M18_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID, M18_TYPE_VISIT, M18_VISDAT)
+  
+  # Extract duplicates from merged data 
+  m18_merged <- m18_merged %>% anti_join(m18_duplicates, by = c("SITE", "MOMID", "PREGID"))
+  
   ## export data 
   save(m18_merged, file= paste0(path_to_save, "m18_merged",".RData",sep = ""))
   
@@ -1612,6 +1875,17 @@ if (exists("m19") == TRUE) {
   
   ## get the variables that are missing from sites
   m19_missing <- lapply(m19_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Extract duplicates into their own dataset
+  m19_duplicates <- m19_merged %>% 
+    group_by(SITE, MOMID, PREGID, M19_OBSSTDAT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH19", M19_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID, M19_TYPE_VISIT, M19_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m19_merged <- m19_merged %>% anti_join(m19_duplicates, by = c("SITE", "MOMID", "PREGID", "M19_OBSSTDAT"))
   
   ## export data 
   save(m19_merged, file= paste0(path_to_save, "m19_merged",".RData",sep = ""))
@@ -1687,6 +1961,17 @@ if (exists("m20") == TRUE) {
   ## get the variables that are missing from sites
   m20_missing <- lapply(m20_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m20_duplicates <- m20_merged %>% 
+    group_by(SITE, MOMID, PREGID, INFANTID, M20_OBSSTDAT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH20", M20_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID, INFANTID, M20_TYPE_VISIT, M20_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m20_merged <- m20_merged %>% anti_join(m20_duplicates, by = c("SITE", "MOMID", "PREGID", "INFANTID", "M20_OBSSTDAT"))
+  
   ## export data
   save(m20_infantmerged, file= paste0(path_to_save, "m20_infantmerged",".RData",sep = ""))
   
@@ -1757,6 +2042,18 @@ if (exists("m21") == TRUE) {
   
   ## get the variables that are missing from sites
   m21_missing <- lapply(m21_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Extract duplicates into their own dataset
+  m21_duplicates <- m21_merged %>% 
+    group_by(SITE, MOMID, PREGID, INFANTID, M21_AESTDAT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH21", M21_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID, INFANTID, M21_TYPE_VISIT, M21_AESTDAT)
+  
+  # Extract duplicates from merged data 
+  m21_merged <- m21_merged %>% anti_join(m21_duplicates, by = c("SITE", "MOMID", "PREGID", "INFANTID", "M21_AESTDAT"))
+  
   
   ## export data 
   save(m21_merged, file= paste0(path_to_save, "m21_merged",".RData",sep = ""))
@@ -1832,6 +2129,17 @@ if (exists("m22") == TRUE) {
   ## get the variables that are missing from sites
   m22_missing <- lapply(m22_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m22_duplicates <- m22_merged %>% 
+    group_by(SITE, MOMID, PREGID, INFANTID, M22_DVSTDAT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH22", M22_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID, INFANTID, M22_TYPE_VISIT, M22_DVSTDAT)
+  
+  # Extract duplicates from merged data 
+  m22_merged <- m22_merged %>% anti_join(m22_duplicates, by = c("SITE", "MOMID", "PREGID", "INFANTID", "M22_DVSTDAT"))
+  
   ## export data
   save(m22_merged, file= paste0(path_to_save, "m22_infantmerged",".RData",sep = ""))
   
@@ -1899,6 +2207,17 @@ if (exists("m23") == TRUE) {
   
   ## get the variables that are missing from sites
   m23_missing <- lapply(m23_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Extract duplicates into their own dataset
+  m23_duplicates <- m23_merged %>% 
+    group_by(SITE, MOMID, PREGID) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH23", M23_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID, M23_TYPE_VISIT, M23_CLOSE_DSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m23_merged <- m23_merged %>% anti_join(m23_duplicates, by = c("SITE", "MOMID", "PREGID"))
   
   ## export data 
   save(m23_merged, file= paste0(path_to_save, "m23_merged",".RData",sep = ""))
@@ -1973,6 +2292,17 @@ if (exists("m24") == TRUE) {
   ## get the variables that are missing from sites
   m24_missing <- lapply(m24_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  # Extract duplicates into their own dataset
+  m24_duplicates <- m24_merged %>% 
+    group_by(SITE, MOMID, PREGID, INFANTID, M24_CLOSE_DSSTDAT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1) %>% 
+    mutate(FORM = "MNH24", M24_TYPE_VISIT = NA) %>% 
+    select(FORM, SITE, MOMID, PREGID, INFANTID, M24_TYPE_VISIT, M24_CLOSE_DSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m24_merged <- m24_merged %>% anti_join(m24_duplicates, by = c("SITE", "MOMID", "PREGID","INFANTID", "M24_CLOSE_DSSTDAT"))
+  
   ## export data
   save(m24_infantmerged, file= paste0(path_to_save, "m24_infantmerged",".RData",sep = ""))
   
@@ -2040,6 +2370,18 @@ if (exists("m25") == TRUE) {
   
   ## get the variables that are missing from sites
   m25_missing <- lapply(m25_rbind, function(x) setdiff(allNms, colnames(x)))
+  
+  # Extract duplicates into their own dataset
+  m25_duplicates <- m25_merged %>% 
+    group_by(SITE, MOMID, PREGID, M25_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M25_TYPE_VISIT!=13, M25_TYPE_VISIT!=14) %>% 
+    mutate(FORM = "MNH25") %>% 
+    select(FORM, SITE, MOMID, PREGID, M25_TYPE_VISIT, M25_OBSSTDAT)
+  
+  # Extract duplicates from merged data 
+  m25_merged <- m25_merged %>% anti_join(m25_duplicates, by = c("SITE", "MOMID", "PREGID","M25_TYPE_VISIT"))
+  
   
   ## export data 
   save(m25_merged, file= paste0(path_to_save, "m25_merged",".RData",sep = ""))
@@ -2111,6 +2453,19 @@ if (exists("m26") == TRUE) {
   ## get the variables that are missing from sites
   m26_missing <- lapply(m26_rbind, function(x) setdiff(allNms, colnames(x)))
   
+  
+  # Extract duplicates into their own dataset
+  m26_duplicates <- m26_merged %>% 
+    group_by(SITE, MOMID, PREGID, M26_TYPE_VISIT) %>% 
+    mutate(n = n()) %>% 
+    filter(n > 1, M26_TYPE_VISIT!=13, M26_TYPE_VISIT!=14) %>% 
+    mutate(FORM = "MNH26") %>% 
+    select(FORM, SITE, MOMID, PREGID, M26_TYPE_VISIT, M26_FTGE_OBSTDAT)
+  
+  # Extract duplicates from merged data 
+  m26_merged <- m26_merged %>% anti_join(m26_duplicates, by = c("SITE", "MOMID", "PREGID","M26_TYPE_VISIT"))
+  
+  
   ## export data 
   save(m26_merged, file= paste0(path_to_save, "m26_merged",".RData",sep = ""))
   
@@ -2172,6 +2527,9 @@ form_site <- mget(ls(pattern = "_names*"))
 # get list of all missing variables - this will show all the missing variables by form and site 
 varname_missing <- mget(ls(pattern = "._missing*"))
 
+varname_duplicates <- mget(ls(pattern = "_duplicates*"))
+
+
 # get list of all merged data 
 #mat_data_merged <- mget(ls(pattern = "._merged*")) 
 #inf_data_merged <- mget(ls(pattern = "._infantmerged*")) 
@@ -2193,23 +2551,23 @@ table(m05_merged$SITE, m05_merged$M05_TYPE_VISIT)
 table(m26_merged$SITE, m26_merged$M26_TYPE_VISIT)
 
 ## export as .CSV into network drive
-# # 1. place all merged datasets into list
-# files_list <- mget(ls(pattern = "_merged"))
-# 
-# # 2. rename
-# names(files_list) = str_replace(names(files_list),  "m", "mnh")
-# 
-# # 3. set working directory
-# # first need to make subfolder with upload date
-# maindir <- paste0("Z:/Stacked Data", sep = "")
-# subdir = UploadDate
-# dir.create(file.path(maindir, subdir), showWarnings = FALSE)
-# 
-# setwd(paste("Z:/Stacked Data/", UploadDate, sep = ""))
-# 
-# # 4. export
-# lapply(1:length(files_list), function(i) write.csv(files_list[[i]], 
-#                                                    file = paste0(names(files_list[i]), ".csv"),
-#                                                    row.names = FALSE))
+# 1. place all merged datasets into list
+files_list <- mget(ls(pattern = "_merged"))
+
+# 2. rename
+names(files_list) = str_replace(names(files_list),  "m", "mnh")
+
+# 3. set working directory
+# first need to make subfolder with upload date
+maindir <- paste0("Z:/Stacked Data", sep = "")
+subdir = UploadDate
+dir.create(file.path(maindir, subdir), showWarnings = FALSE)
+
+setwd(paste("Z:/Stacked Data/", UploadDate, sep = ""))
+
+# 4. export
+lapply(1:length(files_list), function(i) write.csv(files_list[[i]],
+                                                   file = paste0(names(files_list[i]), ".csv"),
+                                                   row.names = FALSE))
 # 
 # 
