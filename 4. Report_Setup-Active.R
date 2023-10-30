@@ -32,6 +32,7 @@
 ## healthyOutcome
 ## input: MatData_Anc_Visits
 ## Includes relevant constructed variables for ReMAPP healthy criteria 
+#1964
 #*****************************************************************************
 
 ## load in data 
@@ -84,7 +85,8 @@ MatData_Report <- MatData_Wide %>%
 save(MatData_Report, file= paste0(path_to_save, "MatData_Report",".RData",sep = ""))
 
 InfData_Report <- InfData_Wide %>% 
-  select(matches(InfNames_sheet$varname), 
+  select(matches(InfNames_sheet$varname),
+         M11_VISIT_COMPLETE_6,
          contains("_TYPE_VISIT_"), 
          contains("_VISIT_COMPLETE"),
          contains("_PNC_AT_VISIT_DAYS"),
@@ -251,14 +253,15 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
          M04_FETAL_LOSS_DSSTDAT_5 = replace(M04_FETAL_LOSS_DSSTDAT_5, M04_FETAL_LOSS_DSSTDAT_5==ymd("1907-07-07"), NA)) %>% 
   mutate(MISCARRIAGE_DATE = pmin(M04_FETAL_LOSS_DSSTDAT_1, M04_FETAL_LOSS_DSSTDAT_2, 
                                  M04_FETAL_LOSS_DSSTDAT_3 ,M04_FETAL_LOSS_DSSTDAT_4, M04_FETAL_LOSS_DSSTDAT_5, na.rm = TRUE)) %>% 
-  # calculate preg end in days (MISCARRIAGE DATE-EST_CONCEP_DATE)
-  mutate(ENDPREG_DAYS = ifelse(MISCARRIAGE==1, MISCARRIAGE_DATE-EST_CONCEP_DATE, GESTAGE_AT_BIRTH_DAYS), 
-         ENDPREG_WKS = ENDPREG_DAYS %/% 7) %>% 
-  # if miscarriage=1, use MISCARRIAGE_DATE as DOB 
-  mutate(DOB = ifelse(MISCARRIAGE==1, as.character(MISCARRIAGE_DATE), 
-                      as.character(DOB))) %>% 
+# calculate preg end in days (MISCARRIAGE DATE-EST_CONCEP_DATE)
+  mutate(ENDPREG_DAYS = ifelse(is.na(MISCARRIAGE), GESTAGE_AT_BIRTH_DAYS, 
+                               ifelse(MISCARRIAGE==1, MISCARRIAGE_DATE-EST_CONCEP_DATE, GESTAGE_AT_BIRTH_DAYS))) %>%   # if miscarriage=1, use MISCARRIAGE_DATE as DOB 
+  mutate(DOB = ifelse(is.na(MISCARRIAGE), as.character(DOB),
+                    ifelse(MISCARRIAGE==1, as.character(MISCARRIAGE_DATE), 
+                                  as.character(DOB))) )%>% 
   # convert DOB to date class 
   mutate(DOB = as.Date(DOB, format = "%Y-%m-%d"))
+
 
 ## Has woman closed out? 
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
@@ -293,7 +296,7 @@ MatData_Anc_Visits <- MatData_Screen_Enroll %>%
          ANC32_ONTIME = (EDD_BOE - as.difftime(280, unit="days")) + as.difftime(237, unit="days"),
          ANC32_LATE = (EDD_BOE - as.difftime(280, unit="days")) + as.difftime(237, unit="days"), 
          ANC36_ONTIME = (EDD_BOE - as.difftime(280, unit="days")) + as.difftime(272, unit="days"),
-         ANC36_LATE = (EDD_BOE - as.difftime(280, unit="days")) + as.difftime(300, unit="days")) %>%
+         ANC36_LATE = (EDD_BOE - as.difftime(280, unit="days")) + as.difftime(272, unit="days")) %>%
   ## CALCULATE INDICATOR VARIABLES for passed ON-TIME ANC WINDOWS - same as overdue code, but exclude the visit completion piece
   ## using upload date
   mutate(ENROLL_PASS = ifelse(ENROLL_ONTIME<UploadDate, 1, 0),
@@ -377,36 +380,63 @@ save(MatData_Anc_Visits, file= paste0(path_to_save, "MatData_Anc_Visits",".RData
 # if someone delievered at 54 days (7wks); NO ANC20 / anc28/ anc32/  anc36
 # if someone delievered at 310 days (44wks);  ANC20 / anc28/ anc32/  anc36
 # if someone delievered at 270 days (38wks);  NO anc36
-
-table(MatData_Anc_Visits$ENDPREG_DAYS) 
-
 #**************************************************************************************
 ### MatData_Ipc_Visits
 # input: MatData_Screen_Enroll
 # Includes all women who are enrolled who have enrolled 
 #**************************************************************************************
-# n = 1226 -- woudl expect to have 1226 + 20 (twins) (1246)
-MatData_Ipc_Visits <- MatData_Screen_Enroll %>% 
+# extract unique MOM/INFANT pair from infant wide data 4634
+InfData_Report_Mat <- InfData_Report %>% distinct(SITE, MOMID, PREGID, .keep_all = TRUE )
+
+MatData_Ipc_Visits_Mat <- MatData_Screen_Enroll %>% 
   select(SITE, MOMID, PREGID, ENROLL, DOB, EDD_BOE, ENDPREG_DAYS,M09_TYPE_VISIT_6, 
          M10_TYPE_VISIT_6, M09_VISIT_COMPLETE_6, M10_VISIT_COMPLETE_6, M09_INFANTS_FAORRES_6) %>% 
   filter(ENROLL == 1,
          (is.na(ENDPREG_DAYS) | ENDPREG_DAYS > 139)) %>% ## filter for anyone who is enrolled and has delivered (DOB is not NA) 
-  left_join(InfData_Report[c("SITE", "MOMID", "PREGID", "INFANTID", "M11_TYPE_VISIT_6", "M11_VISIT_COMPLETE_6")], 
+  # join with InfData_Report_Mom
+  left_join(InfData_Report_Mat[c("SITE", "MOMID", "PREGID", "INFANTID", "M11_TYPE_VISIT_6", "M11_VISIT_COMPLETE_6")], 
             by = c("SITE", "MOMID", "PREGID")) %>% 
   ## CALCULATE ON TIME AND LATE ANC WINDOWS
   mutate(IPC_ONTIME = (EDD_BOE - as.difftime(280, unit="days")) + as.difftime(300, unit="days")) %>% 
   ## CALCULATE INDICATOR VARIABLES for passed ON-TIME ANC WINDOWS - same as overdue code, but exclude the visit completion piece
   ## using upload date
   mutate(IPC_PASS = ifelse(IPC_ONTIME<UploadDate, 1, 0)) %>%  
-  ## CALCULATE INDICATOR VARIABLES for missed ANC visits ON-TIME WINDOWS
   ## CALCULATE INDICATOR VARIALBE FOR ANY VISIT TYPE = i
   mutate(ANY_TYPE_VISIT_COMPLETE_6 = ifelse((M09_TYPE_VISIT_6 == 6 & M09_VISIT_COMPLETE_6 == 1) | 
                                               (M10_TYPE_VISIT_6 == 6 & M10_VISIT_COMPLETE_6 == 1) |
                                               (M11_TYPE_VISIT_6 == 6 & M11_VISIT_COMPLETE_6 == 1), 1, 0)) 
 
+## export 
+save(MatData_Ipc_Visits_Mat, file= paste0(path_to_save, "MatData_Ipc_Visits_Mat",".RData",sep = ""))
+
+# maternal protocol compliance -- only maternal for mnh09/10
+MatData_Ipc_Visits_Compliance_Mat <- MatData_Screen_Enroll %>% 
+  select(SITE, MOMID, PREGID, ENROLL, DOB, EDD_BOE, ENDPREG_DAYS,M09_TYPE_VISIT_6, 
+         M10_TYPE_VISIT_6, M09_VISIT_COMPLETE_6, M10_VISIT_COMPLETE_6, M09_INFANTS_FAORRES_6) %>% 
+  filter(ENROLL == 1,
+         (is.na(ENDPREG_DAYS) | ENDPREG_DAYS > 139)) %>% ## filter for anyone who is enrolled and has delivered (DOB is not NA) 
+  ## CALCULATE INDICATOR VARIALBE FOR ANY VISIT TYPE = i
+  mutate(ANY_TYPE_VISIT_COMPLETE_6 = ifelse((M09_TYPE_VISIT_6 == 6 & M09_VISIT_COMPLETE_6 == 1) | 
+                                              (M10_TYPE_VISIT_6 == 6 & M10_VISIT_COMPLETE_6 == 1), 1, 0)) 
 
 ## export 
-save(MatData_Ipc_Visits, file= paste0(path_to_save, "MatData_Ipc_Visits",".RData",sep = ""))
+save(MatData_Ipc_Visits_Compliance_Mat, file= paste0(path_to_save, "MatData_Ipc_Visits_Compliance_Mat",".RData",sep = ""))
+
+# infant protocol compliance -- only infant for mnh11
+MatData_Ipc_Visits_Compliance_Inf <- InfData_Report %>% 
+  select(SITE, INFANTID, PREGID, M11_TYPE_VISIT_6, M11_VISIT_COMPLETE_6) %>% 
+  full_join(MatData_Screen_Enroll[c("SITE", "MOMID", "PREGID", "ENROLL", "DOB", "EDD_BOE", "ENDPREG_DAYS","M09_TYPE_VISIT_6", 
+                                    "M10_TYPE_VISIT_6", "M09_VISIT_COMPLETE_6", "M10_VISIT_COMPLETE_6", "M09_INFANTS_FAORRES_6")],
+            by = c("SITE",  "PREGID"), multiple = "all") %>% 
+  filter(ENROLL == 1 & ENDPREG_DAYS > 139) %>% 
+  relocate(MOMID, .after = SITE) %>% 
+  relocate(INFANTID, .after = PREGID) %>% 
+  ## CALCULATE INDICATOR VARIALBE FOR ANY VISIT TYPE = i
+  mutate(ANY_TYPE_VISIT_COMPLETE_6 = ifelse((M09_TYPE_VISIT_6 == 6 & M09_VISIT_COMPLETE_6 == 1) | 
+                                              (M10_TYPE_VISIT_6 == 6 & M10_VISIT_COMPLETE_6 == 1) | 
+                                              (M11_TYPE_VISIT_6 == 6 & M11_VISIT_COMPLETE_6 == 1), 1, 0)) 
+## export 
+save(MatData_Ipc_Visits_Compliance_Inf, file= paste0(path_to_save, "MatData_Ipc_Visits_Compliance_Inf",".RData",sep = ""))
 #**************************************************************************************
 ### MatData_Pnc_Visits
 # input: MatData_Screen_Enroll
@@ -416,11 +446,11 @@ save(MatData_Ipc_Visits, file= paste0(path_to_save, "MatData_Ipc_Visits",".RData
 
 ## MatData_Pnc_Visits
 MatData_Pnc_Visits <- MatData_Screen_Enroll %>% 
-  select(SITE,SCRNID, MOMID, PREGID, ENROLL, DOB, BOE_GA_WKS_ENROLL, EST_CONCEP_DATE,ENDPREG_DAYS,MISCARRIAGE,
+  select(SITE,SCRNID, MOMID, PREGID, ENROLL,BOE_GA_WKS_ENROLL, DOB, EST_CONCEP_DATE,ENDPREG_DAYS,MISCARRIAGE,
          ends_with("_7"),  ends_with("_8"),  ends_with("_9"), 
          ends_with("_10"), ends_with("_11"), ends_with("_12"),starts_with("M09_BIRTH_DSTERM_INF"), contains("M23_")) %>% 
   ## filter participants with a delivery outcome (exclude NA age at pregnancy end)
-  # filter(!is.na(ENDPREG_DAYS)) %>% 
+  #filter(!is.na(ENDPREG_DAYS)) %>% 
   ## CALCULATE ON TIME AND LATE PNC WINDOWS 
   mutate(PNC0_ONTIME = DOB + as.difftime(5, unit="days"),
          PNC0_LATE = DOB + as.difftime(5, unit="days"),
@@ -512,14 +542,20 @@ save(MatData_Pnc_Visits, file= paste0(path_to_save, "MatData_Pnc_Visits",".RData
 ## ANC
 Visit_Complete_Anc <- MatData_Anc_Visits %>% 
   select(SITE, MOMID, PREGID,BOE_GA_WKS_ENROLL, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"),
-         contains("_ONTIME"),contains("_LATE"),ENDPREG_DAYS, GESTAGE_AT_BIRTH_WKS) %>% 
+         contains("_ONTIME"),contains("_LATE"),ENDPREG_DAYS, M23_CLOSE_DSSTDAT) %>% 
   ## ONTIME WINDOWS 
   mutate(VC_ENROLL_NUM =ifelse(ANY_TYPE_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1 , 1, 0), ## if the closeout date is passed the enroll on time window then they are included
          VC_ANC20_NUM = ifelse(ANY_TYPE_VISIT_COMPLETE_2 == 1 & ANC20_PASS == 1 & 
                                  (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)), 1, 0),
-         VC_ANC28_NUM = ifelse(ANY_TYPE_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1  & (ENDPREG_DAYS>216 | is.na(ENDPREG_DAYS)), 1, 0),
-         VC_ANC32_NUM = ifelse(ANY_TYPE_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1  & (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)), 1, 0),
-         VC_ANC36_NUM = ifelse(ANY_TYPE_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1 & (ENDPREG_DAYS>272 | is.na(ENDPREG_DAYS)), 1, 0)) %>% 
+         VC_ANC28_NUM = ifelse(ANY_TYPE_VISIT_COMPLETE_3 == 1 & ANC28_PASS == 1  & 
+                                 (ENDPREG_DAYS>216 | is.na(ENDPREG_DAYS)), 1, 0),
+         
+         VC_ANC32_NUM = ifelse(ANY_TYPE_VISIT_COMPLETE_4 == 1 & ANC32_PASS == 1  &
+                                 (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)), 1, 0),
+         
+         VC_ANC36_NUM = ifelse(ANY_TYPE_VISIT_COMPLETE_5 == 1 & ANC36_PASS == 1 & 
+                                 (ENDPREG_DAYS>272 | is.na(ENDPREG_DAYS)), 1, 0)) %>% 
+  
   ## exclude particpants who do not have EDD -- we are not able to calculate their windows - exclude from num and denom
   mutate(VC_ENROLL_NUM = ifelse(is.na(ENROLL_PASS), NA, VC_ENROLL_NUM),
          VC_ANC20_NUM = ifelse(is.na(ANC20_PASS), NA, VC_ANC20_NUM),
@@ -529,10 +565,18 @@ Visit_Complete_Anc <- MatData_Anc_Visits %>%
   ## LATE WINDOWS
   # Numerator for ANC Visit Completion
   mutate(VC_ENROLL_NUM_LATE =ifelse(ANY_TYPE_VISIT_COMPLETE_1 == 1 & ENROLL_PASS_LATE == 1, 1, 0),
-         VC_ANC20_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_2 == 1 & ANC20_PASS_LATE == 1 & (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)), 1, 0),
-         VC_ANC28_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_3 == 1 & ANC28_PASS_LATE == 1  & (ENDPREG_DAYS>216 | is.na(ENDPREG_DAYS)), 1, 0),
-         VC_ANC32_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_4 == 1 & ANC32_PASS_LATE == 1  & (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)), 1, 0),
-         VC_ANC36_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_5 == 1 & ANC36_PASS_LATE == 1  & (ENDPREG_DAYS>272 | is.na(ENDPREG_DAYS)), 1, 0)) %>% 
+         VC_ANC20_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_2 == 1 & ANC20_PASS_LATE == 1 & 
+                                      (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)), 1, 0),
+         
+         VC_ANC28_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_3 == 1 & ANC28_PASS_LATE == 1  & 
+                                      (ENDPREG_DAYS>216 | is.na(ENDPREG_DAYS)), 1, 0),
+         
+         VC_ANC32_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_4 == 1 & ANC32_PASS_LATE == 1  &
+                                      (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)), 1, 0),
+         
+         VC_ANC36_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_5 == 1 & ANC36_PASS_LATE == 1  &
+                                      (ENDPREG_DAYS>272 | is.na(ENDPREG_DAYS)), 1, 0)) %>% 
+  
   ## exclude particpants who do not have EDD -- we are not able to calculate their windows - exclude from num and denom
   mutate(VC_ENROLL_NUM_LATE = ifelse(is.na(ENROLL_PASS_LATE), NA, VC_ENROLL_NUM_LATE),
          VC_ANC20_NUM_LATE = ifelse(is.na(ANC20_PASS_LATE), NA, VC_ANC20_NUM_LATE),
@@ -541,17 +585,33 @@ Visit_Complete_Anc <- MatData_Anc_Visits %>%
          VC_ANC36_NUM_LATE = ifelse(is.na(ANC36_PASS_LATE), NA, VC_ANC36_NUM_LATE)) %>% 
   ## generate denominators - ONTIME
   mutate(VC_ENROLL_DENOM = ifelse(ENROLL_PASS==1, 1, 0), 
-         VC_ANC20_DENOM = ifelse(ANC20_PASS==1 & BOE_GA_WKS_ENROLL <= 17 & (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)), 1, 0), 
-         VC_ANC28_DENOM = ifelse(ANC28_PASS==1  & (ENDPREG_DAYS>216 | is.na(ENDPREG_DAYS)), 1, 0), 
-         VC_ANC32_DENOM = ifelse(ANC32_PASS==1  & (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)), 1, 0), 
-         VC_ANC36_DENOM = ifelse(ANC36_PASS==1  & (ENDPREG_DAYS>272 | is.na(ENDPREG_DAYS)), 1, 0), 
+         VC_ANC20_DENOM = ifelse(ANC20_PASS==1 & BOE_GA_WKS_ENROLL <= 17 & 
+                                   (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)) & ## birth outcome after window or has not yet delivered
+                                   ((M23_CLOSE_DSSTDAT > ANC20_PASS) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),  ## closed out after window or has not yet closed out
+         VC_ANC28_DENOM = ifelse(ANC28_PASS==1  &
+                                   (ENDPREG_DAYS>216 | is.na(ENDPREG_DAYS))& ## birth outcome after window or has not yet delivered
+                                   ((M23_CLOSE_DSSTDAT > ANC28_PASS) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),  ## closed out after window or has not yet closed out
+         VC_ANC32_DENOM = ifelse(ANC32_PASS==1  & 
+                                   (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)) & ## birth outcome after window or has not yet delivered
+                                 ((M23_CLOSE_DSSTDAT > ANC32_PASS) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),  ## closed out after window or has not yet closed out
+         VC_ANC36_DENOM = ifelse(ANC36_PASS==1  &
+                                   (ENDPREG_DAYS>272 | is.na(ENDPREG_DAYS)) & ## birth outcome after window or has not yet delivered
+                                 ((M23_CLOSE_DSSTDAT > ANC28_PASS) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),  ## closed out after window or has not yet closed out 
   ) %>% 
   ## generate denominators - LATE
   mutate(VC_ENROLL_DENOM_LATE = ifelse(ENROLL_PASS_LATE == 1, 1, 0), 
-         VC_ANC20_DENOM_LATE = ifelse(ANC20_PASS_LATE == 1 & BOE_GA_WKS_ENROLL <= 17 & (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)), 1, 0), 
-         VC_ANC28_DENOM_LATE = ifelse(ANC28_PASS_LATE == 1  & (ENDPREG_DAYS>216 | is.na(ENDPREG_DAYS)), 1, 0), 
-         VC_ANC32_DENOM_LATE = ifelse(ANC32_PASS_LATE == 1  & (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)), 1, 0), 
-         VC_ANC36_DENOM_LATE = ifelse(ANC36_PASS_LATE == 1  & (ENDPREG_DAYS>272 | is.na(ENDPREG_DAYS)), 1, 0)
+         VC_ANC20_DENOM_LATE = ifelse(ANC20_PASS_LATE == 1 & BOE_GA_WKS_ENROLL <= 17 &
+                                        (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)) & 
+                                        ((M23_CLOSE_DSSTDAT > ANC20_PASS_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),  ## closed out after window or has not yet closed out
+         VC_ANC28_DENOM_LATE = ifelse(ANC28_PASS_LATE == 1  &
+                                        (ENDPREG_DAYS>216 | is.na(ENDPREG_DAYS)) & 
+                                        ((M23_CLOSE_DSSTDAT > ANC28_PASS_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0), 
+         VC_ANC32_DENOM_LATE = ifelse(ANC32_PASS_LATE == 1  & 
+                                        (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)) & 
+                                        ((M23_CLOSE_DSSTDAT > ANC32_PASS_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0), 
+         VC_ANC36_DENOM_LATE = ifelse(ANC36_PASS_LATE == 1  & 
+                                        (ENDPREG_DAYS>272 | is.na(ENDPREG_DAYS))  & 
+                                        ((M23_CLOSE_DSSTDAT > ANC36_PASS_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0)
   )
 
 ## export 
@@ -601,13 +661,13 @@ Visit_Complete_Pnc <- MatData_Pnc_Visits %>%
                                   ((M23_CLOSE_DSSTDAT > PNC1_ONTIME) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),
          VC_PNC4_DENOM = ifelse(PNC4_PASS==1 &
                                   ((M23_CLOSE_DSSTDAT > PNC4_ONTIME) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),
-         VC_PNC6_DENOM = ifelse(PNC6_PASS==1 & MISCARRIAGE == 0 & 
+         VC_PNC6_DENOM = ifelse(PNC6_PASS==1 & 
                                   ((M23_CLOSE_DSSTDAT > PNC6_ONTIME) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),
          
-         VC_PNC26_DENOM = ifelse(PNC26_PASS==1 & MISCARRIAGE == 0 & 
+         VC_PNC26_DENOM = ifelse(PNC26_PASS==1 & ENDPREG_DAYS>139 & 
                                    ((M23_CLOSE_DSSTDAT > PNC26_ONTIME) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),
          
-         VC_PNC52_DENOM = ifelse(PNC52_PASS==1 & MISCARRIAGE == 0 & 
+         VC_PNC52_DENOM = ifelse(PNC52_PASS==1 & ENDPREG_DAYS>139 & 
                                    ((M23_CLOSE_DSSTDAT > PNC52_ONTIME) | is.na(M23_CLOSE_DSSTDAT)), 1, 0)
   ) %>%
   ## generate denominators - late
@@ -620,12 +680,13 @@ Visit_Complete_Pnc <- MatData_Pnc_Visits %>%
          VC_PNC6_DENOM_LATE = ifelse(PNC6_PASS_LATE==1 & 
                                        ((M23_CLOSE_DSSTDAT > PNC6_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),
          
-         VC_PNC26_DENOM_LATE = ifelse(PNC26_PASS_LATE==1 & MISCARRIAGE == 0 & 
+         VC_PNC26_DENOM_LATE = ifelse(PNC26_PASS_LATE==1 & ENDPREG_DAYS>139 & 
                                         ((M23_CLOSE_DSSTDAT > PNC26_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),
          
-         VC_PNC52_DENOM_LATE = ifelse(PNC52_PASS_LATE==1 & MISCARRIAGE == 0 & 
+         VC_PNC52_DENOM_LATE = ifelse(PNC52_PASS_LATE==1 & ENDPREG_DAYS>139 & 
                                         ((M23_CLOSE_DSSTDAT > PNC52_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0)
   )
+
 
 
 ## export 
@@ -643,7 +704,7 @@ save(Visit_Complete_Pnc, file= paste0(path_to_save, "Visit_Complete_Pnc",".RData
 ## ANC
 ## CALCULATE DENOMINATORS FOR PROTOCOL COMPLIANCE  
 Prot_Compliance_Anc <- MatData_Anc_Visits %>% 
-  select(SITE, MOMID, PREGID, ENROLL, M02_SCRN_OBSSTDAT,SCREEN, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
+  select(SITE, MOMID, PREGID, ENROLL, M02_SCRN_OBSSTDAT,SCREEN,BOE_GA_WKS_ENROLL, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
          contains("_VISIT_COMPLETE_")) %>% 
   # DENOMINATOR for protocol compliance 
   mutate(PC_ENROLL_DENOM =ifelse(ANY_TYPE_VISIT_COMPLETE_1 == 1 & ENROLL_PASS == 1, 1, 0),
@@ -658,9 +719,10 @@ save(Prot_Compliance_Anc, file= paste0(path_to_save, "Prot_Compliance_Anc",".RDa
 ## PNC 
 ## CALCULATE DENOMINATORS FOR PROTOCOL COMPLIANCE  
 Prot_Compliance_Pnc <- MatData_Pnc_Visits %>% 
-  select(SITE, MOMID, PREGID, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
+  select(SITE, MOMID, PREGID, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), ENDPREG_DAYS,
          contains("_VISIT_COMPLETE_"), BIRTH_OUTCOME_YN, contains("M23_"), contains("_ONTIME")) %>% 
-  filter(BIRTH_OUTCOME_YN == 1) %>% 
+  #filter(BIRTH_OUTCOME_YN == 1) %>% 
+  filter(!is.na(ENDPREG_DAYS)) %>% ## exclude anyone without a birth outcome (missing ENDPREG_DAYS)
   # DENOMINATOR for protocol compliance
   mutate(PC_PNC0_DENOM =ifelse(ANY_TYPE_VISIT_COMPLETE_7 == 1 & PNC0_PASS == 1, 1, 0),
          PC_PNC1_DENOM = ifelse(ANY_TYPE_VISIT_COMPLETE_8 == 1 & PNC1_PASS == 1, 1, 0),
@@ -726,7 +788,7 @@ save(Prot_Compliance_MNH25_MNH26, file= paste0(path_to_save, "Prot_Compliance_MN
 
 ## ANC
 Form_Completion_Anc <- MatData_Anc_Visits %>% 
-  select(SITE, MOMID, PREGID,M02_SCRN_OBSSTDAT, ENROLL, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
+  select(SITE, MOMID, PREGID,M02_SCRN_OBSSTDAT,BOE_GA_WKS_ENROLL, ENROLL, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
          contains("_VISIT_COMPLETE_"),contains("_TYPE_VISIT_"), BOE_GA_WKS_ENROLL) %>% 
   # DENOMINATOR for form completion
   # step 1. indicator for any type visit = i with any visit status 
@@ -774,9 +836,10 @@ save(Form_Completion_Anc, file= paste0(path_to_save, "Form_Completion_Anc",".RDa
 
 ## PNC 
 Form_Completion_Pnc <- MatData_Pnc_Visits %>% 
-  select(SITE, MOMID, PREGID, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
+  select(SITE, MOMID, PREGID, ENDPREG_DAYS,contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
          contains("_VISIT_COMPLETE_"),contains("_TYPE_VISIT_"), BIRTH_OUTCOME_YN, M23_CLOSE_DSDECOD) %>%
-  filter(BIRTH_OUTCOME_YN == 1) %>% 
+  #filter(BIRTH_OUTCOME_YN == 1) %>% 
+  filter(!is.na(ENDPREG_DAYS)) %>% ## exclude anyone without a birth outcome (missing ENDPREG_DAYS)
   # DENOMINATOR for form completion
   # step 1. indicator for any type visit = i with any visit status 
   mutate(TYPE_VISIT_ANY_STATUS_7 = ifelse((M06_TYPE_VISIT_7 == 7 & !is.na(M06_VISIT_COMPLETE_7)) |
@@ -1297,5 +1360,4 @@ save(healthyOutcome_1, file= paste0(path_to_save, "healthyOutcome_1",".RData",se
 #          VC_PNC26_DENOM_LATE = ifelse(PNC26_PASS==1 & ((M23_CLOSE_DSSTDAT > PNC26_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0),
 #          VC_PNC52_DENOM_LATE = ifelse(PNC52_PASS==1 & ((M23_CLOSE_DSSTDAT > PNC52_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0)
 #   )
-
 

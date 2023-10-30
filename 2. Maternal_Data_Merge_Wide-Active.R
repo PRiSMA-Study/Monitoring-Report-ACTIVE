@@ -393,6 +393,7 @@ for(i in names(ipc_data)){
     mutate(!!paste0(toupper(i),quo_name("_VISIT_COMPLETE")) := ifelse(if_all(matches("(.+)_MAT_VISIT_MNH(.+)")) == 1 | if_all(matches("(.+)_MAT_VISIT_MNH(.+)")) == 2, 1, 0)) %>% 
     ## move type_visit to the front of each data set
     relocate(TYPE_VISIT, .after = PREGID)  
+  
 }
 
 
@@ -433,8 +434,8 @@ m09 <- m09_merged %>% select(SITE, MOMID, PREGID, M09_INFANTS_FAORRES,
            pmin(DELIVERY_DATETIME_INF1, DELIVERY_DATETIME_INF2, 
                 DELIVERY_DATETIME_INF3, DELIVERY_DATETIME_INF4, na.rm = TRUE)) %>% 
   mutate(DOB = 
-           pmin(ymd(M09_DELIV_DSSTDAT_INF1), ymd(M09_DELIV_DSSTDAT_INF2), 
-                ymd(M09_DELIV_DSSTDAT_INF3), ymd(M09_DELIV_DSSTDAT_INF4), na.rm = TRUE)) %>% 
+           pmin(M09_DELIV_DSSTDAT_INF1, M09_DELIV_DSSTDAT_INF2, 
+                 M09_DELIV_DSSTDAT_INF3, M09_DELIV_DSSTDAT_INF4, na.rm = TRUE)) %>% 
   # merge in mnh01 estimated date of conception variable to calculate age at birth
   left_join(anc_data_wide[c("SITE", "MOMID", "PREGID", "EST_CONCEP_DATE")], by = c("SITE", "MOMID", "PREGID")) %>%
   # calculate gestational age at birth
@@ -444,6 +445,13 @@ m09 <- m09_merged %>% select(SITE, MOMID, PREGID, M09_INFANTS_FAORRES,
 
 ipc_data_wide_visit <- ipc_data_wide_visit %>% left_join(m09, by = c("SITE", "MOMID", "PREGID"))
 
+# pre long m09 -- 1059
+# make long m09 -- 1059
+# join with ipc data wide -- 1097
+# merge with all -- 1059
+out_post <- m09 %>% filter(SITE == "Pakistan")
+ipc_merge <- ipc_data_wide_visit %>% filter(SITE == "Pakistan") %>% select(MOMID, PREGID, DOB)
+all_merge <- MatData_Wide %>% filter(SITE == "Pakistan" & M09_TYPE_VISIT_6==6)%>% select(MOMID, PREGID, DOB)
 ## Final maternal wide dataset by visit type == ipc_data_wide_visit 
 
 ## IF WE WANT TO HAVE A WIDE DATASET WITH 1 ROW FOR EACH WOMAN, THEN WE NEED TO ADD A SUFFIX TO EACH OF THE VARIABLE NAMES 
@@ -621,7 +629,6 @@ MatData_Wide <- full_join(MatData_Wide, m23_merged, by =c("SITE", "MOMID", "PREG
 # out_IDS <- test[duplicated(test[,1:4]),]
 # dim(out_IDS)
 
-table(MatData_Wide)
 ## remove duplicates
 out_IDS <- MatData_Wide[duplicated(MatData_Wide[,1:4]),]
 out_duplicated_IDS_SCRNID <- out_IDS %>% distinct(SITE, SCRNID)

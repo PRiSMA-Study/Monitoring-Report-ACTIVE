@@ -8,7 +8,6 @@
 #* 1. InfData_Wide.RData wide dataset by INFANTID and visit type (one row for each infant at each visit)
 #* 2. InfData_Wide_Visit.RData wide dataset by INFANTID (one row for each infant)
 
-
 #* STEPS: 
 #* 1. Import merged data 
 #* 2. Add date variable with consistent naming across forms 
@@ -41,10 +40,10 @@ walk(rdata_files, ~ load(.x, .GlobalEnv))
 if (exists("m09_merged") == TRUE){ m09_merged <- m09_merged %>% mutate(VISIT_DATE = M09_MAT_LD_OHOSTDAT) }
 #if (exists("m11_merged") == TRUE){ m11_merged <- m11_merged %>% mutate(VISIT_DATE = M11_VISIT_OBSSTDAT) }
 if (exists("m13_infantmerged") == TRUE){ m13_infantmerged <- m13_infantmerged %>% mutate(VISIT_DATE = M13_VISIT_OBSSTDAT) %>% 
-  filter(!is.na(INFANTID))}
+   filter(!is.na(INFANTID))}
 if (exists("m14_infantmerged") == TRUE){ m14_infantmerged <- m14_infantmerged %>% mutate(VISIT_DATE = M14_VISIT_OBSSTDAT) %>% 
   filter(!is.na(INFANTID))}
-if (exists("m15_infantmerged") == TRUE){ m15_infantmerged <- m15_infantmerged %>% mutate(VISIT_DATE = M15_OBSSTDAT) %>% 
+if (exists("m15_infantmerged") == TRUE){ m15_infantmerged <- m15_infantmerged %>% mutate(VISIT_DATE = M15_OBSSTDAT)  %>% 
   filter(!is.na(INFANTID))}
 if (exists("m20_infantmerged") == TRUE){ m20_infantmerged <- m20_infantmerged %>% mutate(VISIT_DATE = M20_OBSSTDAT) }
 if (exists("m21_merged") == TRUE){ m21_merged <- m21_merged %>% mutate(VISIT_DATE = M21_AESTDAT) }
@@ -52,6 +51,7 @@ if (exists("m24_infantmerged") == TRUE){ m24_infantmerged <- m24_infantmerged %>
 
 ## add visit type for M111, M13, M14, M15 -- to update once data dictionary updates go out 
 if (exists("m11_merged") == TRUE){ m11_merged$M11_TYPE_VISIT = 6}
+
 
 #m20_infantmerged = m20_infantmerged %>% rename("PREGID" = "M20_PREGID")
 ## extract date of birth for each infant 
@@ -123,7 +123,6 @@ for (i in inf_vec_data) {
 # get pnc visit types allowed 
 inf_visits <- c(7,8,9,10,11,12)
 for (i in inf_vec_data) {
-  # inf_data[[i]] <- inf_data[[i]] %>% rename("TYPE_VISIT" = paste(toupper(i),"_","TYPE_VISIT", sep = "")) %>% 
   inf_data[[i]] <- inf_data[[i]] %>% mutate(TYPE_VISIT = if_all(matches("(.+)_TYPE_VISIT"))) %>% 
     filter(TYPE_VISIT %in% inf_visits)
 }
@@ -168,9 +167,9 @@ inf_data_out_wide <- inf_data_out_wide %>% relocate(TYPE_VISIT, .after= INFANTID
 
 ## BY VISIT TYPE 
 ## Merge in MNH11 post-delivery outcomes 
-m11_merged_out <- m11_merged %>% select(-c("MOMID", "PREGID")) %>% 
-  rename_with(~paste0(., "_", 6), .cols = -c("SITE", "INFANTID")) 
-InfData_Wide_Visit <- full_join(inf_data_out_wide, m11_merged_out, by = c("SITE", "INFANTID")) 
+m11_merged_out <- m11_merged %>% #select(-c("MOMID", "PREGID")) %>% 
+  rename_with(~paste0(., "_", 6), .cols = -c("SITE","MOMID", "PREGID", "INFANTID")) 
+InfData_Wide_Visit <- full_join(inf_data_out_wide, m11_merged_out, by = c("SITE","MOMID", "PREGID", "INFANTID")) 
 
 ## export data 
 setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
@@ -222,14 +221,13 @@ m24_infantmerged <- m24_infantmerged %>%
 InfData_Wide <- full_join(InfData_Wide, m24_infantmerged, by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% distinct()
 
 ## Merge in MNH11 post-delivery outcomes 
-m11_merged_out <- m11_merged %>% select(-c("MOMID", "PREGID")) %>% 
+m11_merged_out <- m11_merged %>% #select(-c("MOMID", "PREGID")) %>% 
   mutate(M11_VISIT_COMPLETE = ifelse(M11_INF_VISIT_MNH11 %in% c(1,2,3), 1, 0)) %>% 
-  rename_with(~paste0(., "_", 6), .cols = -c("SITE", "INFANTID")) 
-InfData_Wide <- full_join(InfData_Wide, m11_merged_out, by = c("SITE","INFANTID")) %>% distinct()
-
+  rename_with(~paste0(., "_", 6), .cols = -c("SITE","MOMID", "PREGID", "INFANTID")) 
+InfData_Wide <- full_join(InfData_Wide, m11_merged_out, by = c("SITE","MOMID", "PREGID", "INFANTID")) %>% distinct()
 ## Merge in MNH28 infant VA
-m28_merged_out <- m28_merged %>% select(-c("MOMID", "PREGID"))
-InfData_Wide <- full_join(InfData_Wide, m28_merged_out, by = c("SITE","INFANTID")) %>% distinct()
+# m28_merged_out <- m28_merged %>% select(-c("MOMID", "PREGID"))
+# InfData_Wide <- full_join(InfData_Wide, m28_merged_out, by = c("SITE","INFANTID")) %>% distinct()
 
 #*****************************************************************************
 #* Merge all forms that do not have visit type and can have multiple visits
@@ -331,13 +329,10 @@ InfData_Wide <- left_join(InfData_Wide, non_sched_form_wide_all, by =c("SITE", "
   relocate(any_of(c("SCRNID", "MOMID", "PREGID", "INFANTID")), .after = SITE) %>% 
   distinct()
 
-
-# out <- all_out[["m15"]] %>%  filter(MOMID == "PF1ceda003-fbc5-4afd-acb9-06d76c5f86a1") %>% 
-#   select(SITE, MOMID, PREGID, INFANTID, M15_TYPE_VISIT)
-# 
 # table(InfData_Wide$INFANTID, useNA = "ifany")
 table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_7)
 table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_8)
+
 
 #*****************************************************************************
 #* Export wide dataset 

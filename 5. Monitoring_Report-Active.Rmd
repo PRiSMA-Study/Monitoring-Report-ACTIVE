@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2023-10-24)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2023-10-30)"
 output:
   html_document:
     df_print: paged
@@ -20,8 +20,6 @@ header-includes:
   
 ```{r updates, include=FALSE}
  # Last Updated: 25 October 2023
-
-
  
 ```
 
@@ -318,6 +316,9 @@ tb_enroll <- MatData_Screen_Enroll %>%
                                 " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
                                    " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+          "Doesn't plan to remain in catchment area" = paste0(sum(CATCHREMAIN == 0, na.rm=TRUE),
+                                   " (", format(sum(CATCHREMAIN == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+
             "Did not consent" = paste0(sum(CONSENT == 0, na.rm=TRUE),
                                   " (", format(sum(CONSENT == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
   ) %>%
@@ -342,6 +343,10 @@ tb_enroll <- MatData_Screen_Enroll %>%
                                 " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
                                    " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+    
+            "Doesn't plan to remain in catchment area" = paste0(sum(CATCHREMAIN == 0, na.rm=TRUE),
+                                   " (", format(sum(CATCHREMAIN == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+
             "Did not consent" = paste0(sum(CONSENT == 0, na.rm=TRUE),
                                   " (", format(sum(CONSENT == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
       ) %>%
@@ -364,6 +369,7 @@ bind_rows(tb_enroll#,
                  "Did not meet age requirement",
                  "Viable pregnancy with GA>=20 weeks by US", 
                  "Outside catchment area", 
+                 "Does not plan to remain in catchment area", 
                  "Did not consent"
                  )
                 ) %>% 
@@ -376,7 +382,7 @@ bind_rows(tb_enroll#,
   #         )  %>% 
   kable_styling(font_size = 13) %>%
   pack_rows("Enrollment", 1, 4, label_row_css = "color: steelblue;")  %>% 
-  pack_rows("Reason not enrolled, n(%)^a^", 5, 8, label_row_css = "color: steelblue;") 
+  pack_rows("Reason not enrolled, n(%)^a^", 5, 9, label_row_css = "color: steelblue;") 
 ```
 <span style="font-size: 88%;">
 ^a^ denominator is n screened (MNH02 completed).
@@ -1005,9 +1011,9 @@ bind_rows(VISIT_COMPLETE_ANC,
                  "PNC = 6 (Target window: 6 to 7wks)",
                  "Denominator, n        ",
                  "PNC = 26 (Target window: 26 to 28wks)",
-                 "Denominator, n         ",
+                 "Denominator, n^1^         ",
                  "PNC = 52 (Target window: 52 to 54wks)",
-                 "Denominator, n          "
+                 "Denominator, n^1^          "
                  )
                 ) %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
@@ -1020,14 +1026,15 @@ bind_rows(VISIT_COMPLETE_ANC,
   kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
   row_spec(c(1,3,5,7,9,11,13,15,17,19,21), extra_css = "border-bottom: 0px white;") %>% 
-  #row_spec(c(2, 4, 6,8,10, 12, 14,16,18,20,22), italic = TRUE) %>% 
   add_indent(c(2, 4, 6,8,10, 12, 14,16,18,20,22), level_of_indent = 2)  %>% 
   pack_rows("ANC Visits", 1, 10, label_row_css = "color: steelblue;") %>% 
   pack_rows("PNC Visits", 11, 22, label_row_css = "color: steelblue;") 
 
 ```
 <span style="font-size: 88%;">
-Note: Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.
+^1^ Excludes participants with a reported miscarriage `(FETAL_LOSS_DSDECOD==1 [MNH04])` who are only expected to have PNC0-6.
+<br>
+Note: Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table.
 </span>
 
 \newpage
@@ -1330,9 +1337,9 @@ bind_rows(VISIT_COMPLETE_ANC,
                  "PNC = 6 (Late window: 8 to 12wks)",
                  "Denominator, n        ",
                  "PNC = 26 (Late window: 29 to 39wks)",
-                 "Denominator, n         ",
+                 "Denominator, n^1^         ",
                  "PNC = 52 (Late window: 55 to 64wks)",
-                 "Denominator, n          "
+                 "Denominator, n^1^          "
                  )
                 ) %>%
   mutate_all(funs(str_replace(., "NaN", "0"))) %>%
@@ -1352,6 +1359,8 @@ bind_rows(VISIT_COMPLETE_ANC,
 
 ```
 <span style="font-size: 88%;">
+^1^ Excludes participants with a reported miscarriage `(FETAL_LOSS_DSDECOD==1 [MNH04])` who are only expected to have PNC0-6.
+<br>
 Note: Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.
 </span>
 
@@ -1363,7 +1372,7 @@ Note: Passed window denominators for all visits are calculated by EDD reported i
 
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
 <br>
-*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
 
 ```{r ga_tb PC}
 ## ANC visits - ultrasound form  
@@ -1527,6 +1536,7 @@ ENROLLMENT <- Prot_Compliance_Anc %>%
 #* Denom: Any form with visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
 
 ANC20 <- Prot_Compliance_Anc %>% 
+    filter(BOE_GA_WKS_ENROLL <= 17) %>% 
     rowwise() %>% 
     group_by(SITE) %>% 
     summarise(
@@ -1590,7 +1600,8 @@ ANC20 <- Prot_Compliance_Anc %>%
   slice(-1) %>% 
     add_column(
       .before = 1,
-      "All sites" = Prot_Compliance_Anc %>% 
+      "All sites" = Prot_Compliance_Anc %>%
+      filter(BOE_GA_WKS_ENROLL <= 17) %>% 
         plyr::summarise(
           
       "Denominator" = paste0(
@@ -2255,6 +2266,7 @@ ENROLLMENT <- Form_Completion_Anc %>%
 #* Denom: Any form with visit type = i AND have any visit status AND passed window for visit type = i
 
 ANC20 <- Form_Completion_Anc %>% 
+    filter(BOE_GA_WKS_ENROLL <= 17) %>% 
     rowwise() %>% 
     group_by(SITE) %>% 
     summarise(
@@ -2317,6 +2329,7 @@ ANC20 <- Form_Completion_Anc %>%
     add_column(
       .before = 1,
       "All sites" = Form_Completion_Anc %>% 
+      filter(BOE_GA_WKS_ENROLL <= 17) %>% 
         plyr::summarise(
                 
     "Denominator" = paste0(
@@ -2810,7 +2823,7 @@ bind_rows(ga_tb,
 \newpage
 
 #### `r emo::ji("pushpin")` Table 8: IPC Visit Completion & Protocol Compliance
-*Value: Among women successfully contacted during the IPC period, are all expected forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). Goal: 100% completion for all forms, except MNH08 where lab results are expected to lag.*
+*Value: Among women successfully contacted during the IPC period, are all expected forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
 <br>
 ```{r ipc table}
 
@@ -2819,7 +2832,7 @@ bind_rows(ga_tb,
 # row 3: among people WITH either an 09/10/11 how many have mnh10 complete 
 # row 4: among people WITH either an 09/10/11 how many have mnh11 complete 
 
-IPC <- MatData_Ipc_Visits %>%
+IPC_Total <- MatData_Ipc_Visits_Mat %>%
   rowwise() %>%
   group_by(SITE) %>%
   summarise(
@@ -2836,29 +2849,8 @@ IPC <- MatData_Ipc_Visits %>%
 
     "total passed ipc period" = paste0(
       format(sum(IPC_PASS==1 | ANY_TYPE_VISIT_COMPLETE_6 == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-    ),
+    )
     
-  ## PROTOCOL COMPLIANCE: 
-    # NUM: have a complete visit status (variable name: `MAT_VISIT_MNHXX`).
-    # DENOM: n completed MNH09 or MNH10 or MNH11 with visit status=complete.
-    
-    "MNH09" = paste0(
-      format(sum(M09_VISIT_COMPLETE_6==1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M09_VISIT_COMPLETE_6==1, na.rm = TRUE)/sum(ANY_TYPE_VISIT_COMPLETE_6==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH10" = paste0(
-      format(sum(M10_VISIT_COMPLETE_6==1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M10_VISIT_COMPLETE_6==1, na.rm = TRUE)/sum(ANY_TYPE_VISIT_COMPLETE_6==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")"),
-    
-    "MNH11" = paste0(
-      format(sum(M11_VISIT_COMPLETE_6==1, na.rm = TRUE), nsmall = 0, digits = 2),
-      " (",
-      format(round(sum(M11_VISIT_COMPLETE_6==1, na.rm = TRUE)/sum(ANY_TYPE_VISIT_COMPLETE_6==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      ")")
   ) %>%
   
   t() %>% as.data.frame() %>%
@@ -2866,7 +2858,7 @@ IPC <- MatData_Ipc_Visits %>%
   slice(-1)  %>% 
       add_column(
       .before = 1,
-      "All sites" = MatData_Ipc_Visits %>%
+      "All sites" = MatData_Ipc_Visits_Mat %>%
         plyr::summarise(
           
   ## VISIT COMPLETION: 
@@ -2881,7 +2873,18 @@ IPC <- MatData_Ipc_Visits %>%
 
     "total passed ipc period" = paste0(
       format(sum(IPC_PASS==1 | ANY_TYPE_VISIT_COMPLETE_6 == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-    ),
+    )
+    
+  ) %>%
+        t() %>%
+        as.data.frame() %>%
+      `colnames<-`(c(.[1,])) %>% unlist()
+)
+
+IPC_Prot_Comp_Mat <- MatData_Ipc_Visits_Compliance_Mat %>%
+  rowwise() %>%
+  group_by(SITE) %>%
+  summarise(
     
   ## PROTOCOL COMPLIANCE: 
     # NUM: have a complete visit status (variable name: `MAT_VISIT_MNHXX`).
@@ -2897,7 +2900,65 @@ IPC <- MatData_Ipc_Visits %>%
       format(sum(M10_VISIT_COMPLETE_6==1, na.rm = TRUE), nsmall = 0, digits = 2),
       " (",
       format(round(sum(M10_VISIT_COMPLETE_6==1, na.rm = TRUE)/sum(ANY_TYPE_VISIT_COMPLETE_6==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")")
+  ) %>%
+  
+  t() %>% as.data.frame() %>%
+  `colnames<-`(c(.[1,])) %>%
+  slice(-1)  %>% 
+      add_column(
+      .before = 1,
+      "All sites" = MatData_Ipc_Visits_Compliance_Mat %>%
+        plyr::summarise(
+
+  ## PROTOCOL COMPLIANCE: 
+    # NUM: have a complete visit status (variable name: `MAT_VISIT_MNHXX`).
+    # DENOM: n completed MNH09 or MNH10 or MNH11 with visit status=complete.
+    
+    "MNH09" = paste0(
+      format(sum(M09_VISIT_COMPLETE_6==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(M09_VISIT_COMPLETE_6==1, na.rm = TRUE)/sum(ANY_TYPE_VISIT_COMPLETE_6==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
       ")"),
+    
+    "MNH10" = paste0(
+      format(sum(M10_VISIT_COMPLETE_6==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(M10_VISIT_COMPLETE_6==1, na.rm = TRUE)/sum(ANY_TYPE_VISIT_COMPLETE_6==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")")
+  ) %>%
+        t() %>%
+        as.data.frame() %>%
+      `colnames<-`(c(.[1,])) %>% unlist()
+)
+
+IPC_Prot_Comp_Inf <- MatData_Ipc_Visits_Compliance_Inf %>%
+  rowwise() %>%
+  group_by(SITE) %>%
+  summarise(
+    
+  ## PROTOCOL COMPLIANCE: 
+    # NUM: have a complete visit status (variable name: `MAT_VISIT_MNHXX`).
+    # DENOM: n completed MNH09 or MNH10 or MNH11 with visit status=complete.
+
+    "MNH11" = paste0(
+      format(sum(M11_VISIT_COMPLETE_6==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(M11_VISIT_COMPLETE_6==1, na.rm = TRUE)/sum(ANY_TYPE_VISIT_COMPLETE_6==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")")
+  ) %>%
+  
+  t() %>% as.data.frame() %>%
+  `colnames<-`(c(.[1,])) %>%
+  slice(-1)  %>% 
+      add_column(
+      .before = 1,
+      "All sites" = MatData_Ipc_Visits_Compliance_Inf %>%
+        plyr::summarise(
+
+  ## PROTOCOL COMPLIANCE: 
+    # NUM: have a complete visit status (variable name: `MAT_VISIT_MNHXX`).
+    # DENOM: n completed MNH09 or MNH10 or MNH11 with visit status=complete.
     
     "MNH11" = paste0(
       format(sum(M11_VISIT_COMPLETE_6==1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -2910,11 +2971,13 @@ IPC <- MatData_Ipc_Visits %>%
       `colnames<-`(c(.[1,])) %>% unlist()
 )
 
+
+
 ```
 
 ```{r PRISMA TABLE 8 OUT}
 
-IPC %>% 
+bind_rows(IPC_Total, IPC_Prot_Comp_Mat, IPC_Prot_Comp_Inf) %>% 
   `rownames<-`(c("IPC (Target window: Delivery to 72 hours)",
                  "Denominator, n",
                  "MNH09 Labor & Delivery", 
@@ -2922,9 +2985,6 @@ IPC %>%
                  "MNH11 Newborn Birth Outcome"))  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
   kbl(caption = "", booktabs = TRUE) %>% #longtable = TRUE, 
-  # footnote(alphabet = c("denominator is n passed on-time window with >42 weeks gestation.",
-  #                       "by form: have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i with >42 weeks gestation.",
-  #                       "denominator is n completed MNH09 or MNH10 or MNH11 with visit status=complete AND passed on-time window with >42 weeks gestation.")) %>% 
   kable_paper(bootstrap_options = "striped", 
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = c("repeat_header", "HOLD_position")) %>% 
@@ -2933,17 +2993,25 @@ IPC %>%
   row_spec(0:1, extra_css = "padding: 0.1px") %>% 
   pack_rows(paste0("IPC Visit Completion^a,b^"),1, 2, 
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("IPC Protocol Compliance^c,d^", 3, 5, 
+  pack_rows("Maternal IPC Protocol Compliance^c,d^", 3, 4, 
+            label_row_css = "color: steelblue;") %>% 
+  pack_rows("Infant IPC Protocol Compliance^e,f^", 5, 5, 
             label_row_css = "color: steelblue;") 
+
 ```
 <span style="font-size: 88%;">
-^a^ numerator: have MNH09 or MNH10 or MNH11 with a complete visit status (variable name: `MAT_VISIT_MNHXX`).
+^a^ numerator: n mom with MNH09 or MNH10 or MNH11 with a complete visit status (variable name: `MAT_VISIT_MNHXX`).
 <br>
-^b^ denominator is n completed MNH09 or MNH10 or MNH11 with a complete visit status (variable name: `MAT_VISIT_MNHXX`) OR passed on-time window with >42 weeks gestation.
+^b^ denominator: n mom completed MNH09 or MNH10 or MNH11 with a complete visit status (variable name: `MAT_VISIT_MNHXX`) OR passed on-time window with >42 weeks gestation.
 <br>
-^c^ numerator: have a complete visit status (variable name: `MAT_VISIT_MNHXX`).
+^c^ numerator: n mom with a complete visit status (variable name: `MAT_VISIT_MNHXX`).
 <br>
-^d^ denominator is n completed MNH09 or MNH10 or MNH11 with visit status=complete.
+^d^ denominator: n mom completed MNH09 or MNH10 or MNH11 with visit status=complete.
+<br>
+^e^ numerator: n infant with a complete visit status (variable name: `MAT_VISIT_MNHXX`).
+<br>
+^f^ denominator: n mom-infant pair completed MNH09 or MNH10 or MNH11 with visit status=complete.
+
 </span>
 
 \newpage
