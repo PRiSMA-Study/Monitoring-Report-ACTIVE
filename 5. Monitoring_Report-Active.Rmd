@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2023-10-30)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2023-11-14)"
 output:
   html_document:
     df_print: paged
@@ -42,7 +42,7 @@ header-includes:
 &nbsp;
 
 
-##### **Includes data from synapse last updated:** 2023-10-13 {.unlisted .unnumbered}
+##### **Includes data from synapse last updated:** 2023-11-10 {.unlisted .unnumbered}
 &nbsp;
 &nbsp;
 
@@ -65,7 +65,7 @@ library(naniar)
 #library(dplyr)
 library(RColorBrewer)
 
-UploadDate = "2023-10-13" 
+UploadDate = "2023-11-10" 
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
 
@@ -99,7 +99,7 @@ lastenroll <- MatData_Screen_Enroll %>%
 ##new 
 date_last_enrll_pak <- lastenroll %>% filter(SITE == "Pakistan") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_ke <- lastenroll %>% filter(SITE == "Kenya") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
-date_last_enrll_ga <- lastenroll %>% filter(SITE == "Ghana") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
+# date_last_enrll_ga <- lastenroll %>% filter(SITE == "Ghana") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_za <- lastenroll %>% filter(SITE == "Zambia") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_cmc <- lastenroll %>% filter(SITE == "India-CMC") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 
@@ -107,18 +107,18 @@ date_last_enrll_cmc <- lastenroll %>% filter(SITE == "India-CMC") %>% select(las
 ```
 
 ##### **Last Enrollment Date: ** 
-##### Kenya : 2023-10-12 {.unlisted .unnumbered}
-##### Pakistan : 2023-10-06 {.unlisted .unnumbered}
-##### Ghana : 2023-09-28 {.unlisted .unnumbered}
-##### Zambia : 2023-10-05 {.unlisted .unnumbered}
-##### India CMC : 2023-09-29 {.unlisted .unnumbered}
+##### Kenya : 2023-11-10 {.unlisted .unnumbered}
+##### Pakistan : 2023-11-03 {.unlisted .unnumbered}
+##### Ghana : NA {.unlisted .unnumbered}
+##### Zambia : 2023-11-08 {.unlisted .unnumbered}
+##### India CMC : 2023-10-27 {.unlisted .unnumbered}
 
 ```{r Table1}
 ## Prescreening and enrollment in the most recent one week 
 # denominator: a = n all pre-screened 
 MatData_Screen_Enroll$date_last_enrll_pak = date_last_enrll_pak
 MatData_Screen_Enroll$date_last_enrll_ke = date_last_enrll_ke
-MatData_Screen_Enroll$date_last_enrll_ga = date_last_enrll_ga
+# MatData_Screen_Enroll$date_last_enrll_ga = date_last_enrll_ga
 MatData_Screen_Enroll$date_last_enrll_za = date_last_enrll_za
 MatData_Screen_Enroll$date_last_enrll_cmc = date_last_enrll_cmc
 
@@ -126,7 +126,7 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
   filter(
     SITE == "Pakistan" & (M00_SCRN_OBSSTDAT > date_last_enrll_pak) |
     SITE == "Kenya" & (M00_SCRN_OBSSTDAT > date_last_enrll_ke) | 
-    SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
+   # SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
     SITE == "Zambia" & (M00_SCRN_OBSSTDAT > date_last_enrll_za) | 
     SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc)  
   ) %>% 
@@ -147,7 +147,7 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
   filter(
     SITE == "Pakistan" & (M00_SCRN_OBSSTDAT > date_last_enrll_pak) |
     SITE == "Kenya" & (M00_SCRN_OBSSTDAT > date_last_enrll_ke) | 
-    SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
+   # SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
     SITE == "Zambia" & (M00_SCRN_OBSSTDAT > date_last_enrll_za) |
     SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc) 
 
@@ -707,346 +707,346 @@ tb_status %>%
 </span>
 
 
+<!-- \newpage -->
+
+<!-- #### `r emo::ji("pushpin")` Table 5a: PRISMA Visit Completion (On-Time Windows) -->
+<!-- *Value: Are forms completed for each visit? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). Goal: 80% completion (100% completion for enrollment).* -->
+<!-- <br> -->
+
+<!-- *Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed on-time window for visit type = i  -->
+<!-- <br> -->
+<!-- *Denominator:* Passed on-time window for visit type = i AND (has not delivered OR delivered with gestational age > visit window) AND (has not closed out OR closed out with closeout date > visit window) -->
+<!-- ```{r Table 5a } -->
+<!-- #* Num: Any form with visit type = i AND visit status = 1 or 2 & Passed window for visit type = i -->
+<!-- #* Denom: Passed window for visit type = i -->
+
+<!-- VISIT_COMPLETE_ANC <- Visit_Complete_Anc %>%  -->
+<!--           rowwise() %>%  -->
+<!--           group_by(SITE) %>%  -->
+<!--           summarise( -->
+
+<!--       "Enrollment" = paste0( -->
+<!--         format(sum(VC_ENROLL_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_ENROLL_NUM == 1, na.rm = TRUE)/sum(VC_ENROLL_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n" = paste0( -->
+<!--         format(sum(VC_ENROLL_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "ANC = 20" = paste0( -->
+<!--         format(sum(VC_ANC20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_ANC20_NUM == 1, na.rm = TRUE)/sum(VC_ANC20_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n " = paste0( -->
+<!--         format(sum(VC_ANC20_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "ANC = 28" = paste0( -->
+<!--         format(sum(VC_ANC28_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_ANC28_NUM == 1, na.rm = TRUE)/sum(VC_ANC28_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n  " = paste0( -->
+<!--         format(sum(VC_ANC28_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "ANC = 32" = paste0( -->
+<!--         format(sum(VC_ANC32_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_ANC32_NUM == 1, na.rm = TRUE)/sum(VC_ANC32_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n   " = paste0( -->
+<!--         format(sum(VC_ANC32_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "ANC = 36" = paste0( -->
+<!--         format(sum(VC_ANC36_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_ANC36_NUM == 1, na.rm = TRUE)/sum(VC_ANC36_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n    " = paste0( -->
+<!--         format(sum(VC_ANC36_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ) -->
+<!--       ) %>% -->
+<!--   t() %>% as.data.frame() %>%  -->
+<!--   `colnames<-`(c(.[1,])) %>%  -->
+<!--   slice(-1) %>%  -->
+<!--       add_column( -->
+<!--       .before = 1, -->
+<!--       "All sites" = Visit_Complete_Anc %>%  -->
+<!--         plyr::summarise( -->
+
+<!--       "Enrollment" = paste0( -->
+<!--         format(sum(VC_ENROLL_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_ENROLL_NUM == 1, na.rm = TRUE)/sum(VC_ENROLL_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n" = paste0( -->
+<!--         format(sum(VC_ENROLL_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "ANC = 20" = paste0( -->
+<!--         format(sum(VC_ANC20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_ANC20_NUM == 1, na.rm = TRUE)/sum(VC_ANC20_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n " = paste0( -->
+<!--         format(sum(VC_ANC20_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "ANC = 28" = paste0( -->
+<!--         format(sum(VC_ANC28_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_ANC28_NUM == 1, na.rm = TRUE)/sum(VC_ANC28_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n  " = paste0( -->
+<!--         format(sum(VC_ANC28_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "ANC = 32" = paste0( -->
+<!--         format(sum(VC_ANC32_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_ANC32_NUM == 1, na.rm = TRUE)/sum(VC_ANC32_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n   " = paste0( -->
+<!--         format(sum(VC_ANC32_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "ANC = 36" = paste0( -->
+<!--         format(sum(VC_ANC36_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_ANC36_NUM == 1, na.rm = TRUE)/sum(VC_ANC36_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n    " = paste0( -->
+<!--         format(sum(VC_ANC36_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ) -->
+
+<!--       ) %>%  -->
+<!--         t() %>%  -->
+<!--         as.data.frame() %>%  -->
+<!--       `colnames<-`(c(.[1,])) %>% unlist()  -->
+<!-- ) -->
+
+
+<!-- ## PNC  -->
+<!-- VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>%  -->
+<!--           rowwise() %>%  -->
+<!--           group_by(SITE) %>%  -->
+<!--           summarise( -->
+
+<!--       "PNC = 0" = paste0( -->
+<!--         format(sum(VC_PNC0_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC0_NUM == 1, na.rm = TRUE)/sum(VC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n" = paste0( -->
+<!--         format(sum(VC_PNC0_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "PNC = 1" = paste0( -->
+<!--         format(sum(VC_PNC1_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC1_NUM == 1, na.rm = TRUE)/sum(VC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n " = paste0( -->
+<!--         format(sum(VC_PNC1_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "PNC = 4" = paste0( -->
+<!--         format(sum(VC_PNC4_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC4_NUM == 1, na.rm = TRUE)/sum(VC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n  " = paste0( -->
+<!--         format(sum(VC_PNC4_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "PNC = 6" = paste0( -->
+<!--         format(sum(VC_PNC6_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC6_NUM == 1, na.rm = TRUE)/sum(VC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n   " = paste0( -->
+<!--         format(sum(VC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "PNC = 26" = paste0( -->
+<!--         format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(VC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n    " = paste0( -->
+<!--         format(sum(VC_PNC26_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "PNC = 52" = paste0( -->
+<!--         format(sum(VC_PNC52_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC52_NUM == 1, na.rm = TRUE)/sum(VC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n     " = paste0( -->
+<!--         format(sum(VC_PNC52_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ) -->
+<!--       ) %>% -->
+<!--   t() %>% as.data.frame() %>%  -->
+<!--   `colnames<-`(c(.[1,])) %>%  -->
+<!--   slice(-1) %>%  -->
+<!--       add_column( -->
+<!--       .before = 1, -->
+<!--       "All sites" = Visit_Complete_Pnc %>%  -->
+<!--         plyr::summarise( -->
+
+<!--       "PNC = 0" = paste0( -->
+<!--         format(sum(VC_PNC0_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC0_NUM == 1, na.rm = TRUE)/sum(VC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n" = paste0( -->
+<!--         format(sum(VC_PNC0_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "PNC = 1" = paste0( -->
+<!--         format(sum(VC_PNC1_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC1_NUM == 1, na.rm = TRUE)/sum(VC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n " = paste0( -->
+<!--         format(sum(VC_PNC1_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "PNC = 4" = paste0( -->
+<!--         format(sum(VC_PNC4_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC4_NUM == 1, na.rm = TRUE)/sum(VC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n  " = paste0( -->
+<!--         format(sum(VC_PNC4_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "PNC = 6" = paste0( -->
+<!--         format(sum(VC_PNC6_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC6_NUM == 1, na.rm = TRUE)/sum(VC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n   " = paste0( -->
+<!--         format(sum(VC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "PNC = 26" = paste0( -->
+<!--         format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(VC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n    " = paste0( -->
+<!--         format(sum(VC_PNC26_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ), -->
+
+<!--       "PNC = 52" = paste0( -->
+<!--         format(sum(VC_PNC52_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+<!--         " (", -->
+<!--         format(round(sum(VC_PNC52_NUM == 1, na.rm = TRUE)/sum(VC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+<!--         ")"), -->
+
+<!--       "Denominator,n     " = paste0( -->
+<!--         format(sum(VC_PNC52_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+<!--         ) -->
+<!--       ) %>%  -->
+<!--         t() %>%  -->
+<!--         as.data.frame() %>%  -->
+<!--       `colnames<-`(c(.[1,])) %>% unlist()  -->
+<!-- ) -->
+
+<!-- ## since no PNC data in zambia or ghana - replace with "no data"  -->
+<!-- #VISIT_COMPLETE_PNC <- VISIT_COMPLETE_PNC %>%  add_column(Ghana = "No PNC Data", .after = "All sites") -->
+<!-- #VISIT_COMPLETE_PNC <- VISIT_COMPLETE_PNC %>%  add_column(Zambia = "No PNC Data", .after = "Pakistan") -->
+
+<!-- ``` -->
+
+<!-- ```{r PRISMA TABLE 5a OUT} -->
+
+<!-- bind_rows(VISIT_COMPLETE_ANC,  -->
+<!--           VISIT_COMPLETE_PNC,  -->
+<!--           ) %>%  -->
+<!--   `rownames<-` (c(## anc (1-10) -->
+<!--                  "Enrollment (Target window: <20wks)", -->
+<!--                  "Denominator, n", -->
+<!--                  "ANC = 20 (Target window: 18 to 22wks)", -->
+<!--                  "Denominator, n ", -->
+<!--                  "ANC = 28 (Target window: 26 to 30wks)", -->
+<!--                  "Denominator, n  ", -->
+<!--                  "ANC = 32 (Target window: 31 to 33wks)", -->
+<!--                  "Denominator, n   ", -->
+<!--                  "ANC = 36 (Target window: 34 to 38wks)", -->
+<!--                  "Denominator, n    ", -->
+<!--                  ## pnc (11-22) -->
+<!--                  "PNC = 0 (Target window: 3 to 5 days)", -->
+<!--                  "Denominator, n     ", -->
+<!--                  "PNC = 1 (Target window: 7 to 14 days)", -->
+<!--                  "Denominator, n      ", -->
+<!--                  "PNC = 4 (Target window: 28 to 35 days)", -->
+<!--                  "Denominator, n       ", -->
+<!--                  "PNC = 6 (Target window: 6 to 7wks)", -->
+<!--                  "Denominator, n        ", -->
+<!--                  "PNC = 26 (Target window: 26 to 28wks)", -->
+<!--                  "Denominator, n^1^         ", -->
+<!--                  "PNC = 52 (Target window: 52 to 54wks)", -->
+<!--                  "Denominator, n^1^          " -->
+<!--                  ) -->
+<!--                 ) %>%  -->
+<!--   mutate_all(funs(str_replace(., "NaN", "0"))) %>%  -->
+<!--   kbl(caption = "", booktabs = TRUE) %>% -->
+<!--     # footnote(general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.",  -->
+<!--     #          footnote_order = "general") %>%  -->
+<!--   kable_paper(bootstrap_options = "striped",  -->
+<!--               full_width = T, html_font = "Cambria", position = "left", -->
+<!--               latex_options = c("repeat_header", "HOLD_position")) %>%  -->
+<!--   kable_styling(font_size = 13) %>% -->
+<!--   row_spec(0, extra_css = "border-bottom: 0px white;") %>%  -->
+<!--   row_spec(c(1,3,5,7,9,11,13,15,17,19,21), extra_css = "border-bottom: 0px white;") %>%  -->
+<!--   add_indent(c(2, 4, 6,8,10, 12, 14,16,18,20,22), level_of_indent = 2)  %>%  -->
+<!--   pack_rows("ANC Visits", 1, 10, label_row_css = "color: steelblue;") %>%  -->
+<!--   pack_rows("PNC Visits", 11, 22, label_row_css = "color: steelblue;")  -->
+
+<!-- ``` -->
+<!-- <span style="font-size: 88%;"> -->
+<!-- ^1^ Excludes participants with a reported miscarriage `(FETAL_LOSS_DSDECOD==1 [MNH04])` who are only expected to have PNC0-6. -->
+<!-- <br> -->
+<!-- Note: Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table. -->
+<!-- </span> -->
+
 \newpage
 
-#### `r emo::ji("pushpin")` Table 5a: PRISMA Visit Completion (On-Time Windows)
-*Value: Are forms completed for each visit? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). Goal: 80% completion (100% completion for enrollment).*
-<br>
-
-*Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed on-time window for visit type = i 
-<br>
-*Denominator:* Passed on-time window for visit type = i AND (has not delivered OR delivered with gestational age > visit window) AND (has not closed out OR closed out with closeout date > visit window)
-```{r Table 5a }
-#* Num: Any form with visit type = i AND visit status = 1 or 2 & Passed window for visit type = i
-#* Denom: Passed window for visit type = i
-
-VISIT_COMPLETE_ANC <- Visit_Complete_Anc %>% 
-          rowwise() %>% 
-          group_by(SITE) %>% 
-          summarise(
-
-      "Enrollment" = paste0(
-        format(sum(VC_ENROLL_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_ENROLL_NUM == 1, na.rm = TRUE)/sum(VC_ENROLL_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-      
-      "Denominator,n" = paste0(
-        format(sum(VC_ENROLL_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-
-      "ANC = 20" = paste0(
-        format(sum(VC_ANC20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_ANC20_NUM == 1, na.rm = TRUE)/sum(VC_ANC20_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-      
-      "Denominator,n " = paste0(
-        format(sum(VC_ANC20_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-      
-      "ANC = 28" = paste0(
-        format(sum(VC_ANC28_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_ANC28_NUM == 1, na.rm = TRUE)/sum(VC_ANC28_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-            
-      "Denominator,n  " = paste0(
-        format(sum(VC_ANC28_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-      
-      "ANC = 32" = paste0(
-        format(sum(VC_ANC32_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_ANC32_NUM == 1, na.rm = TRUE)/sum(VC_ANC32_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-            
-      "Denominator,n   " = paste0(
-        format(sum(VC_ANC32_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-
-      "ANC = 36" = paste0(
-        format(sum(VC_ANC36_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_ANC36_NUM == 1, na.rm = TRUE)/sum(VC_ANC36_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-            
-      "Denominator,n    " = paste0(
-        format(sum(VC_ANC36_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-        )
-      ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-      add_column(
-      .before = 1,
-      "All sites" = Visit_Complete_Anc %>% 
-        plyr::summarise(
-
-      "Enrollment" = paste0(
-        format(sum(VC_ENROLL_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_ENROLL_NUM == 1, na.rm = TRUE)/sum(VC_ENROLL_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-            
-      "Denominator,n" = paste0(
-        format(sum(VC_ENROLL_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-      
-      "ANC = 20" = paste0(
-        format(sum(VC_ANC20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_ANC20_NUM == 1, na.rm = TRUE)/sum(VC_ANC20_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-            
-      "Denominator,n " = paste0(
-        format(sum(VC_ANC20_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-
-      "ANC = 28" = paste0(
-        format(sum(VC_ANC28_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_ANC28_NUM == 1, na.rm = TRUE)/sum(VC_ANC28_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-            
-      "Denominator,n  " = paste0(
-        format(sum(VC_ANC28_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-
-      "ANC = 32" = paste0(
-        format(sum(VC_ANC32_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_ANC32_NUM == 1, na.rm = TRUE)/sum(VC_ANC32_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-            
-      "Denominator,n   " = paste0(
-        format(sum(VC_ANC32_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-
-      "ANC = 36" = paste0(
-        format(sum(VC_ANC36_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_ANC36_NUM == 1, na.rm = TRUE)/sum(VC_ANC36_DENOM == 1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-            
-      "Denominator,n    " = paste0(
-        format(sum(VC_ANC36_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
-        )
-      
-      ) %>% 
-        t() %>% 
-        as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-)
-
-
-## PNC 
-VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>% 
-          rowwise() %>% 
-          group_by(SITE) %>% 
-          summarise(
-
-      "PNC = 0" = paste0(
-        format(sum(VC_PNC0_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC0_NUM == 1, na.rm = TRUE)/sum(VC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                  
-      "Denominator,n" = paste0(
-        format(sum(VC_PNC0_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-
-      "PNC = 1" = paste0(
-        format(sum(VC_PNC1_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC1_NUM == 1, na.rm = TRUE)/sum(VC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                        
-      "Denominator,n " = paste0(
-        format(sum(VC_PNC1_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-
-      "PNC = 4" = paste0(
-        format(sum(VC_PNC4_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC4_NUM == 1, na.rm = TRUE)/sum(VC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                        
-      "Denominator,n  " = paste0(
-        format(sum(VC_PNC4_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-      
-      "PNC = 6" = paste0(
-        format(sum(VC_PNC6_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC6_NUM == 1, na.rm = TRUE)/sum(VC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                        
-      "Denominator,n   " = paste0(
-        format(sum(VC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-      
-      "PNC = 26" = paste0(
-        format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(VC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                        
-      "Denominator,n    " = paste0(
-        format(sum(VC_PNC26_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-      
-      "PNC = 52" = paste0(
-        format(sum(VC_PNC52_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC52_NUM == 1, na.rm = TRUE)/sum(VC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                        
-      "Denominator,n     " = paste0(
-        format(sum(VC_PNC52_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        )
-      ) %>%
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-      add_column(
-      .before = 1,
-      "All sites" = Visit_Complete_Pnc %>% 
-        plyr::summarise(
-          
-      "PNC = 0" = paste0(
-        format(sum(VC_PNC0_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC0_NUM == 1, na.rm = TRUE)/sum(VC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                  
-      "Denominator,n" = paste0(
-        format(sum(VC_PNC0_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-
-      "PNC = 1" = paste0(
-        format(sum(VC_PNC1_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC1_NUM == 1, na.rm = TRUE)/sum(VC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                        
-      "Denominator,n " = paste0(
-        format(sum(VC_PNC1_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-
-      "PNC = 4" = paste0(
-        format(sum(VC_PNC4_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC4_NUM == 1, na.rm = TRUE)/sum(VC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                        
-      "Denominator,n  " = paste0(
-        format(sum(VC_PNC4_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-      
-      "PNC = 6" = paste0(
-        format(sum(VC_PNC6_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC6_NUM == 1, na.rm = TRUE)/sum(VC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                        
-      "Denominator,n   " = paste0(
-        format(sum(VC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-
-      "PNC = 26" = paste0(
-        format(sum(VC_PNC26_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC26_NUM == 1, na.rm = TRUE)/sum(VC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                        
-      "Denominator,n    " = paste0(
-        format(sum(VC_PNC26_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        ),
-      
-      "PNC = 52" = paste0(
-        format(sum(VC_PNC52_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-        " (",
-        format(round(sum(VC_PNC52_NUM == 1, na.rm = TRUE)/sum(VC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-        ")"),
-                        
-      "Denominator,n     " = paste0(
-        format(sum(VC_PNC52_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
-        )
-      ) %>% 
-        t() %>% 
-        as.data.frame() %>% 
-      `colnames<-`(c(.[1,])) %>% unlist() 
-)
-
-## since no PNC data in zambia or ghana - replace with "no data" 
-#VISIT_COMPLETE_PNC <- VISIT_COMPLETE_PNC %>%  add_column(Ghana = "No PNC Data", .after = "All sites")
-#VISIT_COMPLETE_PNC <- VISIT_COMPLETE_PNC %>%  add_column(Zambia = "No PNC Data", .after = "Pakistan")
-
-```
-
-```{r PRISMA TABLE 5a OUT}
-
-bind_rows(VISIT_COMPLETE_ANC, 
-          VISIT_COMPLETE_PNC, 
-          ) %>% 
-  `rownames<-` (c(## anc (1-10)
-                 "Enrollment (Target window: <20wks)",
-                 "Denominator, n",
-                 "ANC = 20 (Target window: 18 to 22wks)",
-                 "Denominator, n ",
-                 "ANC = 28 (Target window: 26 to 30wks)",
-                 "Denominator, n  ",
-                 "ANC = 32 (Target window: 31 to 33wks)",
-                 "Denominator, n   ",
-                 "ANC = 36 (Target window: 34 to 38wks)",
-                 "Denominator, n    ",
-                 ## pnc (11-22)
-                 "PNC = 0 (Target window: 3 to 5 days)",
-                 "Denominator, n     ",
-                 "PNC = 1 (Target window: 7 to 14 days)",
-                 "Denominator, n      ",
-                 "PNC = 4 (Target window: 28 to 35 days)",
-                 "Denominator, n       ",
-                 "PNC = 6 (Target window: 6 to 7wks)",
-                 "Denominator, n        ",
-                 "PNC = 26 (Target window: 26 to 28wks)",
-                 "Denominator, n^1^         ",
-                 "PNC = 52 (Target window: 52 to 54wks)",
-                 "Denominator, n^1^          "
-                 )
-                ) %>% 
-  mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
-  kbl(caption = "", booktabs = TRUE) %>%
-    # footnote(general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.", 
-    #          footnote_order = "general") %>% 
-  kable_paper(bootstrap_options = "striped", 
-              full_width = T, html_font = "Cambria", position = "left",
-              latex_options = c("repeat_header", "HOLD_position")) %>% 
-  kable_styling(font_size = 13) %>%
-  row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
-  row_spec(c(1,3,5,7,9,11,13,15,17,19,21), extra_css = "border-bottom: 0px white;") %>% 
-  add_indent(c(2, 4, 6,8,10, 12, 14,16,18,20,22), level_of_indent = 2)  %>% 
-  pack_rows("ANC Visits", 1, 10, label_row_css = "color: steelblue;") %>% 
-  pack_rows("PNC Visits", 11, 22, label_row_css = "color: steelblue;") 
-
-```
-<span style="font-size: 88%;">
-^1^ Excludes participants with a reported miscarriage `(FETAL_LOSS_DSDECOD==1 [MNH04])` who are only expected to have PNC0-6.
-<br>
-Note: Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table.
-</span>
-
-\newpage
-
-#### `r emo::ji("pushpin")` Table 5b: PRISMA Visit Completion (Late Windows) 
+#### `r emo::ji("pushpin")` Table 5: PRISMA Visit Completion (Late Windows) 
 *Value: Are forms completed for each visit? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). If there is no late window for a visit, the on-time windows are used. Goal: 90% completion (100% completion for enrollment)*
 <br>
 
 *Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i
 <br>
 *Denominator:* Passed late window for visit type = i  AND (has not delivered OR delivered with gestational age > late visit window) AND (has not closed out OR closed out with closeout date > visit window)
-```{r Table 5b }
+```{r Table 5 }
 #* Num: Any form with visit type = i AND visit status = 1 or 2 & Passed window for visit type = i
 #* Denom: Passed window for visit type = i
 
@@ -1311,7 +1311,7 @@ VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>%
 
 ```
 
-```{r PRISMA TABLE 5b OUT}
+```{r PRISMA TABLE 5 OUT}
 
 bind_rows(VISIT_COMPLETE_ANC,
           VISIT_COMPLETE_PNC,
@@ -1344,7 +1344,7 @@ bind_rows(VISIT_COMPLETE_ANC,
                 ) %>%
   mutate_all(funs(str_replace(., "NaN", "0"))) %>%
   kbl(caption = "", booktable = TRUE) %>%
-    # footnote(general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.",
+    # footnote(general = "Passed late window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.",
     #          footnote_order = "general") %>%
   kable_paper(bootstrap_options = "striped",
               full_width = T, html_font = "Cambria", position = "left",
@@ -1361,7 +1361,7 @@ bind_rows(VISIT_COMPLETE_ANC,
 <span style="font-size: 88%;">
 ^1^ Excludes participants with a reported miscarriage `(FETAL_LOSS_DSDECOD==1 [MNH04])` who are only expected to have PNC0-6.
 <br>
-Note: Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.
+Note: Passed late window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table.
 </span>
 
 \newpage
@@ -1370,9 +1370,9 @@ Note: Passed window denominators for all visits are calculated by EDD reported i
 *Value: Among women successfully contacted during the ANC period, are all expected forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). Goal: 100% completion for all forms, except MNH08 where lab results are expected to lag.*
 <br>
 
-*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i 
 <br>
-*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed latewindow for visit type = i 
 
 ```{r ga_tb PC}
 ## ANC visits - ultrasound form  
@@ -2054,12 +2054,12 @@ bind_rows(ga_tb,
                )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
   kbl(caption = "", booktabs = TRUE) %>%  
-    # footnote(alphabet = c("denominator is n completed any form with visit status=complete AND visit type=Enrollment AND passed on-time window with >19 weeks gestation",
-    #                   "denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed on-time window with >22 weeks gestation",
-    #                   "denominator is n completed any form with visit status=complete ANDvisit type=ANC28  AND passed on-time window with >30 weeks gestation",
-    #                   "denominator is n completed any form with visit status=complete AND visit type=ANC32  AND passed on-time window with>33 weeks gestation",
-    #                   "denominator is n completed any form with visit status=complete AND visit type=ANC36  AND passed on-time window with >38 weeks gestation"),
-    #          general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.",
+    # footnote(alphabet = c("denominator is n completed any form with visit status=complete AND visit type=Enrollment AND passed late window with >19 weeks gestation",
+    #                   "denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed late window with >22 weeks gestation",
+    #                   "denominator is n completed any form with visit status=complete AND visit type=ANC28  AND passed late window with >30 weeks gestation",
+    #                   "denominator is n completed any form with visit status=complete AND visit type=ANC32  AND passed late window with>33 weeks gestation",
+    #                   "denominator is n completed any form with visit status=complete AND visit type=ANC36  AND passed late window with >38 weeks gestation"),
+    #          general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table.",
     #          number = "MNH26 is only filled out for ReMAPP participants",
     #          footnote_order = c("alphabet","number", "general")) %>% 
   kable_paper(bootstrap_options = "striped", 
@@ -2082,19 +2082,19 @@ bind_rows(ga_tb,
 
 ```
 <span style="font-size: 88%;">
-^a^ denominator is n completed any form with visit status=complete AND visit type=Enrollment AND passed on-time window with >19 weeks gestation.
+^a^ denominator is n completed any form with visit status=complete AND visit type=Enrollment AND passed late window with >19 weeks gestation.
 <br>
-^b^ denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed on-time window with >22 weeks gestation. 
+^b^ denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed late window with >22 weeks gestation. 
 <br>
-^c^ denominator is n completed any form with visit status=complete ANDvisit type=ANC28  AND passed on-time window with >30 weeks gestation. 
+^c^ denominator is n completed any form with visit status=complete ANDvisit type=ANC28  AND passed late window with >30 weeks gestation. 
 <br>
-^d^ denominator is n completed any form with visit status=complete AND visit type=ANC32  AND passed on-time window with>33 weeks gestation. 
+^d^ denominator is n completed any form with visit status=complete AND visit type=ANC32  AND passed late window with>33 weeks gestation. 
 <br>
-^e^ denominator is n completed any form with visit status=complete AND visit type=ANC36  AND passed on-time window with >38 weeks gestation. 
+^e^ denominator is n completed any form with visit status=complete AND visit type=ANC36  AND passed late window with >38 weeks gestation. 
 <br>
 ^1^MNH26 is only filled out for ReMAPP participants. 
 <br>
-Note: Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.
+Note: Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table.
 </span>
 
 \newpage
@@ -2103,9 +2103,9 @@ Note: Passed window denominators for all visits are calculated by EDD reported i
 *Value: Are forms completed regardless of visit status? Goal: 100% completion for all forms, except MNH08 where lab results are expected to lag.*
 <br>
 
-*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i 
 <br>
-*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i 
 
 ```{r ga_tb FC}
 ## ANC visits - ultrasound form  
@@ -2776,11 +2776,11 @@ bind_rows(ga_tb,
                )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
   kbl(caption = "", booktabs = TRUE) %>% #longtable = TRUE, 
-    # footnote(alphabet = c("denominator is n completed any form with any visit status AND visit type=Enrollment AND passed on-time window with >19 weeks gestation",
-    #                   "denominator is n completed any form with any visit status AND visit type=ANC20 AND passed on-time window with >22 weeks gestation",
-    #                   "denominator is n completed any form with any visit status AND visit type=ANC28 AND passed on-time window with >30 weeks gestation",
-    #                   "denominator is n completed any form with any visit status AND visit type=ANC32 AND passed on-time window with>33 weeks gestation",
-    #                   "denominator is n completed any form with any visit status AND visit type=ANC36 AND passed on-time window with >38 weeks gestation"),
+    # footnote(alphabet = c("denominator is n completed any form with any visit status AND visit type=Enrollment AND passed late window with >19 weeks gestation",
+    #                   "denominator is n completed any form with any visit status AND visit type=ANC20 AND passed late window with >22 weeks gestation",
+    #                   "denominator is n completed any form with any visit status AND visit type=ANC28 AND passed late window with >30 weeks gestation",
+    #                   "denominator is n completed any form with any visit status AND visit type=ANC32 AND passed late window with>33 weeks gestation",
+    #                   "denominator is n completed any form with any visit status AND visit type=ANC36 AND passed late window with >38 weeks gestation"),
     #          general = "Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.", 
     #          number = "MNH26 is only filled out for ReMAPP participants",
     #          footnote_order = c("alphabet","number", "general")) %>% 
@@ -2795,7 +2795,7 @@ bind_rows(ga_tb,
   #pack_rows("MNH01 Ultrasound", 2, 5, label_row_css = "color: steelblue;") %>%
   pack_rows(paste0("Enrollment, n(%)^a^ \nTarget window: <20wks"),2, 10, 
             label_row_css = "color: steelblue;") %>% 
-  pack_rows("ANC = 20, n(%)^b^ \nTarget window: 18 to 22wks", 11, 19, 
+  pack_rows("ANC = 20, n(%)^b^ \nTarget window: 23 to 25wks", 11, 19, 
             label_row_css = "color: steelblue;") %>% 
   pack_rows("ANC = 28, n(%)^d^ \nTarget window: 26 to 30wks", 20, 26,
             label_row_css = "color: steelblue;") %>% 
@@ -2806,15 +2806,15 @@ bind_rows(ga_tb,
 
 ```
 <span style="font-size: 88%;">
-^a^ denominator is n completed any form with any visit status AND visit type=Enrollment AND passed on-time window with >19 weeks gestation.
+^a^ denominator is n completed any form with any visit status AND visit type=Enrollment AND passed late window with >19 weeks gestation.
 <br>
-^b^ denominator is n completed any form with any visit status AND visit type=ANC20 AND passed on-time window with >22 weeks gestation.
+^b^ denominator is n completed any form with any visit status AND visit type=ANC20 AND passed late window with >22 weeks gestation.
 <br>
-^c^ denominator is n completed any form with any visit status AND visit type=ANC28 AND passed on-time window with >30 weeks gestation. 
+^c^ denominator is n completed any form with any visit status AND visit type=ANC28 AND passed late window with >30 weeks gestation. 
 <br>
-^d^ denominator is n completed any form with any visit status AND visit type=ANC32 AND passed on-time window with>33 weeks gestation.
+^d^ denominator is n completed any form with any visit status AND visit type=ANC32 AND passed late window with>33 weeks gestation.
 <br>
-^e^ denominator is n completed any form with any visit status AND visit type=ANC36 AND passed on-time window with >38 weeks gestation.
+^e^ denominator is n completed any form with any visit status AND visit type=ANC36 AND passed late window with >38 weeks gestation.
 <br>
 ^1^ MNH26 is only filled out for ReMAPP participants. 
 ^Note:^Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.
@@ -3002,7 +3002,7 @@ bind_rows(IPC_Total, IPC_Prot_Comp_Mat, IPC_Prot_Comp_Inf) %>%
 <span style="font-size: 88%;">
 ^a^ numerator: n mom with MNH09 or MNH10 or MNH11 with a complete visit status (variable name: `MAT_VISIT_MNHXX`).
 <br>
-^b^ denominator: n mom completed MNH09 or MNH10 or MNH11 with a complete visit status (variable name: `MAT_VISIT_MNHXX`) OR passed on-time window with >42 weeks gestation.
+^b^ denominator: n mom completed MNH09 or MNH10 or MNH11 with a complete visit status (variable name: `MAT_VISIT_MNHXX`) OR passed late window with >42 weeks gestation.
 <br>
 ^c^ numerator: n mom with a complete visit status (variable name: `MAT_VISIT_MNHXX`).
 <br>
@@ -3020,9 +3020,9 @@ bind_rows(IPC_Total, IPC_Prot_Comp_Mat, IPC_Prot_Comp_Inf) %>%
 *Value: Among women successfully contacted during the PNC period, are all expected forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). Goal: 100% completion for all forms, except MNH08 where lab results are expected to lag*
 <br>
 
-*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i
 <br>
-*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i
+*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i
 
 ```{r birthoutcome PC}
 ## ANC visits - ultrasound form
@@ -3527,12 +3527,12 @@ bind_rows(birthoutcome,
                )  %>%
   mutate_all(funs(str_replace(., "NaN", "0"))) %>%
   kbl(caption = "",  booktabs = TRUE) %>% #longtable = TRUE,
-    # footnote(alphabet = c("denominator is n completed any form with visit status=complete AND visit type=PNC0 AND passed on-time window with >5 days postpartum",
-    #                   "denominator is n completed any form with visit status=complete AND visit type=PNC1 AND passed on-time window with 14 days postpartum",
-    #                   "denominator is n completed any form with visit status=complete AND visit type=PNC4 AND passed on-time window with >35 days postpartum",
-    #                   "denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed on-time window with >7 wks postpartum",
-    #                   "denominator is n completed any form with visit status=complete AND visit type=PNC26 AND passed on-time window with >28 wks postpartum",
-    #                   "denominator is n completed any form wit visit status=complete AND visit type=PNC52 AND passed on-time window with >54 wks postpartum"),
+    # footnote(alphabet = c("denominator is n completed any form with visit status=complete AND visit type=PNC0 AND passed late window with >5 days postpartum",
+    #                   "denominator is n completed any form with visit status=complete AND visit type=PNC1 AND passed late window with 14 days postpartum",
+    #                   "denominator is n completed any form with visit status=complete AND visit type=PNC4 AND passed late window with >35 days postpartum",
+    #                   "denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed late window with >7 wks postpartum",
+    #                   "denominator is n completed any form with visit status=complete AND visit type=PNC26 AND passed late window with >28 wks postpartum",
+    #                   "denominator is n completed any form wit visit status=complete AND visit type=PNC52 AND passed late window with >54 wks postpartum"),
     #          general = "Passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table.",
     #          number = "n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09",
     #          footnote_order = c("number", "alphabet", "general")) %>%
@@ -3549,27 +3549,27 @@ bind_rows(birthoutcome,
             label_row_css = "color: steelblue;") %>%
   pack_rows("PNC = 4, n(%)^c^ \nTarget window: 28 to 35 days", 8, 10,
             label_row_css = "color: steelblue;") %>%
-  pack_rows("PNC = 6, n(%)^d^ \nTarget window: 6 to 7 wks", 11, 17,
+  pack_rows("PNC = 6, n(%)^d^ \nTarget window: 8 to 12 wks", 11, 17,
             label_row_css = "color: steelblue;") %>%
-  pack_rows("PNC = 26, n(%)^e^ \nTarget window: 26 to 28 wks", 18, 23,
+  pack_rows("PNC = 26, n(%)^e^ \nTarget window: 29 to 39 wks", 18, 23,
             label_row_css = "color: steelblue;") %>%
-  pack_rows("PNC = 52, n(%)^f^ \nTarget window: 52 to 54 wks", 24, 27,
+  pack_rows("PNC = 52, n(%)^f^ \nTarget window: 55 to 54 wks", 24, 27,
             label_row_css = "color: steelblue;")
 
 
 ```
 <span style="font-size: 88%;">
-^a^ denominator is n completed any form with visit status=complete AND visit type=PNC0 AND passed on-time window with >5 days postpartum. 
+^a^ denominator is n completed any form with visit status=complete AND visit type=PNC0 AND passed late window with >5 days postpartum. 
 <br>
-^b^ denominator is n completed any form with visit status=complete AND visit type=PNC1 AND passed on-time window with 14 days postpartum. 
+^b^ denominator is n completed any form with visit status=complete AND visit type=PNC1 AND passed late window with 14 days postpartum. 
 <br>
-^c^ denominator is n completed any form with visit status=complete AND visit type=PNC4 AND passed on-time window with >35 days postpartum. 
+^c^ denominator is n completed any form with visit status=complete AND visit type=PNC4 AND passed late window with >35 days postpartum. 
 <br>
-^d^ denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed on-time window with >7 wks postpartum. 
+^d^ denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed late window with >7 wks postpartum. 
 <br>
-^e^ denominator is n completed any form with visit status=complete AND visit type=PNC26 AND passed on-time window with >28 wks postpartum. 
+^e^ denominator is n completed any form with visit status=complete AND visit type=PNC26 AND passed late window with >28 wks postpartum. 
 <br>
-^f^ denominator is n completed any form wit visit status=complete AND visit type=PNC52 AND passed on-time window with >54 wks postpartum.
+^f^ denominator is n completed any form wit visit status=complete AND visit type=PNC52 AND passed late window with >54 wks postpartum.
 <br>
 ^1^ n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09.  
 Note: Passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table.
@@ -3581,9 +3581,9 @@ Note: Passed window denominators for all visits are calculated by date and time 
 *Value: Are forms completed regardless of visit status? Goal: 100% completion for all forms, except MNH08 where lab results are expected to lag.*
 <br>
 
-*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i
 <br>
-*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i
+*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i
 
 ```{r birthoutcome FC}
 ## ANC visits - ultrasound form
@@ -4326,12 +4326,12 @@ bind_rows(birthoutcome,
                )  %>%
   mutate_all(funs(str_replace(., "NaN", "0"))) %>%
   kbl(caption = "", booktabs = TRUE) %>% #longtable = TRUE, 
-    # footnote(alphabet = c("denominator is n completed any form with any visit status AND visit type=PNC0 AND passed on-time window with >5 days postpartum",
-    #                   "denominator is n completed any form with any visit status AND visit type=PNC1 AND passed on-time window with 14 days postpartum",
-    #                   "denominator is n completed any form with any visit status AND visit type=PNC4 AND passed on-time window with >35 days postpartum",
-    #                   "denominator is n completed any form with any visit status AND visit type=PNC6 AND passed on-time window with >7 wks postpartum",
-    #                   "denominator is n completed any form with any visit status AND visit type=PNC26 AND passed on-time window with >28 wks postpartum",
-    #                   "denominator is n completed any form with any visit status AND visit type=PNC52 AND passed on-time window with >54 wks postpartum"),
+    # footnote(alphabet = c("denominator is n completed any form with any visit status AND visit type=PNC0 AND passed late window with >5 days postpartum",
+    #                   "denominator is n completed any form with any visit status AND visit type=PNC1 AND passed late window with 14 days postpartum",
+    #                   "denominator is n completed any form with any visit status AND visit type=PNC4 AND passed late window with >35 days postpartum",
+    #                   "denominator is n completed any form with any visit status AND visit type=PNC6 AND passed late window with >7 wks postpartum",
+    #                   "denominator is n completed any form with any visit status AND visit type=PNC26 AND passed late window with >28 wks postpartum",
+    #                   "denominator is n completed any form with any visit status AND visit type=PNC52 AND passed late window with >54 wks postpartum"),
     #          general = "Passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table.",
     #          number = "n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09",
     #          footnote_order = c("number", "alphabet", "general")) %>%
@@ -4358,20 +4358,20 @@ bind_rows(birthoutcome,
 
 ```
 <span style="font-size: 88%;">
-^a^ denominator is n completed any form with any visit status AND visit type=PNC0 AND passed on-time window with >5 days postpartum. 
+^a^ denominator is n completed any form with any visit status AND visit type=PNC0 AND passed late window with >5 days postpartum. 
 <br>
-^b^ denominator is n completed any form with any visit status AND visit type=PNC1 AND passed on-time window with 14 days postpartum. 
+^b^ denominator is n completed any form with any visit status AND visit type=PNC1 AND passed late window with 14 days postpartum. 
 <br>
-^c^ denominator is n completed any form with any visit status AND visit type=PNC4 AND passed on-time window with >35 days postpartum. 
+^c^ denominator is n completed any form with any visit status AND visit type=PNC4 AND passed late window with >35 days postpartum. 
 <br>
-^d^ denominator is n completed any form with any visit status AND visit type=PNC6 AND passed on-time window with >7 wks postpartum. 
+^d^ denominator is n completed any form with any visit status AND visit type=PNC6 AND passed late window with >7 wks postpartum. 
 <br>
-^e^ denominator is n completed any form with any visit status AND visit type=PNC26 AND passed on-time window with >28 wks postpartum. 
+^e^ denominator is n completed any form with any visit status AND visit type=PNC26 AND passed late window with >28 wks postpartum. 
 <br>
-^f^ denominator is n completed any form with any visit status AND visit type=PNC52 AND passed on-time window with >54 wks postpartum.
+^f^ denominator is n completed any form with any visit status AND visit type=PNC52 AND passed late window with >54 wks postpartum.
 <br>
 ^1^ n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09.  
-Note: Passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table.
+Note: Passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the participant is removed from this table.
 </span>
 
 \newpage
@@ -4384,9 +4384,9 @@ Note: Passed window denominators for all visits are calculated by date and time 
 <br>
 <br>
   
-  *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+  *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i 
   <br>
-    *Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed window for visit type = i 
+    *Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i 
     ```{r ENROLLMENT OR ANC20 PC}
     
     #* Num (hard code in monitoring report rmd): For each form: visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
@@ -4529,11 +4529,11 @@ out_tb %>%
                )  %>%
   mutate_all(funs(str_replace(., "NaN", "0"))) %>%
   kbl(caption = "", booktabs = TRUE) %>% #longtable = TRUE, 
-    # footnote(alphabet = c("denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed on-time window with >22 weeks gestation \nOR\n completed any form with visit status=complete AND visit type=ENROLLMENT (if combined ENROLLEMNT visit) AND passed on-time window with >19 weeks gestation",
+    # footnote(alphabet = c("denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed late window with >22 weeks gestation \nOR\n completed any form with visit status=complete AND visit type=ENROLLMENT (if combined ENROLLEMNT visit) AND passed late window with >19 weeks gestation",
     #                       
-    #               "denominator is n completed any form with visit status=complete AND visit type=ANC32 AND passed on-time window with >33 weeks gestation \nOR\n completed any form with visit status=complete AND visit type=ANC36 (if missed ANC32) AND passed on-time window with >38 weeks gestation",
+    #               "denominator is n completed any form with visit status=complete AND visit type=ANC32 AND passed late window with >33 weeks gestation \nOR\n completed any form with visit status=complete AND visit type=ANC36 (if missed ANC32) AND passed late window with >38 weeks gestation",
     #               
-    #               "denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed on-time window with >7 weeks postpartum"),
+    #               "denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed late window with >7 weeks postpartum"),
     #          general = c("Passed window denominators for ANC visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.",
     #            "Passed window denominators for PNC visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table."),
     #          number = "n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09",
@@ -4555,19 +4555,19 @@ out_tb %>%
 
 ```
 <span style="font-size: 88%;">
-^a^ denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed on-time window with >22 weeks gestation
+^a^ denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed late window with >22 weeks gestation
 <br>
 OR
 <br>
-completed any form with visit status=complete AND visit type=ENROLLMENT (if combined ENROLLEMNT visit) AND passed on-time window with >19 weeks gestation. 
+completed any form with visit status=complete AND visit type=ENROLLMENT (if combined ENROLLEMNT visit) AND passed late window with >19 weeks gestation. 
 <br>
-^b^ denominator is n completed any form with visit status=complete AND visit type=ANC32 AND passed on-time window with >33 weeks gestation 
+^b^ denominator is n completed any form with visit status=complete AND visit type=ANC32 AND passed late window with >33 weeks gestation 
 <br>
 OR
 <br>
-completed any form with visit status=complete AND visit type=ANC36 (if missed ANC32) AND passed on-time window with >38 weeks gestation
+completed any form with visit status=complete AND visit type=ANC36 (if missed ANC32) AND passed late window with >38 weeks gestation
 <br>
-^c^ denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed on-time window with >7 weeks postpartum
+^c^ denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed late window with >7 weeks postpartum
 <br>
 ^1^ n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09. 
 <br>
@@ -4676,8 +4676,8 @@ criteria_names <- c('Aged 18 to 34 years',
                     'No Hepatitis B virus infection',
                     'No Hepatitis C virus infection'
 )
-
-healthy_tb <- map_dfc(c("Ghana", "Pakistan","Kenya", "Zambia"), function(site){
+#healthy_tb <- map_dfc(c("Ghana", "Pakistan","Kenya", "Zambia"), function(site){
+healthy_tb <- map_dfc(c( "Pakistan","Kenya", "Zambia", "India-CMC"), function(site){
 healthyOutcome_1 %>%
     filter(ENROLL == 1) %>%
     filter(SITE == {{site}}) %>%
@@ -5111,30 +5111,30 @@ ggplot() +
 ```{r, Remapp Figure 2 Ghana, fig.show='hold', out.width="70%"}
 
 
-## ReMAPP figure 3
-trimester_names <- c(`1` = "First Trimester",
-                     `2` = "Second Trimester",
-                     `3` = "Third Trimester")
-## Ghana
-MatData_HB_GA_Visit_Ghana <- MatData_Hb_GA_Visit %>% filter(SITE == "Ghana", 
-                                                               TEST == "CBC", 
-                                                               !is.na(TRIMESTER),
-                                                               RESULT < 75)
-
-
-ggplot() + 
-  geom_histogram(data = MatData_HB_GA_Visit_Ghana, binwidth = 0.1, aes(RESULT))  + 
-    facet_grid(rows = vars(TRIMESTER), labeller=as_labeller(trimester_names)) + 
-    theme_bw() +
-    #ylim(0,30) + 
-    xlim(2.5,15.5) + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        legend.position="bottom",
-        panel.grid.minor = element_blank()) +
-  xlab("Hemoglobin (g/dL)") +
-  ylab("Frequency") + 
-  scale_color_brewer(palette="Set1") + 
-  ggtitle("Ghana") 
+# ## ReMAPP figure 3
+# trimester_names <- c(`1` = "First Trimester",
+#                      `2` = "Second Trimester",
+#                      `3` = "Third Trimester")
+# ## Ghana
+# MatData_HB_GA_Visit_Ghana <- MatData_Hb_GA_Visit %>% filter(SITE == "Ghana", 
+#                                                                TEST == "CBC", 
+#                                                                !is.na(TRIMESTER),
+#                                                                RESULT < 75)
+# 
+# 
+# ggplot() + 
+#   geom_histogram(data = MatData_HB_GA_Visit_Ghana, binwidth = 0.1, aes(RESULT))  + 
+#     facet_grid(rows = vars(TRIMESTER), labeller=as_labeller(trimester_names)) + 
+#     theme_bw() +
+#     #ylim(0,30) + 
+#     xlim(2.5,15.5) + 
+#     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+#         legend.position="bottom",
+#         panel.grid.minor = element_blank()) +
+#   xlab("Hemoglobin (g/dL)") +
+#   ylab("Frequency") + 
+#   scale_color_brewer(palette="Set1") + 
+#   ggtitle("Ghana") 
 
 
 ```
