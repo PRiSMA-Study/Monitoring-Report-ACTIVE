@@ -42,7 +42,7 @@ header-includes:
 &nbsp;
 
 
-##### **Includes data from synapse last updated:** 2023-11-10 {.unlisted .unnumbered}
+##### **Includes data from synapse last updated:** 2023-11-17 {.unlisted .unnumbered}
 &nbsp;
 &nbsp;
 
@@ -54,7 +54,8 @@ header-includes:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
- 
+knitr::opts_chunk$set(out.width = "100%", fig.align = "center")
+
 library(knitr)
 library(tidyverse)
 library(reshape2)
@@ -64,14 +65,16 @@ library(emo)
 library(naniar)
 #library(dplyr)
 library(RColorBrewer)
+library(scales) 
 
-UploadDate = "2023-11-10" 
+UploadDate = "2023-11-17" 
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
 
 ## import all rda files 
 rda_files = list.files(pattern="*.RData")
 walk(rda_files, ~ load(.x, .GlobalEnv))
+
 
 ```
 
@@ -99,7 +102,7 @@ lastenroll <- MatData_Screen_Enroll %>%
 ##new 
 date_last_enrll_pak <- lastenroll %>% filter(SITE == "Pakistan") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_ke <- lastenroll %>% filter(SITE == "Kenya") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
-# date_last_enrll_ga <- lastenroll %>% filter(SITE == "Ghana") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
+date_last_enrll_ga <- lastenroll %>% filter(SITE == "Ghana") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_za <- lastenroll %>% filter(SITE == "Zambia") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_cmc <- lastenroll %>% filter(SITE == "India-CMC") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 
@@ -118,7 +121,7 @@ date_last_enrll_cmc <- lastenroll %>% filter(SITE == "India-CMC") %>% select(las
 # denominator: a = n all pre-screened 
 MatData_Screen_Enroll$date_last_enrll_pak = date_last_enrll_pak
 MatData_Screen_Enroll$date_last_enrll_ke = date_last_enrll_ke
-# MatData_Screen_Enroll$date_last_enrll_ga = date_last_enrll_ga
+MatData_Screen_Enroll$date_last_enrll_ga = date_last_enrll_ga
 MatData_Screen_Enroll$date_last_enrll_za = date_last_enrll_za
 MatData_Screen_Enroll$date_last_enrll_cmc = date_last_enrll_cmc
 
@@ -126,7 +129,7 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
   filter(
     SITE == "Pakistan" & (M00_SCRN_OBSSTDAT > date_last_enrll_pak) |
     SITE == "Kenya" & (M00_SCRN_OBSSTDAT > date_last_enrll_ke) | 
-   # SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
+   SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
     SITE == "Zambia" & (M00_SCRN_OBSSTDAT > date_last_enrll_za) | 
     SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc)  
   ) %>% 
@@ -147,7 +150,7 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
   filter(
     SITE == "Pakistan" & (M00_SCRN_OBSSTDAT > date_last_enrll_pak) |
     SITE == "Kenya" & (M00_SCRN_OBSSTDAT > date_last_enrll_ke) | 
-   # SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
+   SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
     SITE == "Zambia" & (M00_SCRN_OBSSTDAT > date_last_enrll_za) |
     SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc) 
 
@@ -298,16 +301,17 @@ bind_rows(tb_prescreen_all
 # denominator: a = n all screened 
 
 tb_enroll <- MatData_Screen_Enroll %>%
-  filter(SCREEN == 1) %>% 
+  #filter(SCREEN == 1) %>% 
   group_by(SITE) %>%
   summarise("Screened for PRISMA (MNH02), n" = sum(SCREEN == 1, na.rm=TRUE),
-            "Enrolled in PRISMA (MNH02), n(%) ^a^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
+            "Prescreen eligible (MNH00) with no Screening (MNH02), n^a^" = sum(PRESCR_ELIGIBLE ==1 & SCREEN == 0, na.rm = TRUE),
+            "Enrolled in PRISMA (MNH02), n(%) ^b^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             
               "Gestational Age at Enrollment, mean (SD)" = paste0(format(round(mean(BOE_GA_WKS_ENROLL, na.rm = TRUE),2), 
                                                         nsmall=0, digits = 2), " (",format(round(sd(BOE_GA_WKS_ENROLL, 
                                                             na.rm = TRUE),2), nsmall=0, digits = 2), ")"), 
-              "First trimester (<14 wks), n(%)^a^" = paste0(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
+              "First trimester (<14 wks), n(%)^c^" = paste0(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
                           format(round(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, 2), nsmall = 0, digits = 2),
     ")"),
             "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
@@ -329,12 +333,13 @@ tb_enroll <- MatData_Screen_Enroll %>%
     .before = 1,
     "All sites" = MatData_Screen_Enroll %>%
   plyr::summarise("Screened for PRISMA (MNH02), n" = sum(SCREEN == 1, na.rm = TRUE),
-            "Enrolled in PRISMA (MNH02), n(%) ^a^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
+                  "Prescreen eligible (MNH00) with no Screening (MNH02), n^a^" = sum(PRESCR_ELIGIBLE ==1 & SCREEN == 0, na.rm = TRUE),
+            "Enrolled in PRISMA (MNH02), n(%) ^b^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             "Gestational Age at Enrollment, mean (SD)" = paste0(format(round(mean(BOE_GA_WKS_ENROLL, na.rm = TRUE),2), 
                                                         nsmall=0, digits = 2), " (",format(round(sd(BOE_GA_WKS_ENROLL, 
                                                             na.rm = TRUE),2), nsmall=0, digits = 2), ")"), 
-            "First trimester (<14 wks), n(%)^a^" = paste0(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
+            "First trimester (<14 wks), n(%)^c^" = paste0(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
                           format(round(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, 2), nsmall = 0, digits = 2),
     ")"),
             "Viable pregnancy with GA>=20 weeks by US" = paste0(sum(AGE == 0, na.rm=TRUE),
@@ -363,9 +368,10 @@ bind_rows(tb_enroll#,
           ) %>%
     `rownames<-` (c(
                  "Screened for PRISMA (MNH02), n",
-                 "Enrolled in PRISMA (MNH02), n(%) ^a^",
+                 "Prescreen eligible (MNH00) with no Screening (MNH02), n^a^",
+                 "Enrolled in PRISMA (MNH02), n(%) ^b^",
                  "Gestational Age at Enrollment, mean (SD)",
-                 "First trimester (<14 wks), n(%)^b^",
+                 "First trimester (<14 wks), n(%)^c^",
                  "Did not meet age requirement",
                  "Viable pregnancy with GA>=20 weeks by US", 
                  "Outside catchment area", 
@@ -381,13 +387,15 @@ bind_rows(tb_enroll#,
   #                       "denominator is n enrolled")
   #         )  %>% 
   kable_styling(font_size = 13) %>%
-  pack_rows("Enrollment", 1, 4, label_row_css = "color: steelblue;")  %>% 
-  pack_rows("Reason not enrolled, n(%)^a^", 5, 9, label_row_css = "color: steelblue;") 
+  pack_rows("Enrollment", 1, 5, label_row_css = "color: steelblue;")  %>% 
+  pack_rows("Reason not enrolled, n(%)^a^", 6, 10, label_row_css = "color: steelblue;") 
 ```
 <span style="font-size: 88%;">
-^a^ denominator is n screened (MNH02 completed).
+^a^ n is number participants who met the eligibility criteria in MNH00 but do not have a screening form (MNH02). 
 <br>
-^b^ denominator is n enrolled. 
+^b^ denominator is n screened (MNH02 completed).
+<br>
+^c^ denominator is n enrolled. 
 </span>
 
 \newpage
@@ -395,7 +403,7 @@ bind_rows(tb_enroll#,
 #### `r emo::ji("pushpin")` Figure 1a: Cumulative Enrollment by Site and Week
 *Value: Illustrate cumulative enrollment status by site over time.*
 
-```{r, echo=FALSE, figure.align='center', out.width="100%"}
+```{r, echo=FALSE}
 ##new 
 
 enroll_cum <- MatData_Screen_Enroll %>% 
@@ -430,7 +438,7 @@ enroll_cum %>%
 #### `r emo::ji("pushpin")` Figure 1b: Cumulative Enrollment by Week for Each Site
 *Value: Compare expected and actual enrollment for each site over time. Calculated by dividing the total target enrollment by 36 months to get the average enrollment per month over the course of three years. We can further divide to get average enrollment per week.*
 
-```{r, figure-side, fig.show='hold', out.width="50%"}
+```{r, figure-side}
 
 ## pakistan
 enroll_cum_PA <- MatData_Screen_Enroll %>% 
@@ -3011,8 +3019,42 @@ bind_rows(IPC_Total, IPC_Prot_Comp_Mat, IPC_Prot_Comp_Inf) %>%
 ^e^ numerator: n infant with a complete visit status (variable name: `MAT_VISIT_MNHXX`).
 <br>
 ^f^ denominator: n mom-infant pair completed MNH09 or MNH10 or MNH11 with visit status=complete.
-
 </span>
+
+\newpage
+
+
+#### `r emo::ji("pushpin")` Figure 2: Participants with gestational age >42 weeks with no pregnancy outcome
+*Value: Distribution of women who have not yet reported a pregnancy outcome with gestational age >= 42 weeks. 
+<br>
+```{r ipc fig 2}
+
+## histogram of participants who have not yet delivered and have GA >42 weeks (300 days)
+Gestage_Greater42 <- MatData_Screen_Enroll %>% 
+  # only include participants who are enrolled and who do not have a pregnancy end (ENDPREG_DAYS == NA)
+  filter(ENROLL==1, is.na(ENDPREG_DAYS)) %>% 
+  select(SITE, MOMID, PREGID, INFANTID, contains("GESTAGE_AT_VISIT_DAYS")) %>% 
+  # pivot longer to collapse all GA at visits into a single column called "GESTAGE_AT_VISIT_DAYS"
+  pivot_longer(cols = -c(SITE, MOMID, PREGID, INFANTID),
+               values_to = "GESTAGE_AT_VISIT_DAYS") %>%
+  # extract any GESTAGE_AT_VISIT_DAYS >= 300 days
+  filter(GESTAGE_AT_VISIT_DAYS >= 300)
+
+ggplot(data = Gestage_Greater42, aes(x = GESTAGE_AT_VISIT_DAYS)) + 
+  geom_histogram() + 
+  facet_grid(rows = vars(SITE)) + 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+        legend.position="bottom",
+        legend.title = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_x_continuous(breaks = c(300,307,314,321),
+                     label = c("42", "43", "44", "45"), 
+                     limits = c(300,321)) +
+  xlab("Gestational Age (weeks)") +
+  ylab("Count") 
+
+```
 
 \newpage
 
@@ -4379,127 +4421,92 @@ Note: Passed window denominators for all visits are calculated by date and time 
 ### **2. ReMAPP** 
 
 
-#### `r emo::ji("pushpin")` Table 1: ReMAPP Protocol Compliance (MNH25 and MNH26) 
-*Value: Among women successfully contacted during the ANC or PNC period, are all expected MNH25 Maternal Depression and MNH26 Maternal Fatigue forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). The table below shows protocol compliance distributions for MNH25 and MNH26 forms following site launch of ReMAPP. These forms can be filled out either during individual visits (e.g., ANC20) or during combined visits after the gestational age window has passed (e.g., combined Enrollment and ANC20 visits).*
+#### `r emo::ji("pushpin")` Table 1a: MNH25 Protocol Compliance
+*Value: Among women successfully contacted during the ANC or PNC period, are all expected MNH25 Maternal Depression forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). MNH25 can be completed either during individual visits (e.g., ANC20) or during combined visits after the gestational age window has passed (e.g., combined Enrollment and ANC20 visits). The denominators in this table are based on the latest window for eligible visits. For example, the denominator for MNH25 completed at ANC32 is the number of participants who have passed the ANC36 late window to allow for combined visits.*
 <br>
 <br>
-  
-  *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i 
-  <br>
-    *Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i 
-    ```{r ENROLLMENT OR ANC20 PC}
+
+*Numerator:* MNH25 with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i 
+<br>
+*Denominator:* Passed late window for visit type = i
+
+```{r MNH25 PC}
     
-    #* Num (hard code in monitoring report rmd): For each form: visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
-    #* Denom: Any form with visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
+    #* Num: MNH25 with visit status = 1 or 2 AND passed window for visit type = i 
+    #* Denom: passed window for visit type = i 
     
-out_tb <- Prot_Compliance_MNH25_MNH26 %>% 
+out_tb <- Prot_Compliance_MNH25 %>% 
       rowwise() %>% 
       group_by(SITE) %>% 
       summarise(
         
-        "Denominator, n" = paste0(
-          format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
-
-        "MNH25 at ANC20" = paste0(
+      # ANC 20
+        "MNH25 at ANC20^a^" = paste0(
           format(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")"),
-        
-        "MNH26 at ANC20" = paste0(
-          format(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-          " (",
-          format(round(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-          ")"),
+          
+        "Denominator, n" = paste0(
+          format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
 
       ## ANC 32
-              
-        "Denominator, n " = paste0(
-          format(sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
-
-        "MNH25 at ANC32" = paste0(
+        "MNH25 at ANC32^b^" = paste0(
           format(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")"),
 
-        "MNH26 at ANC32" = paste0(
-          format(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-          " (",
-          format(round(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-          ")"),
+        "Denominator, n " = paste0(
+          format(sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
         
-        ### PNC 6 VISIT 
-        "Denominator, n  " = paste0(
-          format(sum(PC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+     ### PNC 6      
+     "MNH25 at PNC6^c^" = paste0(
+          format(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
 
-        "MNH25 at PNC6" = paste0(
-          format(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-          " (",
-          format(round(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-          ")"),
-        
-        "MNH26 at PNC6" = paste0(
-          format(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-          " (",
-          format(round(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-          ")")
-        
+        "Denominator, n  " = paste0(
+          format(sum(PC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2))
+
       )  %>%
       t() %>% as.data.frame() %>% 
       `colnames<-`(c(.[1,])) %>% 
       slice(-1) %>% 
       add_column(
         .before = 1,
-        "All sites" = Prot_Compliance_MNH25_MNH26 %>% 
+        "All sites" = Prot_Compliance_MNH25%>% 
           plyr::summarise(
-            
-            "Denominator, n" = paste0(
-              format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+      # ANC 20
+        "MNH25 at ANC20^a^" = paste0(
+          format(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+          
+        "Denominator, n" = paste0(
+          format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
 
-            "MNH25 at ANC20" = paste0(
-              format(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-              " (",
-              format(round(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-              ")"),
+      ## ANC 32
+        "MNH25 at ANC32^b^" = paste0(
+          format(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
 
-            "MNH26 at ANC20" = paste0(
-              format(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-              " (",
-              format(round(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-              ")"),
-            
-            ## ANC 32
-            "Denominator, n " = paste0(
-              format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+        "Denominator, n " = paste0(
+          format(sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+        
+     ### PNC 6      
+     "MNH25 at PNC6^c^" = paste0(
+          format(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
 
-            "MNH25 at ANC32" = paste0(
-              format(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-              " (",
-              format(round(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-              ")"),
-            
-            "MNH26 at ANC32" = paste0(
-              format(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-              " (",
-              format(round(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-              ")"),
-
-            ### PNC 6 VISIT 
-            "Denominator, n   " = paste0(
-              format(sum(PC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
-
-            "MNH25 at PNC6" = paste0(
-              format(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-              " (",
-              format(round(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-              ")"),
-            
-            "MNH26 at PNC6" = paste0(
-              format(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-              " (",
-              format(round(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-              ")")
+        "Denominator, n  " = paste0(
+          format(sum(PC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2))
             
           ) %>% 
           t() %>% 
@@ -4508,72 +4515,177 @@ out_tb <- Prot_Compliance_MNH25_MNH26 %>%
   )
       
     
-    
-    ```
-    
-```{r REMAPP table 1 OUT}
-out_tb %>%
-    `rownames<-`(c( ## ANC20 (1-3)
-                   "Denominator, n",
-                   "MNH25 Maternal Depression",
-                   "MNH26 Maternal Fatigue",
-                   ## ANC32 (4-6)
-                   "Denominator, n ",
-                   "MNH25 Maternal Depression ",
-                   "MNH26 Maternal Fatigue ",
-                   ## PNC6 (7-9)
-                   "Denominator, n   ",
-                   "MNH25 Maternal Depression  ",
-                   "MNH26 Maternal Fatigue  "
-                   )
-               )  %>%
+```
+
+```{r REMAPP table 1a OUT}
+# out_tb %>%
+#     `rownames<-`(c( ## ANC20 (1-3)
+#                    "ANC20^a^",
+#                    "Denominator, n",
+#                    ## ANC32 (4-6)
+#                    "ANC32^b^",
+#                    "Denominator, n ",
+#                    ## PNC6 (7-9)
+#                    "PNC6^c^",
+#                    "Denominator, n   "
+#                    )
+#                )  %>%
+ out_tb %>%
   mutate_all(funs(str_replace(., "NaN", "0"))) %>%
-  kbl(caption = "", booktabs = TRUE) %>% #longtable = TRUE, 
-    # footnote(alphabet = c("denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed late window with >22 weeks gestation \nOR\n completed any form with visit status=complete AND visit type=ENROLLMENT (if combined ENROLLEMNT visit) AND passed late window with >19 weeks gestation",
-    #                       
-    #               "denominator is n completed any form with visit status=complete AND visit type=ANC32 AND passed late window with >33 weeks gestation \nOR\n completed any form with visit status=complete AND visit type=ANC36 (if missed ANC32) AND passed late window with >38 weeks gestation",
-    #               
-    #               "denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed late window with >7 weeks postpartum"),
-    #          general = c("Passed window denominators for ANC visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.",
-    #            "Passed window denominators for PNC visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table."),
-    #          number = "n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09",
-    #          footnote_order = c("alphabet", "general")) %>%
+  kbl(caption = "", booktabs = TRUE) %>% 
   kable_paper(bootstrap_options = "striped",
               full_width = T, html_font = "Cambria", position = "left",
               latex_options = c("repeat_header", "HOLD_position")) %>%
   kable_styling(font_size = 13) %>%
   row_spec(0, extra_css = "border-bottom: 0px white;") %>%
-  #row_spec(0:1, extra_css = "padding: 0.1px") %>%
-  row_spec(c(1,4,7), bold = TRUE) %>%
-  pack_rows(paste0("ANC = 20, n(%)^a^"),1, 3,
-            label_row_css = "color: steelblue;") %>%
-  pack_rows("ANC = 32, n(%)^b^", 4, 6,
-            label_row_css = "color: steelblue;") %>%
-  pack_rows("PNC = 6, n(%)^c^", 7, 9,
+  # row_spec(c(1,3,5), bold = TRUE) %>%
+  add_indent(c(2, 4, 6), level_of_indent = 2)  %>%  
+  pack_rows(paste0("MNH25 Maternal Depression"),1, 6,
             label_row_css = "color: steelblue;") 
+  # pack_rows("ANC = 32, n(%)", 4, 6,
+  #           label_row_css = "color: steelblue;") %>%
+  # pack_rows("PNC = 6, n(%)^c^", 7, 9,
+  #           label_row_css = "color: steelblue;") 
 
 
 ```
 <span style="font-size: 88%;">
-^a^ denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed late window with >22 weeks gestation
+^a^ denominator is n passed ANC20 late window with >25 weeks gestation.
 <br>
-OR
+^b^ denominator is n passed ANC36 late window with >42 weeks gestation.
 <br>
-completed any form with visit status=complete AND visit type=ENROLLMENT (if combined ENROLLEMNT visit) AND passed late window with >19 weeks gestation. 
+^c^ denominator is n passed PNC6 late window with >12 weeks postpartum.
 <br>
-^b^ denominator is n completed any form with visit status=complete AND visit type=ANC32 AND passed late window with >33 weeks gestation 
+ANC Note: Passed window denominators for ANC visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table.
 <br>
-OR
+PNC Note: Passed window denominators for PNC visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the participant is removed from this table.
+</span>
+
+#### `r emo::ji("pushpin")` Table 1b: MNH26 Protocol Compliance
+*Value: Among women successfully contacted during the ANC or PNC period, are all expected MNH26 Maternal Fatigue forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). The table below shows protocol compliance distributions for MNH26 forms following site launch of ReMAPP. These forms can be filled out either during individual visits (e.g., ANC20) or during combined visits after the gestational age window has passed (e.g., combined Enrollment and ANC20 visits).For example, the denominator for MNH25 completed at ANC32 is the number of participants who have passed the ANC36 late window to allow for combined visits.**
 <br>
-completed any form with visit status=complete AND visit type=ANC36 (if missed ANC32) AND passed late window with >38 weeks gestation
 <br>
-^c^ denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed late window with >7 weeks postpartum
+
+*Numerator:* MNH26 with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i 
 <br>
-^1^ n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09. 
+*Denominator:* Passed late window for visit type = i 
+
+```{r MNH26 PC}
+    
+    #* Num: MNH26 with visit status = 1 or 2 AND passed window for visit type = i 
+    #* Denom: passed window for visit type = i 
+    
+out_tb <- Prot_Compliance_MNH26 %>% 
+      rowwise() %>% 
+      group_by(SITE) %>% 
+      summarise(
+        
+      # ANC 20
+        "MNH26 at ANC20^a^" = paste0(
+          format(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+          
+        "Denominator, n" = paste0(
+          format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+
+      ## ANC 32
+        "MNH26 at ANC32^b^" = paste0(
+          format(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        "Denominator, n " = paste0(
+          format(sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+        
+     ### PNC 6      
+     "MNH26 at PNC6^c^" = paste0(
+          format(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        "Denominator, n  " = paste0(
+          format(sum(PC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2))
+
+      )  %>%
+      t() %>% as.data.frame() %>% 
+      `colnames<-`(c(.[1,])) %>% 
+      slice(-1) %>% 
+      add_column(
+        .before = 1,
+        "All sites" = Prot_Compliance_MNH26 %>% 
+          plyr::summarise(
+            
+      # ANC 20
+        "MNH26 at ANC20^a^" = paste0(
+          format(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+          
+        "Denominator, n" = paste0(
+          format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+
+      ## ANC 32
+        "MNH26 at ANC32^b^" = paste0(
+          format(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        "Denominator, n " = paste0(
+          format(sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
+        
+     ### PNC 6      
+     "MNH26 at PNC6^c^" = paste0(
+          format(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        "Denominator, n  " = paste0(
+          format(sum(PC_PNC6_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2))
+            
+          ) %>% 
+          t() %>% 
+          as.data.frame() %>% 
+          `colnames<-`(c(.[1,])) %>% unlist() 
+  )
+      
+    
+```
+
+```{r REMAPP table 1b OUT}
+
+out_tb %>%
+  mutate_all(funs(str_replace(., "NaN", "0"))) %>%
+  kbl(caption = "", booktabs = TRUE) %>% 
+  kable_paper(bootstrap_options = "striped",
+              full_width = T, html_font = "Cambria", position = "left",
+              latex_options = c("repeat_header", "HOLD_position")) %>%
+  kable_styling(font_size = 13) %>%
+  row_spec(0, extra_css = "border-bottom: 0px white;") %>%
+  row_spec(c(1,3,5), bold = TRUE) %>%
+  add_indent(c(2, 4, 6), level_of_indent = 2)  %>%  
+  pack_rows(paste0("MNH26 Maternal Fatigue"),1, 6,
+            label_row_css = "color: steelblue;") 
+
+```
+<span style="font-size: 88%;">
+^a^ denominator is n passed ANC20 late window with >25 weeks gestation.
 <br>
-ANC Note: Passed window denominators for ANC visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.
+^b^ denominator is n passed ANC36 late window with >42 weeks gestation.
 <br>
-PNC Note: Passed window denominators for PNC visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table.
+^c^ denominator is n passed PNC6 late window with >12 weeks postpartum.
+<br>
+Note: This table includes all participants who were enrolled following site launch of ReMAPP. 
+<br>
+ANC Note: Passed window denominators for ANC visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table.
+<br>
+PNC Note: Passed window denominators for PNC visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the participant is removed from this table.
 </span>
 
 \newpage
@@ -4586,7 +4698,7 @@ PNC Note: Passed window denominators for PNC visits are calculated by date and t
 options(knitr.kable.NA = '0 (0)')
 
 
-healthy_enroll <- healthyOutcome_1 %>% 
+healthy_enroll <- healthyOutcome %>% 
   filter(ENROLL == 1) %>% 
   group_by(SITE) %>% 
   summarise("Total enrolled in PRISMA since ReMAPP launch" = paste0("(n=", n(), ")"),
@@ -4602,7 +4714,7 @@ healthy_enroll <- healthyOutcome_1 %>%
   slice(-1) %>% 
   add_column(
     .before = 1,
-    "All sites" = healthyOutcome_1 %>% 
+    "All sites" = healthyOutcome %>% 
   filter(ENROLL == 1) %>% 
   plyr::summarise("Total enrolled in PRISMA since ReMAPP launch" = paste0("(n=", sum(ENROLL==1), ")"), 
             "Eligible , n(%)" = paste0(sum(HEALTHY_ELIGIBLE == 1, na.rm=TRUE),
@@ -4631,134 +4743,83 @@ bind_rows(healthy_enroll) %>%
 ^a^ denominator is n enrolled in PRISMA.
 </span>
 
-&nbsp;
-&nbsp;
 
-#### `r emo::ji("pushpin")` Table 3: Proportion of women eligible for ReMAPP healthy cohort by eligibility criteria. 
-*Value: This table will show the eligible number and percentage of all ReMAPP enrolled women for each criteria at baseline*
+#### `r emo::ji("pushpin")` Figure 1: ReMAPP healthy cohort eligibility and missingness by criteria by site.
+*Value: This figure will show the distribution of each healthy cohort criteria among women enrolled in ReMAPP. Missing means missing form, missing diagnosed or measured data, note that it includes pending data (test not performed yet or result pending).* 
 
-```{r}
-## JULY 2023
-criteria_cols = c('CRIT_AGE', 'CRIT_GA',
-                  'CRIT_BMI_MUAC','CRIT_HEIGHT',
-                  'CRIT_SINGLEPREG','CRIT_IRON',
-                  'CRIT_INFLAM',
-                  'CRIT_BP', 
-                  'CRIT_LBW', 'CRIT_STILLBIRTH',
-                  'CRIT_UNPL_CESARIAN',
-                  'CRIT_HEMOGLOBINOPATHIES',
-                  'CRIT_SMOKE',
-                  'CRIT_DRINK', 'CRIT_CHRONIC',
-                  'CRIT_HIV', 'CRIT_MALARIA',
-                  'CRIT_HEPATITISB','CRIT_HEPATITISC'
-                  
-                  
-)
-criteria_names <- c('Aged 18 to 34 years',
-                    'Gestational age <14 weeks at enrollment',
-                    # 'Mid-upper arm circumference \n(MUAC) > 23cm',
-                    # 'BMI at baseline of >18.5 and <30 kg/m2',
-                    'BMI at baseline of >18.5 and <30 kg/m2 \nand Mid-upper arm circumference \n(MUAC) > 23cm',
-                    'Height >=153 cm',
-                    'Singleton pregnancy',
-                    'Not iron deficient (serum ferritin >15 mcg/L– \nadjusted for inflammation)',
-                    'No subclinical inflammation \n(CRP > 5 mg/L and/or AGP > 1 g/L)',
-                    'Systolic blood pressure <140 mmHg and \ndiastolic blood pressure <90 mmHg',
-                    'No previous reported low birth \nweight delivery',
-                    'No previous reported stillbirth',
-                    'No previous reported unplanned \ncesarean delivery',
-                    'No hemoglobinopathies',
-                    'Non-cigarette smoking, tobacco chewing, \nor betel nut use',
-                    'No reported alcohol consumption during \npregnancy',
-                    'No known history or current chronic \ndisease including cancer, kidney disease, and cardiac conditions',
-                    'No known history or current HIV',
-                    'No current malaria infection (per RDT)\n at baseline',
-                    'No Hepatitis B virus infection',
-                    'No Hepatitis C virus infection'
-)
-#healthy_tb <- map_dfc(c("Ghana", "Pakistan","Kenya", "Zambia"), function(site){
-healthy_tb <- map_dfc(c( "Pakistan","Kenya", "Zambia", "India-CMC"), function(site){
-healthyOutcome_1 %>%
-    filter(ENROLL == 1) %>%
-    filter(SITE == {{site}}) %>%
-    select(starts_with("CRIT_")) %>%
-    pivot_longer(everything()) %>%
-    group_by(name, value) %>%
-    summarize(n = n(), .groups = "drop_last") %>%
-    mutate(p = paste0(n, " (", format(round(n/sum(n, na.rm = TRUE)*100), digits = 2, nsmall=0), ")")) %>%
-    select(-n) %>%
-    pivot_wider(names_from = value, values_from = p, values_fill = "0 (0)") %>%
-    ungroup() %>% arrange(match(name, criteria_cols)) %>%
-    select(-name) %>%
-    mutate(criteria = criteria_names, .before  = 1) %>%
-    select(`1`) %>%
-    `colnames<-`(c(site))
-}) %>%
-  as.data.frame() %>%
-  `rownames<-`(criteria_names) %>%
-  add_column(
-    .before = 1,
-    "All sites" =
-      healthyOutcome_1 %>%
-      filter(ENROLL == 1) %>%
-      select(starts_with("CRIT_")) %>%
-      pivot_longer(everything()) %>%
-      group_by(name, value) %>%
-      summarize(n = n(), .groups = "drop_last") %>%
-      mutate(p = paste0(n, " (", format(round(n/sum(n)*100), digits = 2, nsmall=0), ")")) %>%
-      select(-n) %>%
-      pivot_wider(names_from = value, values_from = p, values_fill = "0 (0)") %>%
-      ungroup() %>% arrange(match(name, criteria_cols)) %>%
-      select(-name) %>%
-      mutate(criteria = criteria_names, .before  = 1) %>%
-      select(`1`) %>%
-      unlist()
-  )
-healthy_tb$Pakistan[14] = "NA"
+```{r remapp figure 1}
+plot_criteria <- df_eli_long 
 
-enroll_tb <- healthyOutcome_1 %>%
-  group_by(SITE) %>%
-  filter(ENROLL ==1 ) %>%
-  summarise(" " = paste0("(n=", sum(ENROLL == 1), ")")#,
-  ) %>%
-  t() %>% as.data.frame() %>%
-  `colnames<-`(c(.[1,])) %>%
-  slice(-1) %>%
-  add_column(
-    .before = 1,
-    "All sites" = healthyOutcome_1 %>%
-      filter(ENROLL ==1 ) %>%
-      summarise(" " = paste0("(n=", sum(ENROLL == 1), ")")
-      ) %>%
-      t() %>% as.data.frame() %>% unlist()
-  )
-
+plot_criteria %>%
+  ggplot(aes(y = reorder(Variable, desc(Variable)), fill = Value)) + 
+  geom_bar(alpha = 0.9, aes(x = (..count..)/sum(..count..)), position = position_fill(reverse = TRUE)) +
+  scale_x_continuous(labels=percent) + 
+  scale_y_discrete(limits = rev(levels("Variable"))) +
+  scale_fill_manual(
+    values = c("#43bfc7","#F0833A","lightgrey"), 
+    drop = FALSE) + 
+  xlab("") + 
+  ylab("") +
+  facet_grid(~SITE, scales = "free_y", margins = FALSE) + 
+  theme_bw() +  
+  theme(strip.background=element_rect(fill="white"),
+        axis.text = element_text(size = 7),
+        axis.text.x = element_text(size = 6),
+        legend.key.size = unit(0.38,"cm"),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 8),)
 ```
-
-```{r}
-
-## JULY 2023
-enroll_tb %>%
-  bind_rows(healthy_tb) %>%
-  kbl(caption = "",  booktabs = TRUE) %>% #longtable = TRUE,
-  kable_paper(bootstrap_options = c("striped", "hover"),
-              full_width = T, html_font = "Cambria", position = "left",
-              latex_option = "hold position") %>%
-  kable_styling(font_size = 13) %>%
-  row_spec(0, extra_css = "border-bottom: 0px white;") %>%
-  row_spec(0:1, extra_css = "padding: 0px") %>%
-  pack_rows("Eligible for ReMAPP Aim 1 enrollment, n(%)^a^", 2, 20, label_row_css = "color: steelblue;") %>%
- # pack_rows("Lab Values, n(%)^a^", 16, 22, label_row_css = "color: steelblue;") %>%
-  column_spec(1, width = "22em") %>%
-  footnote(alphabet = c("denominator is enrolled in PRISMA"))
-```
+<br>
+<br>
+<span style="font-size: 88%;">
+**Explanation of variable C1-C19:**
+<br>
+* C1 -- CRIT_AGE: Aged 18 to 34 years;
+<br>
+* C2 -- CRIT_GA: Gestational age <14 weeks 
+<br>
+* C3 -- CRIT_BMI_MUAC: Pre-pregnancy or early pregnancy body mass index (BMI) of >18.5 and <30 kg/m2 AND mid-upper arm circumference (MUAC) > 23cm 
+<br>
+* C4 -- CRIT_HEIGHT: Height ≥150 cm 
+<br>
+* C5 -- CRIT_SINGLEPREG: Singleton pregnancy 
+<br>
+* C6 -- CRIT_IRON: Not iron deficient (serum ferritin >15 mcg/L– adjusted for inflammation) 
+<br>
+* C7 -- CRIT_INFLAM: No subclinical inflammation (CRP≤5 and/or AGP≤1)
+<br>
+* C8 -- CRIT_BP: Systolic blood pressure <140 mmHg and diastolic blood pressure <90 mmHg 
+<br>
+* C9 -- CRIT_LBW: No previous reported low birth weight delivery
+<br>
+* C10 -- CRIT_STILLBIRTH: No previous reported stillbirth
+<br>
+* C11 -- CRIT_UNPL_CESARIAN: No previous reported unplanned cesarean delivery
+<br>
+* C12 -- CRIT_HEMOGLOBINOPATHIES: No hemoglobinopathies: SS, SC, SE, EE, CC, SD-Punjab, Sβthal, Eβthal, Cβthal, CD-Punjab, ED-Punjab, D-D-Punjab, D-Punjabβthal, Thalassemia major, Thalassemia intermedia, glucose-6-phosphate dehydrogenase deficiency, or Alpha thalassemia
+<br>
+* C13 -- CRIT_SMOKE: No reported cigarette smoking, tobacco chewing, or betel nut use during pregnancy
+<br>
+* C14 -- CRIT_DRINK: No reported alcohol consumption during pregnancy
+<br>
+* C15 -- CRIT_CHRONIC: No known history or current chronic disease including cancer, kidney disease, and cardiac conditions
+<br>
+* C16 -- CRIT_HIV: No known history or current HIV
+<br>
+* C17 -- CRIT_MALARIA: No current malaria infection (per rapid diagnostic test)
+<br>
+* C18 -- CRIT_HEPATITISB: No current Hepatitis B virus infection (per rapid diagnostic test)
+<br>
+* C19 -- CRIT_HEPATITISC: No current Hepatitis C virus infection (per rapid diagnostic test)
+<br>
+</span>
 
 \newpage
 
-#### `r emo::ji("pushpin")` Table 4: CBC Hemoglobin measurements for participants in ReMAPP per visit 
+#### `r emo::ji("pushpin")` Table 3: CBC Hemoglobin measurements for participants in ReMAPP per visit. 
 *Value: Were all the required CBC hemoglobin measurements taken as directed by the protocol?* 
 
-```{r REMAPP Table 4}
+```{r REMAPP Table 3}
 ## denominators: 
   # DenHBV1 = MNH08 completed with visit type = 1 AND visit status = 1/2 OR enrollment overdue
   # DenHBV2 = MNH08 completed with visit type = 2 AND visit status = 1/2 AND GA at enrollment <= 17wks OR ANC20 overdue
@@ -4814,7 +4875,7 @@ remapp_table3 <- MatData_Hb_Visit %>%
 
 ```
 
-```{r REMAPP Table 4 Out}
+```{r REMAPP Table 3 Out}
 remapp_table3 %>% 
     `rownames<-`(c(" ",
                   "ANC < 20, n(%)^a^",
@@ -4855,156 +4916,11 @@ remapp_table3 %>%
 &nbsp;
 &nbsp;
 
-#### `r emo::ji("pushpin")` Table 5: Hemoglobin descriptive statistics for participants in ReMAPP cohort
-
-```{r REMAPP Table 5}
-
-MatData_Hb_Visit <- MatData_Hb_Visit %>% 
-  mutate(M08_CBC_HB_LBORRES_1 = replace(M08_CBC_HB_LBORRES_1, M08_CBC_HB_LBORRES_1 == -7, NA),
-         M08_CBC_HB_LBORRES_2 = replace(M08_CBC_HB_LBORRES_2, M08_CBC_HB_LBORRES_2 == -7, NA),
-         M08_CBC_HB_LBORRES_3 = replace(M08_CBC_HB_LBORRES_3, M08_CBC_HB_LBORRES_3 == -7, NA),
-         M08_CBC_HB_LBORRES_4 = replace(M08_CBC_HB_LBORRES_4, M08_CBC_HB_LBORRES_4 == -7, NA),
-         M08_CBC_HB_LBORRES_5 = replace(M08_CBC_HB_LBORRES_5, M08_CBC_HB_LBORRES_5 == -7, NA))
-
-remapp_table4 <- MatData_Hb_Visit %>%
-  group_by(SITE) %>%
-    summarise(
-     "total enrolled" = paste0(
-            "(n=", n(),")" ),
-     
-      " " = paste0("Mean (SD),<br>[min-max]"),
-
-      "Enrollment" = paste0(
-        format(round(mean(M08_CBC_HB_LBORRES_1, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " (",
-        format(round(sd(M08_CBC_HB_LBORRES_1, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "), <br> [",
-        format(round(min(M08_CBC_HB_LBORRES_1, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " - ",
-        format(round(max(M08_CBC_HB_LBORRES_1, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "]"),
-      "ANC20" = paste0(
-        format(round(mean(M08_CBC_HB_LBORRES_2, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " (",
-        format(round(sd(M08_CBC_HB_LBORRES_2, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "), <br> [",
-        format(round(min(M08_CBC_HB_LBORRES_2, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " - ",
-        format(round(max(M08_CBC_HB_LBORRES_2, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "]"), 
-  
-      "ANC28" = paste0(
-        format(round(mean(M08_CBC_HB_LBORRES_3, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " (",
-        format(round(sd(M08_CBC_HB_LBORRES_3, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "), <br> [",
-        format(round(min(M08_CBC_HB_LBORRES_3, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " - ",
-        format(round(max(M08_CBC_HB_LBORRES_3, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "]"), 
-  
-      "ANC36" = paste0(
-        format(round(mean(M08_CBC_HB_LBORRES_5, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " (",
-        format(round(sd(M08_CBC_HB_LBORRES_5, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "), <br> [",
-        format(round(min(M08_CBC_HB_LBORRES_5, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " - ",
-        format(round(max(M08_CBC_HB_LBORRES_5, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "]")
-  
-            # "PNC6" = paste0(sum(HB_COMPLETED_10 == 1),
-            #                             " (", format(sum(HB_COMPLETED_10 == 1)/sum(d == 1, na.rm = TRUE)*100, digits = 2, nsmall=0), ")")
-  
-) %>%
-  t() %>% as.data.frame() %>%
-  `colnames<-`(c(.[1,])) %>%
-  slice(-1) %>%
-  add_column(
-    .before = 1,
-    "All sites" = MatData_Hb_Visit %>%
-    plyr::summarise(
-          "total enrolled" = paste0(
-            "(n=", sum(ENROLL_DENOM == 1, na.rm=TRUE),")"),
-          
-      " " = paste0("Mean (SD),<br>[min-max]"),
-      
-      "Enrollment" = paste0(
-        format(round(mean(M08_CBC_HB_LBORRES_1, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " (",
-        format(round(sd(M08_CBC_HB_LBORRES_1, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "),<br>[",
-        format(round(min(M08_CBC_HB_LBORRES_1, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " - ",
-        format(round(max(M08_CBC_HB_LBORRES_1, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "]"),
-      "ANC20" = paste0(
-        format(round(mean(M08_CBC_HB_LBORRES_2, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " (",
-        format(round(sd(M08_CBC_HB_LBORRES_2, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "),<br>[",
-        format(round(min(M08_CBC_HB_LBORRES_2, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " - ",
-        format(round(max(M08_CBC_HB_LBORRES_2, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "]"), 
-  
-      "ANC28" = paste0(
-        format(round(mean(M08_CBC_HB_LBORRES_3, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " (",
-        format(round(sd(M08_CBC_HB_LBORRES_3, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "),<br>[",
-        format(round(min(M08_CBC_HB_LBORRES_3, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " - ",
-        format(round(max(M08_CBC_HB_LBORRES_3, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "]"), 
-  
-      "ANC36" = paste0(
-        format(round(mean(M08_CBC_HB_LBORRES_5, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " (",
-        format(round(sd(M08_CBC_HB_LBORRES_5, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "),<br>[",
-        format(round(min(M08_CBC_HB_LBORRES_5, na.rm = TRUE),2), nsmall=0, digits = 2),
-        " - ",
-        format(round(max(M08_CBC_HB_LBORRES_5, na.rm = TRUE),2), nsmall=0, digits = 2),
-        "]") 
-            # "PNC6" = paste0(sum(HB_COMPLETED_10 == 1),
-            #                             " (", format(sum(HB_COMPLETED_10 == 1)/sum(d == 1, na.rm = TRUE)*100, digits = 2, nsmall=0), ")")
-  
-) %>%
-      t() %>% unlist()
-  )
-
-
-```
-
-```{r REMAPP Table 5 Out}
-
-remapp_table4 %>% 
-    `rownames<-`(c(" ", "  ",
-                  "ANC < 20",
-                  "ANC = 20",
-                  "ANC = 28",
-                  "ANC = 36")) %>% 
- #mutate_all(funs(str_replace(., "<br />\n", ""))) %>% 
-  mutate_all(funs(str_replace(., "NaN" , "No Data"))) %>% 
-  mutate_all(funs(str_replace(., "Inf" , ""))) %>%  
-  mutate_all(funs(str_replace(., "-Inf" , ""))) %>%  
-  kbl(caption = "", escape = FALSE) %>%
-  kable_paper(bootstrap_options = "striped", 
-              full_width = T, html_font = "Cambria", position = "left",
-              latex_options = "hold_position") %>% 
-  kable_styling(font_size = 13) %>%
-  row_spec(0, extra_css = "border-bottom: 0px white;") %>% 
-  row_spec(0:1, extra_css = "padding: 0px") 
-
-```
-
-
 \newpage
 
-#### `r emo::ji("pushpin")` Figure 1: Hemoglobin measures by gestational age for participants enrolled in PRISMA MNH 
+#### `r emo::ji("pushpin")` Figure 2: Hemoglobin measures by gestational age for participants enrolled in PRISMA MNH 
 
-```{r, Remapp Figure 1, fig.show='hold', out.width="80%"}
+```{r, Remapp Figure 2}
 ## x axis in weeks 
 #MatData_HB_GA_Visit_Kenya <- MatData_HB_GA_Visit %>% filter(SITE == "Kenya")
 # ggplot(data = MatData_Hb_GA_Visit, 
@@ -5044,159 +4960,3 @@ ggplot(data = MatData_Hb_GA_Visit,
 
 ```
 
-\newpage
-
-#### `r emo::ji("pushpin")` Figure 2: ANC hemoglobin values (CBC) by trimester for participants
-
-```{r, Remapp Figure 2 Kenya, fig.show='hold', out.width="70%"}
-
-
-## ReMAPP figure 3
-trimester_names <- c(`1` = "First Trimester",
-                     `2` = "Second Trimester",
-                     `3` = "Third Trimester")
-
-## Kenya
-MatData_HB_GA_Visit_Kenya <- MatData_Hb_GA_Visit %>% filter(SITE == "Kenya", TEST == "CBC", !is.na(TRIMESTER))
-
-ggplot() + 
-  geom_histogram(data = MatData_HB_GA_Visit_Kenya, binwidth = 0.1, aes(RESULT))  + 
-    facet_grid(rows = vars(TRIMESTER), labeller=as_labeller(trimester_names)) + 
-    theme_bw() +
-    #ylim(0,30) +
-    xlim(2.5,15.5) + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        legend.position="bottom",
-        panel.grid.minor = element_blank()) +
-  xlab("Hemoglobin (g/dL)") +
-  ylab("Frequency") + 
-  scale_color_brewer(palette="Set1") + 
-  ggtitle("Kenya") 
-
-
-
-```
-
-```{r, Remapp Figure 2 Pakistan, fig.show='hold', out.width="70%"}
-
-
-## ReMAPP figure 3
-trimester_names <- c(`1` = "First Trimester",
-                     `2` = "Second Trimester",
-                     `3` = "Third Trimester")
-
-## Pakistan
-MatData_HB_GA_Visit_Pakistan <- MatData_Hb_GA_Visit %>% filter(SITE == "Pakistan", 
-                                                               TEST == "CBC", 
-                                                               !is.na(TRIMESTER),
-                                                               RESULT < 75)
-
-ggplot() + 
-  geom_histogram(data = MatData_HB_GA_Visit_Pakistan, binwidth = 0.1, aes(RESULT))  + 
-    facet_grid(rows = vars(TRIMESTER), labeller=as_labeller(trimester_names)) + 
-    theme_bw() +
-    #ylim(0,30) + 
-    xlim(2.5,15.5) + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        legend.position="bottom",
-        panel.grid.minor = element_blank()) +
-  xlab("Hemoglobin (g/dL)") +
-  ylab("Frequency") + 
-  scale_color_brewer(palette="Set1") + 
-  ggtitle("Pakistan") 
-
-
-```
-
-```{r, Remapp Figure 2 Ghana, fig.show='hold', out.width="70%"}
-
-
-# ## ReMAPP figure 3
-# trimester_names <- c(`1` = "First Trimester",
-#                      `2` = "Second Trimester",
-#                      `3` = "Third Trimester")
-# ## Ghana
-# MatData_HB_GA_Visit_Ghana <- MatData_Hb_GA_Visit %>% filter(SITE == "Ghana", 
-#                                                                TEST == "CBC", 
-#                                                                !is.na(TRIMESTER),
-#                                                                RESULT < 75)
-# 
-# 
-# ggplot() + 
-#   geom_histogram(data = MatData_HB_GA_Visit_Ghana, binwidth = 0.1, aes(RESULT))  + 
-#     facet_grid(rows = vars(TRIMESTER), labeller=as_labeller(trimester_names)) + 
-#     theme_bw() +
-#     #ylim(0,30) + 
-#     xlim(2.5,15.5) + 
-#     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-#         legend.position="bottom",
-#         panel.grid.minor = element_blank()) +
-#   xlab("Hemoglobin (g/dL)") +
-#   ylab("Frequency") + 
-#   scale_color_brewer(palette="Set1") + 
-#   ggtitle("Ghana") 
-
-
-```
-
-```{r, Remapp Figure 2 Zambia, fig.show='hold', out.width="70%"}
-
-
-## ReMAPP figure 3
-trimester_names <- c(`1` = "First Trimester",
-                     `2` = "Second Trimester",
-                     `3` = "Third Trimester")
-## Ghana
-MatData_HB_GA_Visit_Zambia <- MatData_Hb_GA_Visit %>% filter(SITE == "Zambia", 
-                                                               TEST == "CBC", 
-                                                               !is.na(TRIMESTER),
-                                                               RESULT < 75)
-
-
-ggplot() + 
-  geom_histogram(data = MatData_HB_GA_Visit_Zambia, binwidth = 0.1, aes(RESULT))  + 
-    facet_grid(rows = vars(TRIMESTER), labeller=as_labeller(trimester_names)) + 
-    theme_bw() +
-    #ylim(0,30) + 
-    xlim(2.5,15.5) + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        legend.position="bottom",
-        panel.grid.minor = element_blank()) +
-  xlab("Hemoglobin (g/dL)") +
-  ylab("Frequency") + 
-  scale_color_brewer(palette="Set1") + 
-  ggtitle("Zambia") 
-
-
-```
-
-```{r, Remapp Figure 2 CMC, fig.show='hold', out.width="70%"}
-
-
-## ReMAPP figure 3
-trimester_names <- c(`1` = "First Trimester",
-                     `2` = "Second Trimester",
-                     `3` = "Third Trimester")
-## Ghana
-MatData_HB_GA_Visit_CMC <- MatData_Hb_GA_Visit %>% filter(SITE == "India-CMC", 
-                                                               TEST == "CBC", 
-                                                               !is.na(TRIMESTER),
-                                                               RESULT < 75)
-
-
-ggplot() + 
-  geom_histogram(data = MatData_HB_GA_Visit_CMC, binwidth = 0.1, aes(RESULT))  + 
-    facet_grid(rows = vars(TRIMESTER), labeller=as_labeller(trimester_names)) + 
-    theme_bw() +
-    #ylim(0,30) + 
-    xlim(2.5,15.5) + 
-    theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        legend.position="bottom",
-        panel.grid.minor = element_blank()) +
-  xlab("Hemoglobin (g/dL)") +
-  ylab("Frequency") + 
-  scale_color_brewer(palette="Set1") + 
-  ggtitle("India-CMC") 
-
-
-```
