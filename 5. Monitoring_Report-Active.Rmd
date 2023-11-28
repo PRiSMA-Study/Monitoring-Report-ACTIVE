@@ -153,12 +153,6 @@ date_last_enrll_cmc <- lastenroll %>% filter(SITE == "India-CMC") %>% select(las
 
 \tableofcontents
 
-<!-- **Site** | **Last Enrollment Date** -->
-<!-- -------- | ------------- -->
-<!-- Kenya    | 2023-11-10 -->
-<!-- Pakistan | 2023-11-03 -->
-
-
 \newpage
 
 ## **1. PRISMA**
@@ -2879,53 +2873,6 @@ tab_footnote(
 prisma_tab8 <- prisma_tab8 %>% gtsave("prisma_tab8.png")
 knitr::include_graphics("prisma_tab8.png")
 ```
-
-<!-- \newpage  -->
-
-<!-- ### Figure 2: Distribution of gestational age of participants who passed the IPC window and do not yet have a pregnancy outcome reported -->
-
-<!-- *Value:* Among participants who have passed their IPC window and not have any IPC forms. Distributions of gestational age at the time of last visit is shown below. -->
-
-<!-- ```{r} -->
-
-<!-- ## histogram of participants who have not yet delivered and have GA >42 weeks (300 days) -->
-<!-- # Gestage_Greater42 <- MatData_Screen_Enroll %>% -->
-<!-- #   # only include participants who are enrolled and who do not have a pregnancy end (ENDPREG_DAYS == NA) -->
-<!-- #   filter(ENROLL==1, is.na(ENDPREG_DAYS)) %>% -->
-<!-- #   select(SITE, MOMID, PREGID, INFANTID, contains("GESTAGE_AT_VISIT_DAYS")) %>% -->
-<!-- #   # pivot longer to collapse all GA at visits into a single column called "GESTAGE_AT_VISIT_DAYS" -->
-<!-- #   pivot_longer(cols = -c(SITE, MOMID, PREGID, INFANTID), -->
-<!-- #                values_to = "GESTAGE_AT_VISIT_DAYS") %>% -->
-<!-- #   # extract any GESTAGE_AT_VISIT_DAYS >= 300 days -->
-<!-- #   filter(GESTAGE_AT_VISIT_DAYS >= 300 & GESTAGE_AT_VISIT_DAYS<400) -->
-
-<!-- out <- MatData_Ipc_Visits_Mat %>% -->
-<!--   # only include participants who are enrolled and who do not have a pregnancy end (ENDPREG_DAYS == NA) -->
-<!--   filter(GA42_MISSING_IPC==1) %>% -->
-<!--   select(SITE, MOMID, PREGID, INFANTID, contains("GESTAGE_AT_VISIT_DAYS")) %>% -->
-<!--   # pivot longer to collapse all GA at visits into a single column called "GESTAGE_AT_VISIT_DAYS" -->
-<!--   pivot_longer(cols = -c(SITE, MOMID, PREGID, INFANTID), -->
-<!--                values_to = "GESTAGE_AT_VISIT_DAYS") %>% -->
-<!--   # extract the latest date -->
-<!--   group_by(SITE, MOMID, PREGID) %>% -->
-<!--   summarise(AGE_LAST_SEEN = max(GESTAGE_AT_VISIT_DAYS, na.rm = TRUE))  -->
-
-<!-- ggplot(data = out, aes(x = AGE_LAST_SEEN)) + -->
-<!--   geom_histogram() + -->
-<!--   facet_grid(rows = vars(SITE)) + -->
-<!--   theme_bw() + -->
-<!--   theme(axis.text.x = element_text(vjust = 1, hjust=1), -->
-<!--         legend.position="bottom", -->
-<!--         legend.title = element_blank(), -->
-<!--         panel.grid.minor = element_blank()) + -->
-<!--   scale_x_continuous(breaks = c(0,49,98,147,198,245, 294), -->
-<!--                      label = c("0", "7", "14", "21", "28", "35", "42"), -->
-<!--                      limits = c(0,294)) + -->
-<!--   scale_y_continuous(labels = scales::number_format(scale = 1, accuracy = 1)) + -->
-<!--   xlab("Gestational Age At Latest Visit (weeks)") + -->
-<!--   ylab("Count") -->
-
-<!-- ``` -->
 
 \newpage
 
