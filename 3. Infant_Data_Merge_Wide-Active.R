@@ -19,12 +19,12 @@
 #* 8. Make data wide using SITE, INFANTID, VISIT TYPE - InfData_Wide_Visit.RData
 #* 9. Make data wide using SITE, INFANTID - InfData_Wide.RData
 #*****************************************************************************
-#rm(list = ls())
+rm(list = ls())
 
 library(tidyverse)
 library(lubridate)
 library(readxl)
-UploadDate = "2023-10-13"
+UploadDate = "2023-11-24"
 
 #*****************************************************************************
 #* Import merged data 

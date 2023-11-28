@@ -2,7 +2,7 @@
 #*Function: Read in raw data and merged all sites data by form 
 #*Input: Raw .csvs for each site 
 #*Output: .RData file for each form that is merged for all sites 
-#* Last updated: 17 April 2023
+#* Last updated: 20 November 2023
 
 
 ## STEPS ## 
@@ -36,7 +36,7 @@ library(readxl)
 
 # UPDATE EACH RUN # 
 # set upload date 
-UploadDate = "2023-10-13"
+UploadDate = "2023-11-24"
 
 # UPDATE EACH RUN # 
 # create vector of all sites with data in the upload 
@@ -175,6 +175,13 @@ myfiles <- lapply(myfiles, function (x){
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
+## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
+mnh02_ids <- mnh02_Ghana %>% select(MOMID,PREGID, SCRNID) 
+
+mnh01_Ghana <- mnh01_Ghana %>% 
+  left_join(mnh02_ids, by = c("MOMID","PREGID")) 
+
+rm(mnh02_ids)
 #************************India-CMC************************
 site = "India_CMC"
 
@@ -216,6 +223,15 @@ rm(mnh02_ids)
 #*************************************************
 #* Merge all data by form and site 
 #*************************************************
+# Remove ghana data this week 
+# List all objects in the global environment
+# objects <- ls()
+# 
+# # Identify data frames that match the pattern
+# data_frames_to_delete <- objects[grep("_Ghana", objects)]
+# 
+# # Remove identified data frames
+# rm(list = data_frames_to_delete)
 
 #******M00
 
@@ -1264,7 +1280,7 @@ if (exists("m12") == TRUE) {
                         #add  "M##_"
                        #filter(TYPE_VISIT != 13,  TYPE_VISIT != 14) %>% 
                         select(MOMID, PREGID, everything()) %>% 
-                        rename_with( ~ paste0("M12_", .), -c(1:3)) %>% 
+                        rename_with( ~ paste0("M12_", .), -c(1:2)) %>% 
                         distinct()
                       # group_by(MOMID, PREGID, M12_PNC_N_VISIT) %>% 
                       # arrange(desc(M12_VISIT_OBSSTDAT)) %>% 
@@ -2550,7 +2566,14 @@ table(m25_merged$SITE, m25_merged$M25_TYPE_VISIT)
 table(m05_merged$SITE, m05_merged$M05_TYPE_VISIT)
 table(m26_merged$SITE, m26_merged$M26_TYPE_VISIT)
 
-## export as .CSV into network drive
+#*****************************************************************************
+m13_merged = m13_infantmerged
+m14_merged = m14_infantmerged
+m15_merged = m15_infantmerged
+m20_merged = m20_infantmerged
+m24_merged = m24_infantmerged
+
+# ## export as .CSV into network drive
 # 1. place all merged datasets into list
 files_list <- mget(ls(pattern = "_merged"))
 
@@ -2559,15 +2582,21 @@ names(files_list) = str_replace(names(files_list),  "m", "mnh")
 
 # 3. set working directory
 # first need to make subfolder with upload date
-maindir <- paste0("Z:/Stacked Data", sep = "")
+maindir <- paste0("~/Monitoring Report/data/stacked/", sep = "")
 subdir = UploadDate
 dir.create(file.path(maindir, subdir), showWarnings = FALSE)
 
-setwd(paste("Z:/Stacked Data/", UploadDate, sep = ""))
+setwd(paste0("~/Monitoring Report/data/stacked/" ,UploadDate))
 
 # 4. export
 lapply(1:length(files_list), function(i) write.csv(files_list[[i]],
                                                    file = paste0(names(files_list[i]), ".csv"),
                                                    row.names = FALSE))
-# 
-# 
+# # 
+# # 
+m22_merged_ke <- m22_merged %>% filter(SITE == "Kenya")
+table(m22_merged$M22_DVDECOD, m22_merged$SITE)
+view(table(m22_merged_ke$M22_DTL_DVTERM, m22_merged_ke$SITE))
+
+
+

@@ -33,7 +33,7 @@ library(lubridate)
 library(readxl)
 library(tidyverse)
 
-UploadDate = "2023-10-13"
+UploadDate = "2023-11-24"
 
 #*****************************************************************************
 #* Import merged data 
@@ -91,7 +91,7 @@ if (exists("m17_merged") == TRUE){ m17_merged$M17_TYPE_VISIT = 6}
 if (exists("m18_merged") == TRUE){ m18_merged$M18_TYPE_VISIT = 12 }
 
 ## Remove scrnid from MNH26 -- causes issues in merge 
-if (exists("m26_merged") == TRUE){ m26_merged <- m26_merged %>% select(-M26_SCRNID) }
+# if (exists("m26_merged") == TRUE){ m26_merged <- m26_merged %>% select(-M26_SCRNID) }
 
 
 ## only want to look at maternal adverse events 
@@ -449,9 +449,6 @@ ipc_data_wide_visit <- ipc_data_wide_visit %>% left_join(m09, by = c("SITE", "MO
 # make long m09 -- 1059
 # join with ipc data wide -- 1097
 # merge with all -- 1059
-out_post <- m09 %>% filter(SITE == "Pakistan")
-ipc_merge <- ipc_data_wide_visit %>% filter(SITE == "Pakistan") %>% select(MOMID, PREGID, DOB)
-all_merge <- MatData_Wide %>% filter(SITE == "Pakistan" & M09_TYPE_VISIT_6==6)%>% select(MOMID, PREGID, DOB)
 ## Final maternal wide dataset by visit type == ipc_data_wide_visit 
 
 ## IF WE WANT TO HAVE A WIDE DATASET WITH 1 ROW FOR EACH WOMAN, THEN WE NEED TO ADD A SUFFIX TO EACH OF THE VARIABLE NAMES 
