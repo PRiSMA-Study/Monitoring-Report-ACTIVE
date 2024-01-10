@@ -1,11 +1,12 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2023-11-28)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-01-10)"
 output:
   pdf_document:
     toc: no
     toc_depth: 4
     latex_engine: xelatex
     keep_tex: true
+    output_dir: "D:/Users/stacie.loisate/Box/Monitoring-Report-Active/tables/"
 include-in-header:
 - \usepackage{ booktabs,longtable}
 ---
@@ -25,9 +26,10 @@ library(RColorBrewer)
 library(scales) 
 library(gt) 
 library(webshot2) 
-library(ggpubr) 
+library(grid)
+library(gridExtra)
 
-UploadDate = "2023-11-24" 
+UploadDate = "2024-01-05" 
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
 
@@ -100,6 +102,21 @@ tb_theme1 <- function(matrix){
     cols_width(1 ~ px(280))
 } 
 
+
+# Function to extract and format legend horizontally
+g_legend <- function(p) {
+  tmp <- ggplot_gtable(ggplot_build(p))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend_gtable <- tmp$grobs[[leg]]
+  
+  # Arrange legend components horizontally
+  legend_gtable$widths <- unit(rep(1, ncol(legend_gtable)), "null")
+  legend_gtable$grobs <- legend_gtable$grobs[order(legend_gtable$layout$l)]
+  
+  return(legend_gtable)
+}
+
+
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/tables/"))
 ```
 **PRISMA MNH:** Pregnancy Risk and Infant Surveillance and Measurement Alliance Maternal and Newborn Health (PRISMA MNH) Study: A multi-center, prospective cohort study of maternal, newborn, and infant health
@@ -112,14 +129,14 @@ setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/tables/"))
 &nbsp;
 &nbsp;
 
-**Includes data from synapse last updated:** 2023-11-24
+**Includes data from synapse last updated:** 2023-12-08
 
 #### **Last Enrollment Date: **
-  + Kenya: 2023-11-24
-  + Pakistan: 2023-11-17
-  + Ghana : 2023-10-31
-  + Zambia : 2023-11-20
-  + India CMC : 2023-11-10
+  + Kenya: 2023-12-08
+  + Pakistan: 2023-12-01
+  + Ghana : 2023-11-10
+  + Zambia : 2023-12-06
+  + India CMC : 2023-11-24
  
 ```{r, results='hide' }
 #check last day of screening and enrollment
@@ -225,26 +242,6 @@ prisma_tab1 <- tb_theme1(tb_prescreen_enroll) %>%
     title = md("**PRISMA Table 1**")
     # subtitle = md("*Value: This will provide a snapshot of weekly pre-screening and enrollment progress.*")
   ) %>%
-  # tab_row_group(
-  #   label = "Pre-screened for PRISMA, n",
-  #   rows = 1:1
-  # ) %>% 
-  # tab_row_group(
-  #   label = "Eligible based on pre-screening, n(%)  ^a^",
-  #   rows = 2:2
-  # ) %>% 
-  # tab_row_group(
-  #   label = "Screened for PRISMA, n",
-  #   rows = 3:3
-  # ) %>%  
-  # tab_row_group(
-  #   label = "Enrolled in PRISMA, n(%) ^b^",
-  #   rows = 4:4
-  # )  %>% 
-  # row_group_order(groups = c("Pre-screened for PRISMA, n",
-  #                 "Eligible based on pre-screening, n(%)  ^a^",
-  #                 "Screened for PRISMA, n",
-  #                 "Enrolled in PRISMA, n(%) ^b^")) %>% 
 tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>a</sup> Denominator is pre-screened (MNH00 completed).</span>")
 ) %>%   
@@ -2674,7 +2671,7 @@ IPC_Total <- MatData_Ipc_Visits_Mat %>%
     
   ## VISIT COMPLETION: 
       # NUM: have MNH09 or MNH10 or MNH11 with a complete visit status (variable name: `MAT_VISIT_MNHXX`).   
-      # DENOM: denominator is n completed MNH09 or MNH10 or MNH11 with a complete visit status (variable name: `MAT_VISIT_MNHXX`) OR passed on-time window with >42 weeks gestation.
+      # DENOM: denominator is n completed MNH09 or MNH10 or MNH11 with a complete visit status (variable name: `MAT_VISIT_MNHXX`) OR passed on-time window with >42 weeks gestation OR closed out (lost to followup, withdrew, investigator terminated participation).
 
     "IPC" = paste0(
       format(sum(ANY_TYPE_VISIT_COMPLETE_6 == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -2872,6 +2869,45 @@ tab_footnote(
 ```{r}
 prisma_tab8 <- prisma_tab8 %>% gtsave("prisma_tab8.png")
 knitr::include_graphics("prisma_tab8.png")
+```
+
+\newpage
+
+### Figure 2: Distribution of gestational age of participants who passed the IPC window and do not yet have a pregnancy outcome reported
+
+*Value:* Among participants who have passed their IPC window and do not have any IPC forms, how overdue are they? Distributions of estimated gestational age at the time of data upload is shown below.
+
+```{r, echo=FALSE}
+
+figure2 <- MatData_Ipc_Visits_Mat %>%
+  # only include participants who are enrolled and who do not have a pregnancy end (ENDPREG_DAYS == NA)
+  filter(GA42_MISSING_IPC==1, CLOSED_OUT != 1) %>%
+  select(SITE, MOMID, PREGID, EST_CONCEP_DATE, CLOSED_OUT, M23_CLOSE_DSSTDAT) %>%
+  # generate variable for upload date
+  mutate(UPLOADDATE = ymd(UploadDate)) %>% 
+  # calculate the age of particpant TODAY (at date of upload)
+  mutate(AGE_AT_UPLOAD_DAYS = as.numeric(UPLOADDATE - EST_CONCEP_DATE))
+
+# min(figure2$AGE_AT_UPLOAD_DAYS)
+# max(figure2$AGE_AT_UPLOAD_DAYS)
+## work on automating min and max labels and breaks
+ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
+  geom_histogram(binwidth = 7) +
+  facet_grid(rows = vars(SITE)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(vjust = 1, hjust=1),
+        legend.position="bottom",
+        legend.title = element_blank(),
+        panel.grid.minor = element_blank()) +
+  scale_x_continuous(breaks = seq(294, 560, by = 14),
+                     label = as.character(seq(42, 80, by = 2)),
+                     limits = c(294,560)) +
+  scale_y_continuous(labels = scales::number_format(scale = 1, accuracy = 1)) +
+  xlab("Estimated Gestational Age At Time of Upload (weeks)") +
+  ylab("Count")
+
+
+# min(figure2$AGE_AT_UPLOAD_DAYS)
 ```
 
 \newpage
@@ -4204,7 +4240,7 @@ prisma_table11 <- prot_compliance_depression %>%
 ## table 8
 prisma_table11 <- tb_theme1(prisma_table11) %>% 
   tab_header(
-    title = md("**ReMAPP Table 1a**")
+    title = md("**PRISMA Table 11**")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>MNH25 Maternal Depression</span>"),
@@ -4246,6 +4282,837 @@ tab_footnote(
 prisma_table11 <- prisma_table11 %>% gtsave("prisma_table11.png")
 knitr::include_graphics("prisma_table11.png")
 ```
+
+\newpage
+
+
+### Figure 3a. ANC Data Availability, by Form and Visit (Heat maps)
+*Value:* Among women who are passed due or have had the visit, what percent of forms are complete? 
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
+
+*Denominator:* Passed late window for visit type = i AND (has not delivered OR delivered with gestational age > late visit window) AND (has not closed out OR closed out with closeout date > visit window) OR has any form with visit type = i
+
+```{r}
+
+ENROLLMENT_PCT <- Heat_Maps_Anc %>% 
+  rowwise() %>% 
+  group_by(SITE) %>% 
+  summarise(
+    "Denominator" = paste0(
+      format(sum(HM_ENROLL_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "MNH01" = paste0(
+      format(round(sum(M01_VISIT_COMPLETE_1 == 1 , na.rm = TRUE)/sum(HM_ENROLL_DENOM_LATE==1, na.rm = TRUE)*100,
+      2), nsmall = 0, digits = 2)),
+
+    "MNH02" = paste0(
+      format(round(sum(ENROLL == 1, na.rm = TRUE)/sum(HM_ENROLL_DENOM_LATE==1, na.rm = TRUE)*100,
+      2), nsmall = 0, digits = 2)),
+
+    "MNH03" = paste0(
+      format(round(sum(M03_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(HM_ENROLL_DENOM_LATE==1, na.rm = TRUE)*100,
+                   2), nsmall = 0, digits = 2)),
+    
+    "MNH04" = paste0(
+      format(round(sum(M04_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(HM_ENROLL_DENOM_LATE==1, na.rm = TRUE)*100,
+                   2), nsmall = 0, digits = 2)),
+    
+    "MNH05" = paste0(
+      format(round(sum(M05_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(HM_ENROLL_DENOM_LATE==1, na.rm = TRUE)*100,
+                   2), nsmall = 0, digits = 2)),
+    
+    "MNH06" = paste0(
+      format(round(sum(M06_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(HM_ENROLL_DENOM_LATE==1, na.rm = TRUE)*100,
+                   2), nsmall = 0, digits = 2)),
+    
+    "MNH07" = paste0(
+      format(round(sum(M07_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(HM_ENROLL_DENOM_LATE==1, na.rm = TRUE)*100, 
+                   2), nsmall = 0, digits = 2)),
+    
+    "MNH08" = paste0(
+      format(round(sum(M08_VISIT_COMPLETE_1 == 1, na.rm = TRUE)/sum(HM_ENROLL_DENOM_LATE==1, na.rm = TRUE)*100,
+                   2), nsmall = 0, digits = 2))
+) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "Enrollment") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+ANC20_PCT <- Heat_Maps_Anc %>% 
+  filter(BOE_GA_WKS_ENROLL <= 17) %>% 
+  rowwise() %>% 
+  group_by(SITE) %>% 
+  summarise(
+    
+    "Denominator" = paste0(
+      format(sum(HM_ANC20_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "MNH04" = paste0(
+      format(round(sum(M04_VISIT_COMPLETE_2 == 1  , na.rm = TRUE)/sum( HM_ANC20_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH05" = paste0(
+      format(round(sum(M05_VISIT_COMPLETE_2 == 1  , na.rm = TRUE)/sum( HM_ANC20_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH06" = paste0(
+      format(round(sum(M06_VISIT_COMPLETE_2 == 1  , na.rm = TRUE)/sum( HM_ANC20_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH07" = paste0(
+      format(round(sum(M07_VISIT_COMPLETE_2 == 1  , na.rm = TRUE)/sum( HM_ANC20_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH08" = paste0(
+      format(round(sum(M08_VISIT_COMPLETE_2 == 1  , na.rm = TRUE)/sum( HM_ANC20_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2))
+  ) %>%
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "ANC20") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+ANC28_PCT <- Heat_Maps_Anc %>% 
+  rowwise() %>% 
+  group_by(SITE) %>% 
+  summarise(
+    "Denominator" = paste0(
+      format(sum(HM_ANC28_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "MNH04" = paste0(
+      format(round(sum(M04_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(HM_ANC28_DENOM_LATE==1, na.rm = TRUE)*100, 2), 
+             nsmall = 0, digits = 2)),
+    
+    "MNH05" = paste0(
+      format(round(sum(M05_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(HM_ANC28_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH06" = paste0(
+      format(round(sum(M06_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(HM_ANC28_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH07" = paste0(
+      format(round(sum(M07_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(HM_ANC28_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH08" = paste0(
+      format(round(sum(M08_VISIT_COMPLETE_3 == 1, na.rm = TRUE)/sum(HM_ANC28_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2))) %>%
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "ANC28") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+ANC32_PCT <- Heat_Maps_Anc %>% 
+  rowwise() %>% 
+  group_by(SITE) %>% 
+  summarise(
+    
+    "Denominator" = paste0(
+      format(sum(HM_ANC32_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "MNH01" = paste0(
+      format(round(sum(M01_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(HM_ANC32_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH04" = paste0(
+      format(round(sum(M04_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(HM_ANC32_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH05" = paste0(
+      format(round(sum(M05_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(HM_ANC32_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH06" = paste0(
+      format(round(sum(M06_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(HM_ANC32_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH07" = paste0(
+      format(round(sum(M07_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(HM_ANC32_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH08" = paste0(
+      format(round(sum(M08_VISIT_COMPLETE_4 == 1, na.rm = TRUE)/sum(HM_ANC32_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2))
+  ) %>%
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "ANC32") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+ANC36_PCT <- Heat_Maps_Anc %>% 
+  rowwise() %>% 
+  group_by(SITE) %>% 
+  summarise(
+    
+    "Denominator" = paste0(
+      format(sum(HM_ANC36_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "MNH04" = paste0(
+      format(round(sum(M04_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(HM_ANC36_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH05" = paste0(
+      format(round(sum(M05_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(HM_ANC36_DENOM_LATE==1, na.rm = TRUE)*100, 2), 
+             nsmall = 0, digits = 2)),
+    
+    "MNH06" = paste0(
+      format(round(sum(M06_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(HM_ANC36_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH07" = paste0(
+      format(round(sum(M07_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(HM_ANC36_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2)),
+    
+    "MNH08" = paste0(
+      format(round(sum(M08_VISIT_COMPLETE_5 == 1, na.rm = TRUE)/sum(HM_ANC36_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+             nsmall = 0, digits = 2))) %>%
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "ANC36") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+heat_map_data_anc <- bind_rows(ENROLLMENT_PCT, ANC20_PCT, ANC28_PCT, ANC32_PCT, ANC36_PCT)
+
+```
+
+```{r}
+
+# Reorder the "Visit" variable with the desired order
+custom_palette <- colorRampPalette(c("darkred", "#B22222", "#FF0000", "#FF6347", "#F9A603",
+                                     "#FFA500", "#FFD700", "#FFFF00", "#7bd386", "darkgreen"))(10)
+
+UNIQUE_VISITS = as.vector(unique(heat_map_data_anc$VISIT))
+
+out1  <- heat_map_data_anc %>% 
+  filter(VISIT == UNIQUE_VISITS[1]) %>% 
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Form") +
+  ggtitle(paste0(UNIQUE_VISITS[1])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8, face = "bold",),
+        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+
+out2  <- heat_map_data_anc %>%
+    mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  filter(VISIT == UNIQUE_VISITS[2]) %>% 
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Form") +
+  ggtitle(paste0(UNIQUE_VISITS[2])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8, face = "bold",),
+        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+
+out3  <- heat_map_data_anc %>% 
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  filter(VISIT == UNIQUE_VISITS[3]) %>% 
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Form") +
+  ggtitle(paste0(UNIQUE_VISITS[3])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8, face = "bold",),
+        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+
+out4  <- heat_map_data_anc %>% 
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  filter(VISIT == UNIQUE_VISITS[4]) %>% 
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Form") +
+  ggtitle(paste0(UNIQUE_VISITS[4])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8, face = "bold",),
+        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+
+out5  <- heat_map_data_anc %>% 
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  filter(VISIT == UNIQUE_VISITS[5]) %>% 
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = "Percent /nComplete") +
+  xlab("Form") +
+  ggtitle(paste0(UNIQUE_VISITS[5])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8, face = "bold",),
+        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+
+
+```
+
+```{r}
+out1 + theme(legend.position = "bottom")
+```
+
+\newpage
+
+```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
+# grid.arrange(legend_gtable)
+out2 + theme(legend.position = "bottom")
+out3 + theme(legend.position = "bottom")
+```
+\newpage
+
+```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
+# grid.arrange(legend_gtable)
+out4 + theme(legend.position = "bottom")
+out5 + theme(legend.position = "bottom")
+
+```
+
+\newpage
+
+### Figure 3b. PNC Data Availability, by Form and Visit (Heat maps)
+*Value:* Among women who are passed due or have had the visit, what percent of forms are complete? 
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
+
+*Denominator:* Passed late window for visit type = i AND (has not closed out OR closed out with closeout date > visit window) OR has any form with visit type = i
+
+```{r}
+
+## PNC0
+PNC0_PCT <- Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC0_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "MNH06" = paste0(
+        format(round(sum(M06_VISIT_COMPLETE_7 == 1, na.rm = TRUE)/sum(HM_PNC0_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH12" = paste0(
+        format(round(sum(M12_VISIT_COMPLETE_7==1, na.rm = TRUE)/sum(HM_PNC0_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+      ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC0") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+
+
+
+## PNC1
+PNC1_PCT <- Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC1_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "MNH06" = paste0(
+        format(round(sum(M06_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(HM_PNC1_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH12" = paste0(
+        format(round(sum(M12_VISIT_COMPLETE_8 == 1, na.rm = TRUE)/sum(HM_PNC1_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+      ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC1") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+
+## PNC4
+PNC4_PCT <- Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC4_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "MNH06" = paste0(
+        format(round(sum(M06_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(HM_PNC4_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH12" = paste0(
+        format(round(sum(M12_VISIT_COMPLETE_9 == 1, na.rm = TRUE)/sum(HM_PNC4_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+      ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC4") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+ 
+## PNC6
+PNC6_PCT <- Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC6_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "MNH05" = paste0(
+        format(round(sum(M05_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(HM_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH06" = paste0(
+        format(round(sum(M06_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(HM_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH07" = paste0(
+        format(round(sum(M07_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(HM_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH08" = paste0(
+        format(round(sum(M08_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(HM_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH12" = paste0(
+        format(round(sum(M12_VISIT_COMPLETE_10 == 1, na.rm = TRUE)/sum(HM_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+      ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC6") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+
+## PNC26
+PNC26_PCT <- Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "MNH05" = paste0(
+        format(round(sum(M05_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2)),
+
+      "MNH06" = paste0(
+        format(round(sum(M06_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH07" = paste0(
+        format(round(sum(M07_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH08" = paste0(
+        format(round(sum(M08_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH12" = paste0(
+        format(round(sum(M12_VISIT_COMPLETE_11 == 1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+      ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC26") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+
+
+## PNC52
+PNC52_PCT <- Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC52_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+     "MNH05" = paste0(
+        format(round(sum(M05_VISIT_COMPLETE_12 == 1, na.rm = TRUE)/sum(HM_PNC52_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+
+      "MNH06" = paste0(
+        format(round(sum(M06_VISIT_COMPLETE_12 == 1, na.rm = TRUE)/sum(HM_PNC52_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH12" = paste0(
+        format(round(sum(M12_VISIT_COMPLETE_12 == 1, na.rm = TRUE)/sum(HM_PNC52_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+     ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC52") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+heat_map_data_pnc <- bind_rows(PNC0_PCT, PNC1_PCT, PNC4_PCT, PNC6_PCT, PNC26_PCT, PNC52_PCT)
+
+```
+
+```{r}
+
+# Reorder the "Visit" variable with the desired order
+custom_palette <- colorRampPalette(c("darkred", "#B22222", "#FF0000", "#FF6347", "#F9A603",
+                                     "#FFA500", "#FFD700", "#FFFF00", "#7bd386", "darkgreen"))(10)
+
+UNIQUE_VISITS = as.vector(unique(heat_map_data_pnc$VISIT))
+
+out1  <- heat_map_data_pnc %>%
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  filter(VISIT == UNIQUE_VISITS[1]) %>% 
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Form") +
+  ggtitle(paste0(UNIQUE_VISITS[1])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8, face = "bold",),
+        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+  coord_fixed(ratio = 0.15)  # Adjust the ratio to make the tiles shorter
+
+out2  <- heat_map_data_pnc %>% 
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  filter(VISIT == UNIQUE_VISITS[2]) %>% 
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Form") +
+  ggtitle(paste0(UNIQUE_VISITS[2])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8, face = "bold",),
+        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+  coord_fixed(ratio = 0.15)  # Adjust the ratio to make the tiles shorter
+
+out3  <- heat_map_data_pnc %>% 
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  filter(VISIT == UNIQUE_VISITS[3]) %>% 
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Form") +
+  ggtitle(paste0(UNIQUE_VISITS[3])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8, face = "bold",),
+        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+  coord_fixed(ratio = 0.15)  # Adjust the ratio to make the tiles shorter
+
+out4  <- heat_map_data_pnc %>% 
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  filter(VISIT == UNIQUE_VISITS[4]) %>% 
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Form") +
+  ggtitle(paste0(UNIQUE_VISITS[4])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8, face = "bold",),
+        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+
+out5  <- heat_map_data_pnc %>% 
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  filter(VISIT == UNIQUE_VISITS[5]) %>% 
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Form") +
+  ggtitle(paste0(UNIQUE_VISITS[5])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8, face = "bold",),
+        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+
+
+out6  <- heat_map_data_pnc %>% 
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  filter(VISIT == UNIQUE_VISITS[6]) %>% 
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Form") +
+  ggtitle(paste0(UNIQUE_VISITS[6])) +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8, face = "bold",),
+        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+  coord_fixed(ratio = 0.15)  # Adjust the ratio to make the tiles shorter
+
+```
+
+```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
+
+# # Extract and format the legend
+# legend_gtable <- g_legend(out1)
+# 
+# # Print just the legend horizontally
+# grid.newpage()
+# grid.arrange(legend_gtable)
+
+out1 + theme(legend.position = "bottom")
+```
+
+\newpage
+
+```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
+# grid.arrange(legend_gtable)
+out2 + theme(legend.position = "bottom")
+out3 + theme(legend.position = "bottom")
+```
+
+\newpage
+
+```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
+# grid.arrange(legend_gtable)
+out4 + theme(legend.position = "bottom")
+out5 + theme(legend.position = "bottom")
+
+```
+
+\newpage
+
+```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
+# grid.arrange(legend_gtable)
+out6 + theme(legend.position = "bottom")
+```
+
 
 \newpage
 
@@ -4355,7 +5222,7 @@ remapp_table1 <- prot_compliance_fatigue %>%
 ## table 8
 remapp_table1 <- tb_theme1(remapp_table1) %>% 
   tab_header(
-    title = md("**ReMAPP Table 1b**")
+    title = md("**ReMAPP Table 1**")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>MNH26 Maternal Fatigue</span>"),
