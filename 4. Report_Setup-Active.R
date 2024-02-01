@@ -43,7 +43,7 @@ library(lubridate)
 library(readxl)
 library(dplyr)
 
-UploadDate = "2023-11-24"
+UploadDate = "2024-01-26"
 
 load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "MatData_Wide_", UploadDate, ".RData"))
 load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "InfData_Wide_", UploadDate, ".RData"))
@@ -79,6 +79,7 @@ MatData_Report <- MatData_Wide %>%
          contains("_GA_LMP_DAYS_SCORRES_"),
          contains("M04_FETAL_LOSS_DSSTDAT"),
          contains("M09_DELIV_DSSTDAT_INF"),
+         contains("VISIT_DATE"),
          M00_KNOWN_DOBYN_SCORRES, DOB) 
 
 ## export 
@@ -273,7 +274,7 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                                          M23_CLOSE_DSDECOD == 5 | M23_CLOSE_DSDECOD == 6, 1, 0)) 
 
 
-# test <- MatData_Screen_Enroll %>% filter(ENROLL ==1 ) %>% select(SITE, MOMID,MISCARRIAGE, ENDPREG_WKS, DOB )
+# test <- MatData_Screen_Enroll %>% filter(SITE == "Kenya") 
 
 ## export 
 save(MatData_Screen_Enroll, file= paste0(path_to_save, "MatData_Screen_Enroll",".RData",sep = ""))
@@ -389,8 +390,8 @@ save(MatData_Anc_Visits, file= paste0(path_to_save, "MatData_Anc_Visits",".RData
 InfData_Report_Mat <- InfData_Report %>% distinct(SITE, MOMID, PREGID, .keep_all = TRUE )
 
 MatData_Ipc_Visits_Mat <- MatData_Screen_Enroll %>% 
-  select(SITE, MOMID, PREGID, ENROLL, DOB, EDD_BOE, ENDPREG_DAYS,M09_TYPE_VISIT_6, M23_CLOSE_DSSTDAT,
-         M10_TYPE_VISIT_6, M09_VISIT_COMPLETE_6, M10_VISIT_COMPLETE_6, M09_INFANTS_FAORRES_6, 
+  select(SITE, MOMID, PREGID, ENROLL, DOB, EDD_BOE,EST_CONCEP_DATE, ENDPREG_DAYS,M09_TYPE_VISIT_6, M23_CLOSE_DSSTDAT,
+         M10_TYPE_VISIT_6, M09_VISIT_COMPLETE_6, M10_VISIT_COMPLETE_6, M09_INFANTS_FAORRES_6,M23_CLOSE_DSDECOD, 
          contains("GESTAGE_AT_VISIT_DAYS")) %>% 
   filter(ENROLL == 1,
          (is.na(ENDPREG_DAYS) | ENDPREG_DAYS > 139)) %>% ## filter for anyone who is enrolled and has delivered (DOB is not NA) 
@@ -405,18 +406,79 @@ MatData_Ipc_Visits_Mat <- MatData_Screen_Enroll %>%
   mutate(ANY_TYPE_VISIT_COMPLETE_6 = ifelse((M09_TYPE_VISIT_6 == 6 & M09_VISIT_COMPLETE_6 == 1) | 
                                               (M10_TYPE_VISIT_6 == 6 & M10_VISIT_COMPLETE_6 == 1) |
                                               (M11_TYPE_VISIT_6 == 6 & M11_VISIT_COMPLETE_6 == 1), 1, 0)) %>% 
+  ## GENERATE INDICATOR VARIABLE FOR PARTICPANTS WHO HAVE CLOSED OUT EITHER DUE TO LTFU (M23_CLOSE_DSDECOD==4), 
+      # WITHDREW (M23_CLOSE_DSDECOD==5), OR INVESTIGATOR CLOSED(M23_CLOSE_DSDECOD==6)
+  mutate(CLOSED_OUT =  ifelse(is.na(M23_CLOSE_DSDECOD), 0, 
+                              ifelse(M23_CLOSE_DSDECOD == 4 | M23_CLOSE_DSDECOD == 5 | M23_CLOSE_DSDECOD == 6, 1, 0)))  %>% 
   ## CALCULATE INDICATOR VARIALBE FOR DENOMINATOR
-  mutate(IPC_DENOM = ifelse(ANY_TYPE_VISIT_COMPLETE_6==1 | IPC_PASS==1 & 
-                              ((M23_CLOSE_DSSTDAT > IPC_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0)) %>% 
+  mutate(IPC_DENOM = ifelse((ANY_TYPE_VISIT_COMPLETE_6==1 | IPC_PASS==1) & 
+                              ((M23_CLOSE_DSSTDAT > IPC_LATE) | is.na(M23_CLOSE_DSSTDAT)) &  # only include participants who have not yet closed out
+                              CLOSED_OUT != 1, 1, 0)) %>% ## remove any participant who has been lost to follow up NEW 
   ## CALCULATE INDICATOR VARIALBE FOR MISSING ALL VISIT TYPE = 6
   mutate(GA42_MISSING_IPC = ifelse((IPC_DENOM ==1) & is.na(ANY_TYPE_VISIT_COMPLETE_6), 1, 0)) 
+  
 
 ## export 
 save(MatData_Ipc_Visits_Mat, file= paste0(path_to_save, "MatData_Ipc_Visits_Mat",".RData",sep = ""))
 
+## extract any momids that are missing ipc forms and have passed window 
+MISSING_IPC_MOMIDS <- MatData_Ipc_Visits_Mat %>% filter(GA42_MISSING_IPC==1) %>% pull(MOMID)
+MISSING_IPC_MOMIDS_EXTRACT <- MatData_Screen_Enroll %>%  select(SITE, MOMID, PREGID, EST_CONCEP_DATE,M23_CLOSE_DSDECOD, M23_CLOSE_DSSTDAT,EDD_BOE, contains("_VISIT_DATE_"), ) %>% 
+  mutate(IPC_LATE = (EDD_BOE - as.difftime(280, unit="days")) + as.difftime(300, unit="days")) %>% 
+  mutate(CLOSED_OUT =  ifelse(is.na(M23_CLOSE_DSDECOD), 0, 
+                              ifelse(M23_CLOSE_DSDECOD == 4 | M23_CLOSE_DSDECOD == 5 | 
+                                       M23_CLOSE_DSDECOD == 6, 1, 0))) %>% 
+  select(-EDD_BOE, -M23_CLOSE_DSDECOD) %>% 
+  relocate(IPC_LATE, .after=4) %>%
+  relocate(CLOSED_OUT, .after = 5) %>% 
+  pivot_longer(cols = -c(1:7), 
+               values_to = "VISIT_DATE", 
+               names_to = "FORM") %>% 
+  filter(MOMID %in% MISSING_IPC_MOMIDS, CLOSED_OUT!=1) %>% 
+  group_by(SITE, MOMID, PREGID, EST_CONCEP_DATE,IPC_LATE,CLOSED_OUT, M23_CLOSE_DSSTDAT) %>% 
+  # generate variable with date last seen
+  summarise(DATE_LAST_SEEN = max(VISIT_DATE, na.rm= TRUE)) %>% 
+  ungroup() %>% 
+  # generate variable with age last seen
+  mutate(AGE_LAST_SEEN_DAYS = as.numeric(DATE_LAST_SEEN - EST_CONCEP_DATE)) %>% 
+  filter(!is.na(AGE_LAST_SEEN_DAYS)) %>% 
+  # generate variable for upload date
+  mutate(UPLOADDATE = ymd(UploadDate)) %>% 
+  # calculate the age of particpant TODAY (at date of upload)
+  mutate(AGE_AT_UPLOAD_DAYS = as.numeric(UPLOADDATE - EST_CONCEP_DATE)) %>% 
+## generate new weeks variable that includes 1 decimal point for gestational ages that represent the days 
+  mutate(AGE_LAST_SEEN_WKS_FLOOR = AGE_LAST_SEEN_DAYS %/% 7, 
+         AGE_LAST_SEEN_WKS = as.numeric(paste0(AGE_LAST_SEEN_WKS_FLOOR, ".", (AGE_LAST_SEEN_DAYS-(AGE_LAST_SEEN_WKS_FLOOR*7))))) %>% 
+  mutate(AGE_AT_UPLOAD_WKS_FLOOR = AGE_AT_UPLOAD_DAYS %/% 7, 
+         AGE_AT_UPLOAD_WKS = as.numeric(paste0(AGE_AT_UPLOAD_WKS_FLOOR, ".", (AGE_AT_UPLOAD_DAYS-(AGE_AT_UPLOAD_WKS_FLOOR*7))))) %>% 
+  select(SITE, MOMID, PREGID, DATE_LAST_SEEN,AGE_LAST_SEEN_WKS,  AGE_AT_UPLOAD_WKS, IPC_LATE, M23_CLOSE_DSSTDAT)
+
+# # generate table of contents for excel sheet to send to sites 
+# tab_contents <- data.frame("varname" = names(MISSING_IPC_MOMIDS_EXTRACT),
+#                               "definition" = c("site", 
+#                                                "momid",
+#                                                "pregnancy id",
+#                                                "date the last particpant was seen. generated by extracting the latest visit date reported for the particpant.",
+#                                                "gestational age at the last visit particpant was seen with the decimal representing the number of days. For example, 16.6 represents 16 weeks and 6 days.",
+#                                                "calculated gestational age at the time of data upload with the decimal representing the number of days. For example, 16.6 represents 16 weeks and 6 days.",
+#                                                "date IPC late window closed for a particpant. ",
+#                                                "closeout date for the partipant. if a particpant does not have a closeout form, this cell will be empty."))
+# 
+# 
+# # export
+# site_vec = as.vector(unique(MISSING_IPC_MOMIDS_EXTRACT$SITE))
+# for (i in site_vec) {
+#   df_out <- MISSING_IPC_MOMIDS_EXTRACT %>% filter(SITE == i)
+#   list_of_datasets <- list("Table of Contents" = tab_contents, "Report" = df_out)
+#   
+#   write.xlsx(list_of_datasets, file = paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/","PRISMA_", i, "_IDs_missing_IPC_", UploadDate, ".xlsx"),
+#              headerStyle = createStyle(textDecoration = "Bold"))
+# }
+# 
+
 # maternal protocol compliance -- only maternal for mnh09/10 - one row for each mom 
 MatData_Ipc_Visits_Compliance_Mat <- MatData_Screen_Enroll %>% 
-  select(SITE, MOMID, PREGID, ENROLL, DOB, EDD_BOE, ENDPREG_DAYS,M09_TYPE_VISIT_6, 
+  select(SITE, MOMID, PREGID, ENROLL, DOB,EST_CONCEP_DATE, EDD_BOE, ENDPREG_DAYS,M09_TYPE_VISIT_6, 
          M10_TYPE_VISIT_6, M09_VISIT_COMPLETE_6, M10_VISIT_COMPLETE_6, M09_INFANTS_FAORRES_6) %>% 
   filter(ENROLL == 1,
          (is.na(ENDPREG_DAYS) | ENDPREG_DAYS > 139)) %>% ## filter for anyone who is enrolled and has delivered (DOB is not NA) 
@@ -425,7 +487,7 @@ MatData_Ipc_Visits_Compliance_Mat <- MatData_Screen_Enroll %>%
                                               (M10_TYPE_VISIT_6 == 6 & M10_VISIT_COMPLETE_6 == 1), 1, 0)) 
 
 ## export 
-save(MatData_Ipc_Visits_Compliance_Mat, file= paste0(path_to_save, "MatData_Ipc_Visits_Compliance_Mat",".RData",sep = ""))
+save(MatData_Ipc_Visits_Compliance_Mat, file= paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/MatData_Ipc_Visits_Compliance_Mat",".RData",sep = ""))
 
 # infant protocol compliance -- only infant for mnh11 - one row for each infant 
 MatData_Ipc_Visits_Compliance_Inf <- InfData_Report %>% 
@@ -538,8 +600,7 @@ save(MatData_Pnc_Visits, file= paste0(path_to_save, "MatData_Pnc_Visits",".RData
 #**************************************************************************************
 #### VISIT COMPLETION #### 
 #* Are forms completed with visit status = 1 or 2? 
-#* Table 5a
-#* Table 5b
+#* Table 5
 
 #* Num: Any form with visit type = i AND visit status = 1 or 2 
 #* Denom: Passed window for visit type = i
@@ -573,7 +634,7 @@ Visit_Complete_Anc <- MatData_Anc_Visits %>%
          VC_ANC20_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_2 == 1 & ANC20_PASS_LATE == 1 & 
                                       (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)), 1, 0),
          
-         VC_ANC28_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_3 == 1 & ANC28_PASS_LATE == 1  & 
+         VC_ANC28_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_3 == 1  & ANC28_PASS_LATE &
                                       (ENDPREG_DAYS>216 | is.na(ENDPREG_DAYS)), 1, 0),
          
          VC_ANC32_NUM_LATE = ifelse(ANY_TYPE_VISIT_COMPLETE_4 == 1 & ANC32_PASS_LATE == 1  &
@@ -914,6 +975,136 @@ Form_Completion_Pnc <- MatData_Pnc_Visits %>%
 ## export 
 save(Form_Completion_Pnc, file= paste0(path_to_save, "Form_Completion_Pnc",".RData",sep = ""))
 #**************************************************************************************
+#### HEAT MAPS #### 
+#* Are forms completed with visit status = 1 or 2 for EACH visit? 
+#* PRISMA figure 3a/3b
+
+#* Num: By form: visit type = i AND visit status = 1 or 2 AND passed late window 
+#* Denom: Passed window for visit type = i AND didn't closeout AND has not yet delivered
+#**************************************************************************************
+## ANC
+Heat_Maps_Anc <- MatData_Anc_Visits %>% 
+  select(SITE, MOMID, ENROLL, PREGID, BOE_GA_WKS_ENROLL, contains("TYPE_VISIT_"), contains("_VISIT_COMPLETE_"),
+         contains("_LATE"),ENDPREG_DAYS, M23_CLOSE_DSSTDAT) %>% 
+  # indicator for any type visit = i with any visit status 
+  mutate(TYPE_VISIT_ANY_STATUS_1 = ifelse((M01_TYPE_VISIT_1 == 1 & !is.na(M01_VISIT_COMPLETE_1)) | 
+                                            (M03_TYPE_VISIT_1 == 1 & !is.na(M03_VISIT_COMPLETE_1)) |
+                                            (M04_TYPE_VISIT_1 == 1 & !is.na(M04_VISIT_COMPLETE_1)) |
+                                            (M05_TYPE_VISIT_1 == 1 & !is.na(M05_VISIT_COMPLETE_1)) |
+                                            (M06_TYPE_VISIT_1 == 1 & !is.na(M06_VISIT_COMPLETE_1)) |
+                                            (M07_TYPE_VISIT_1 == 1 & !is.na(M07_VISIT_COMPLETE_1)) |
+                                            (M08_TYPE_VISIT_1 == 1 & !is.na(M08_VISIT_COMPLETE_1)), 1, 0),
+         TYPE_VISIT_ANY_STATUS_2 = ifelse((M04_TYPE_VISIT_2 == 2 & !is.na(M04_VISIT_COMPLETE_2) & BOE_GA_WKS_ENROLL <= 17) |
+                                            (M05_TYPE_VISIT_2 == 2 & !is.na(M05_VISIT_COMPLETE_2) & BOE_GA_WKS_ENROLL <= 17) |
+                                            (M06_TYPE_VISIT_2 == 2 & !is.na(M06_VISIT_COMPLETE_2) & BOE_GA_WKS_ENROLL <= 17) |
+                                            (M07_TYPE_VISIT_2 == 2 & !is.na(M07_VISIT_COMPLETE_2) & BOE_GA_WKS_ENROLL <= 17) |
+                                            (M08_TYPE_VISIT_2 == 2 & !is.na(M08_VISIT_COMPLETE_2) & BOE_GA_WKS_ENROLL <= 17) | 
+                                            (M25_TYPE_VISIT_2 == 2 & !is.na(M25_VISIT_COMPLETE_2) & BOE_GA_WKS_ENROLL <= 17) | 
+                                            (M26_TYPE_VISIT_2 == 2 & !is.na(M26_VISIT_COMPLETE_2) & BOE_GA_WKS_ENROLL <= 17), 1, 0),
+         TYPE_VISIT_ANY_STATUS_3 = ifelse((M04_TYPE_VISIT_3 == 3 & !is.na(M04_VISIT_COMPLETE_3)) |
+                                            (M05_TYPE_VISIT_3 == 3 & !is.na(M05_VISIT_COMPLETE_3)) |
+                                            (M06_TYPE_VISIT_3 == 3 & !is.na(M06_VISIT_COMPLETE_3)) |
+                                            (M07_TYPE_VISIT_3 == 3 & !is.na(M07_VISIT_COMPLETE_3)) |
+                                            (M08_TYPE_VISIT_3 == 3 & !is.na(M08_VISIT_COMPLETE_3)), 1, 0),
+         TYPE_VISIT_ANY_STATUS_4 = ifelse((M01_TYPE_VISIT_4 == 4 & !is.na(M01_VISIT_COMPLETE_4)) | 
+                                            (M04_TYPE_VISIT_4 == 4 & !is.na(M04_VISIT_COMPLETE_4)) |
+                                            (M05_TYPE_VISIT_4 == 4 & !is.na(M05_VISIT_COMPLETE_4)) |
+                                            (M06_TYPE_VISIT_4 == 4 & !is.na(M06_VISIT_COMPLETE_4)) |
+                                            (M07_TYPE_VISIT_4 == 4 & !is.na(M07_VISIT_COMPLETE_4)) |
+                                            (M08_TYPE_VISIT_4 == 4 & !is.na(M08_VISIT_COMPLETE_4)) | 
+                                            (M25_TYPE_VISIT_4 == 4 & !is.na(M25_VISIT_COMPLETE_4)) | 
+                                            (M26_TYPE_VISIT_4 == 4 & !is.na(M26_VISIT_COMPLETE_4)), 1, 0),
+         TYPE_VISIT_ANY_STATUS_5 = ifelse((M04_TYPE_VISIT_5 == 5 & !is.na(M04_VISIT_COMPLETE_5)) |
+                                            (M05_TYPE_VISIT_5 == 5 & !is.na(M05_VISIT_COMPLETE_5)) |
+                                            (M06_TYPE_VISIT_5 == 5 & !is.na(M06_VISIT_COMPLETE_5)) |
+                                            (M07_TYPE_VISIT_5 == 5 & !is.na(M07_VISIT_COMPLETE_5)) |
+                                            (M08_TYPE_VISIT_5 == 5 & !is.na(M08_VISIT_COMPLETE_5)), 1, 0)) %>% 
+  ## generate denominators - LATE
+    # has the late window passed AND has not delivered AND has not closed out OR has a form in this visit 
+  mutate(HM_ENROLL_DENOM_LATE = ifelse(ENROLL_PASS_LATE == 1 | TYPE_VISIT_ANY_STATUS_1 == 1, 1, 0), 
+         HM_ANC20_DENOM_LATE = ifelse((ANC20_PASS_LATE == 1 & BOE_GA_WKS_ENROLL <= 17 &
+                                        (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)) & 
+                                        ((M23_CLOSE_DSSTDAT > ANC20_PASS_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
+                              TYPE_VISIT_ANY_STATUS_2 == 1, 1, 0),  ## closed out after window or has not yet closed out
+         HM_ANC28_DENOM_LATE = ifelse((ANC28_PASS_LATE == 1  &
+                                        (ENDPREG_DAYS>216 | is.na(ENDPREG_DAYS)) & 
+                                        ((M23_CLOSE_DSSTDAT > ANC28_PASS_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
+                                        TYPE_VISIT_ANY_STATUS_3 == 1, 1, 0), 
+         HM_ANC32_DENOM_LATE = ifelse((ANC32_PASS_LATE == 1  & 
+                                        (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)) & 
+                                        ((M23_CLOSE_DSSTDAT > ANC32_PASS_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
+                                        TYPE_VISIT_ANY_STATUS_4 == 1, 1, 0), 
+         HM_ANC36_DENOM_LATE = ifelse((ANC36_PASS_LATE == 1  & 
+                                        (ENDPREG_DAYS>272 | is.na(ENDPREG_DAYS))  & 
+                                        ((M23_CLOSE_DSSTDAT > ANC36_PASS_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
+                                        TYPE_VISIT_ANY_STATUS_5 == 1, 1, 0)
+  ) 
+
+## export 
+save(Heat_Maps_Anc, file= paste0(path_to_save, "Heat_Maps_Anc",".RData",sep = ""))
+
+# PNC
+## i filtered out anyone who has an endpreg and then
+# for pnc visits where we do not expect those with miscarriages, i filter 
+Heat_Maps_Pnc <- MatData_Pnc_Visits %>%
+  filter(!is.na(ENDPREG_DAYS)) %>% ## only include participants with a birth outcome
+  select(SITE, MOMID, PREGID, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("TYPE_VISIT"),
+         contains("VISIT_COMPLETE"),
+         contains("_PASS"), contains("_ONTIME"), contains("_LATE"), M23_CLOSE_DSSTDAT, DOB, ENDPREG_DAYS) %>%
+  # indicator for any type visit = i with any visit status 
+  mutate(TYPE_VISIT_ANY_STATUS_7 = ifelse((M06_TYPE_VISIT_7 == 7 & !is.na(M06_VISIT_COMPLETE_7)) |
+                                            (M12_TYPE_VISIT_7 == 7 & !is.na(M12_VISIT_COMPLETE_7)), 1, 0),
+         
+         TYPE_VISIT_ANY_STATUS_8 = ifelse((M06_TYPE_VISIT_8 == 8 & !is.na(M06_VISIT_COMPLETE_8)) |
+                                            (M12_TYPE_VISIT_8 == 8 & !is.na(M12_VISIT_COMPLETE_8)), 1, 0),
+         
+         TYPE_VISIT_ANY_STATUS_9 = ifelse((M06_TYPE_VISIT_9 == 9 & !is.na(M06_VISIT_COMPLETE_9)) |
+                                            (M12_TYPE_VISIT_9 == 9 & !is.na(M12_VISIT_COMPLETE_9)), 1, 0),
+         
+         TYPE_VISIT_ANY_STATUS_10 = ifelse((M05_TYPE_VISIT_10 == 10 & !is.na(M05_VISIT_COMPLETE_10)) |
+                                             (M06_TYPE_VISIT_10 == 10 & !is.na(M06_VISIT_COMPLETE_10)) |
+                                             (M07_TYPE_VISIT_10 == 10 & !is.na(M07_VISIT_COMPLETE_10)) |
+                                             (M08_TYPE_VISIT_10 == 10 & !is.na(M08_VISIT_COMPLETE_10)) |
+                                             (M12_TYPE_VISIT_10 == 10 & !is.na(M12_VISIT_COMPLETE_10)), 1, 0),
+         ## might need to add some detail here of who we expect after the 42 day fu (only women who have had a live birth)
+         TYPE_VISIT_ANY_STATUS_11 = ifelse((M05_TYPE_VISIT_11 == 11 & !is.na(M05_VISIT_COMPLETE_11)) |
+                                             (M06_TYPE_VISIT_11 == 11 & !is.na(M06_VISIT_COMPLETE_11)) |
+                                             (M07_TYPE_VISIT_11 == 11 & !is.na(M07_VISIT_COMPLETE_11)) |
+                                             (M08_TYPE_VISIT_11 == 11 & !is.na(M08_VISIT_COMPLETE_11)) | 
+                                             (M12_TYPE_VISIT_11 == 11 & !is.na(M12_VISIT_COMPLETE_11)), 1, 0),
+         
+         TYPE_VISIT_ANY_STATUS_12 = ifelse((M05_TYPE_VISIT_12 == 12 & !is.na(M05_VISIT_COMPLETE_12)) |
+                                             (M06_TYPE_VISIT_12 == 12 & !is.na(M06_VISIT_COMPLETE_12)) |
+                                             (M12_TYPE_VISIT_12 == 12 & !is.na(M12_VISIT_COMPLETE_12)), 1, 0)) %>% 
+  ## generate denominators - LATE
+  # has the late window passed AND has not delivered AND has not closed out OR has a form in this visit 
+  mutate(HM_PNC0_DENOM_LATE = ifelse((PNC0_PASS_LATE==1 &
+                                       ((M23_CLOSE_DSSTDAT > PNC0_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
+                                       TYPE_VISIT_ANY_STATUS_7 == 1, 1, 0),
+         HM_PNC1_DENOM_LATE = ifelse((PNC1_PASS_LATE==1 &
+                                       ((M23_CLOSE_DSSTDAT > PNC1_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
+                                       TYPE_VISIT_ANY_STATUS_8 == 1, 1, 0),
+         HM_PNC4_DENOM_LATE = ifelse((PNC4_PASS_LATE==1 &
+                                       ((M23_CLOSE_DSSTDAT > PNC4_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
+                                       TYPE_VISIT_ANY_STATUS_9 == 1, 1, 0),
+         HM_PNC6_DENOM_LATE = ifelse((PNC6_PASS_LATE==1 & 
+                                       ((M23_CLOSE_DSSTDAT > PNC6_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
+                                       TYPE_VISIT_ANY_STATUS_10 == 1, 1, 0),
+         
+         HM_PNC26_DENOM_LATE = ifelse((PNC26_PASS_LATE==1 & ENDPREG_DAYS>139 & 
+                                        ((M23_CLOSE_DSSTDAT > PNC26_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
+                                        TYPE_VISIT_ANY_STATUS_11 == 1, 1, 0),
+         
+         HM_PNC52_DENOM_LATE = ifelse((PNC52_PASS_LATE==1 & ENDPREG_DAYS>139 & 
+                                        ((M23_CLOSE_DSSTDAT > PNC52_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
+                                        TYPE_VISIT_ANY_STATUS_12 == 1, 1, 0)
+  )
+
+
+## export 
+save(Heat_Maps_Pnc, file= paste0(path_to_save, "Heat_Maps_Pnc",".RData",sep = ""))
+
+#**************************************************************************************
 #* ReMAPP Table 4: Hemoglobin measurements for participants in ReMAPP per visit 
 #* Only looking at those who are enrolled 
 #* Output = MatData_Hb_VISIT
@@ -944,11 +1135,11 @@ MatData_Hb_Visit <- MatData_Anc_Visits %>%
          M08_CBC_HB_LBORRES_10 = ifelse(M08_CBC_HB_LBORRES_10 < 1 | M08_CBC_HB_LBORRES_10 > 20, NA, M08_CBC_HB_LBORRES_10)) %>%
   ## generate denominators 
   mutate(DenHBV1 = ifelse((M08_VISIT_COMPLETE_1 == 1 & M08_TYPE_VISIT_1 == 1) |  ENROLL_OVERDUE == 1, 1, 0),
-         DenHBV2 = ifelse((M08_VISIT_COMPLETE_2 == 1 & M08_TYPE_VISIT_2 == 2 & BOE_GA_WKS_ENROLL <= 17) |  ANC20_OVERDUE == 1, 1, 0),
+         DenHBV2 = ifelse((M08_VISIT_COMPLETE_2 == 1 & M08_TYPE_VISIT_2 == 2 & BOE_GA_WKS_ENROLL <= 17) |  ANC20_OVERDUE == 1, 1, 0), # 
          DenHBV3 = ifelse((M08_VISIT_COMPLETE_3 == 1 & M08_TYPE_VISIT_3 == 3) |  ANC28_OVERDUE == 1, 1, 0),
          DenHBV4 = ifelse((M08_VISIT_COMPLETE_4 == 1 & M08_TYPE_VISIT_4 == 4) |  ANC32_OVERDUE == 1, 1, 0),
          DenHBV5 = ifelse((M08_VISIT_COMPLETE_5 == 1 & M08_TYPE_VISIT_5 == 5) |  ANC36_OVERDUE == 1, 1, 0),
-         DenHBV10 = ifelse((M08_VISIT_COMPLETE_10 == 1 & M08_TYPE_VISIT_10 == 5) |  PNC6_OVERDUE == 1, 1, 0)) %>% 
+         DenHBV10 = ifelse((M08_VISIT_COMPLETE_10 == 1 & M08_TYPE_VISIT_10 == 10) |  PNC6_OVERDUE == 1, 1, 0)) %>% 
   mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT >= "2023-04-10") |
                                   (SITE == "Pakistan" & M02_SCRN_OBSSTDAT >= "2022-09-22") |
                                   (SITE == "Ghana" & M02_SCRN_OBSSTDAT >= "2022-12-28") | 
@@ -956,6 +1147,10 @@ MatData_Hb_Visit <- MatData_Anc_Visits %>%
                                   (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-07-18"), 1, 0)) %>%
   filter(ENROLL == 1 & REMAPP_LAUNCH ==1)
 
+
+test <- MatData_Hb_Visit %>% filter(SITE == "Pakistan" & HB_COMPLETED_2==1 ) %>% 
+  select(MOMID, M08_CBC_LBPERF_1_2, M08_VISIT_COMPLETE_2,M08_TYPE_VISIT_2,BOE_GA_WKS_ENROLL,ANC20_OVERDUE,
+                                                                                        HB_COMPLETED_2, DenHBV2)
 ## export 
 save(MatData_Hb_Visit, file= paste0(path_to_save, "MatData_Hb_Visit",".RData",sep = ""))
 #**************************************************************************************
@@ -1065,8 +1260,8 @@ df_maternal <- MatData_Screen_Enroll %>%
                                   (SITE == "Pakistan" & M02_SCRN_OBSSTDAT >= "2022-09-22") |
                                   (SITE == "Ghana" & M02_SCRN_OBSSTDAT >= "2022-12-28") | 
                                   (SITE == "Zambia" & M02_SCRN_OBSSTDAT >= "2022-12-15") |
-                                  (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-07-18"), 1, 0)) #%>% 
-# filter(REMAPP_LAUNCH == 1)
+                                  (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-07-18"), 1, 0)) %>% 
+  filter(REMAPP_LAUNCH == 1)
 
 # save(df_maternal, file = "derived_data/df_maternal.rda")
 

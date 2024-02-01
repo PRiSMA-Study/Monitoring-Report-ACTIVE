@@ -26,14 +26,13 @@
 
 ## LINES TO UPDATE EACH RUN: 
 ## LINE 35 - set upload date
-
 #*****************************************************************************
 
 library(lubridate)
 library(readxl)
 library(tidyverse)
 
-UploadDate = "2023-11-24"
+UploadDate = "2024-01-26"
 
 #*****************************************************************************
 #* Import merged data 
@@ -102,7 +101,7 @@ m01_enroll <- m01_merged %>% filter(M01_TYPE_VISIT == 1) %>% ## only want enroll
   select(-MOMID, -PREGID) %>%  # merge in MOMID and PREGID from mnh02 later 
   rename("TYPE_VISIT" = M01_TYPE_VISIT) %>% 
   # filter out any ultrasound visit dates that are 07-07-1907
-  filter(M01_US_OHOSTDAT != ymd("1907-07-07")) %>%   
+  filter(M01_US_OHOSTDAT != ymd("1907-07-07")) %>%   ## FOR KENYA DATA, THIS WILL BE 2007-07-07
   # calculate us ga in days with reported ga in wks + days. if ga is -7 or -5, replace with NA
   ## combine ga weeks and days variables to get a single gestational age variable
   mutate(GA_US_DAYS_FTS1 =  ifelse(SITE!="India-CMC" & M01_US_GA_WKS_AGE_FTS1!= -7 & M01_US_GA_DAYS_AGE_FTS1 != -7,  (M01_US_GA_WKS_AGE_FTS1 * 7 + M01_US_GA_DAYS_AGE_FTS1), NA), 
@@ -356,11 +355,7 @@ anc_visit_out <- mget(ls(pattern = "visit_anc_"))
 # Merge all forms together 
 anc_data_wide <- anc_visit_out %>% reduce(full_join, by =  c("SITE","SCRNID", "MOMID", "PREGID")) %>% distinct()
 
-# check for duplicates
-# test <- anc_data_wide %>%
-#   relocate(any_of(c("SCRNID", "MOMID", "PREGID")), .after = SITE)
-# out_IDS <- test[duplicated(test[,1:4]),]
-
+gc()
 #*****************************************************************************
 #* IPC 
 #*****************************************************************************
@@ -472,6 +467,8 @@ ipc_data_wide <- ipc_data_wide_visit %>% select(-TYPE_VISIT) %>%
 #   relocate(any_of(c("MOMID", "PREGID")), .after = SITE)
 # out_IDS <- test[duplicated(test[,1:3]),]
 # dim(out_IDS)
+
+gc()
 #*****************************************************************************
 #* PNC 
 #*****************************************************************************
@@ -590,6 +587,7 @@ pnc_data_wide <- pnc_visit_out %>% reduce(full_join, by =  c("SITE", "MOMID", "P
 #   relocate(any_of(c("MOMID", "PREGID")), .after = SITE)
 # out_IDS <- test[duplicated(test[,1:3]),]
 # dim(out_IDS)
+gc()
 #*****************************************************************************
 #* Merge all ANC, IPC, PNC data to get wide dataset BY VISIT 
 #* One row for each mom at each visit 
@@ -615,11 +613,13 @@ out <- list(anc_data_wide, ipc_data_wide, pnc_data_wide)
 MatData_Wide <- out %>% reduce(full_join, by = c("SITE", "MOMID", "PREGID"))  %>%
   relocate(DOB, .after = PREGID) %>% distinct()
 
+gc()
 ## Merge in maternal closeout form (MNH23) -- only filled out once which is why we merge it at the end  
 MatData_Wide <- full_join(MatData_Wide, m23_merged, by =c("SITE", "MOMID", "PREGID")) %>% 
   relocate(any_of(c("SCRNID", "MOMID", "PREGID")), .after = SITE) %>% 
   distinct()
 
+gc()
 # check for duplicates:
 # test <- MatData_Wide %>%
 #   relocate(any_of(c("SCRNID", "MOMID", "PREGID")), .after = SITE)
@@ -769,6 +769,7 @@ MatData_Wide <- left_join(MatData_Wide, non_sched_form_wide_all, by =c("SITE", "
   relocate(any_of(c("SCRNID", "MOMID", "PREGID", "INFANTID")), .after = SITE) %>% 
   distinct()
 
+
 # check for duplicates:
 # test <- MatData_Wide %>%
 #   relocate(any_of(c("SCRNID", "MOMID", "PREGID")), .after = SITE)
@@ -776,10 +777,11 @@ MatData_Wide <- left_join(MatData_Wide, non_sched_form_wide_all, by =c("SITE", "
 # dim(out_IDS)
 
 ## remove any gesational ages >=20wks at enrollment ultrasound -- this should be flagged in queries 
-#MatData_Wide <- MatData_Wide %>% filter(GA_US_DAYS_1 < 140 | is.na(GA_US_DAYS_1))
+## MatData_Wide <- MatData_Wide %>% filter(GA_US_DAYS_1 < 140 | is.na(GA_US_DAYS_1))
 #*****************************************************************************
 #* Export wide dataset 
 #*****************************************************************************
+gc()
 # export to personal 
 setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
 save(MatData_Wide, file= paste("MatData_Wide","_", UploadDate,".RData",sep = ""))
@@ -793,4 +795,8 @@ dir.create(file.path(maindir, subdir), showWarnings = FALSE)
 setwd(paste("Z:/Processed Data/",UploadDate, sep = ""))
 #dt=format(Sys.time(), "%Y-%m-%d")
 save(MatData_Wide, file= paste("MatData_Wide","_", UploadDate,".RData",sep = ""))
+
+# export as csv 
+write.csv(MatData_Wide,  file= paste("MatData_Wide","_", UploadDate,".csv",sep = ""))
+
 

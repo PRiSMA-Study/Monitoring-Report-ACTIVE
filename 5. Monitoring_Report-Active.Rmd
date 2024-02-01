@@ -1,12 +1,12 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-01-10)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-01-30)"
 output:
   pdf_document:
     toc: no
     toc_depth: 4
     latex_engine: xelatex
     keep_tex: true
-    output_dir: "D:/Users/stacie.loisate/Box/Monitoring-Report-Active/tables/"
+    # output_dir: "D:/Users/stacie.loisate/Box/Monitoring-Report-Active/tables/"
 include-in-header:
 - \usepackage{ booktabs,longtable}
 ---
@@ -29,7 +29,7 @@ library(webshot2)
 library(grid)
 library(gridExtra)
 
-UploadDate = "2024-01-05" 
+UploadDate = "2024-01-26" 
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
 
@@ -119,24 +119,31 @@ g_legend <- function(p) {
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/tables/"))
 ```
-**PRISMA MNH:** Pregnancy Risk and Infant Surveillance and Measurement Alliance Maternal and Newborn Health (PRISMA MNH) Study: A multi-center, prospective cohort study of maternal, newborn, and infant health
+
+**Abbreviations:**
+
+**PRISMA MNH:** Pregnancy Risk, Infant Surveillance, and Measurement Alliance (PRISMA) Maternal and Newborn Health (MNH) Study: A multi-site, prospective, open cohort study of pregnancy and postpartum health outcomes
 
 &nbsp;
 &nbsp;
 
-**ReMAPP:** Redefining Maternal Anemia in Pregnancy and Postpartum (ReMAPP) Study
+**ReMAPP:** Redefining Maternal Anemia in Pregnancy and Postpartum (ReMAPP) Study: A multisite, international, population-based cohort study to establish global hemoglobin thresholds for maternal anemia
 
 &nbsp;
 &nbsp;
 
-**Includes data from synapse last updated:** 2023-12-08
+**Versions:**
 
-#### **Last Enrollment Date: **
-  + Kenya: 2023-12-08
-  + Pakistan: 2023-12-01
-  + Ghana : 2023-11-10
-  + Zambia : 2023-12-06
-  + India CMC : 2023-11-24
+**Date issued:** 2024-01-30
+
+**Included data last updated in Synapse:** 2024-01-26
+
+#### **Last enrollment date: **
+  + Kenya: 2024-01-26
+  + Pakistan: 2024-01-19
+  + Ghana : 2023-12-28
+  + Zambia : 2024-01-23
+  + India CMC : 2024-01-12
  
 ```{r, results='hide' }
 #check last day of screening and enrollment
@@ -177,8 +184,8 @@ date_last_enrll_cmc <- lastenroll %>% filter(SITE == "India-CMC") %>% select(las
 &nbsp;
 &nbsp;
 
-### Table 1: Pre-screening and Enrollment numbers for PRISMA for the most recent one week
-*Value:* This will provide a snapshot of weekly pre-screening and enrollment progress.
+### Table 1: Most recent one week pre-screened and enrolled in PRISMA
+*Value:* Provides a snapshot of weekly pre-screening and enrollment progress.
 
 ```{r}
 ## Prescreening and enrollment in the most recent one week 
@@ -193,16 +200,16 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
   filter(
     SITE == "Pakistan" & (M00_SCRN_OBSSTDAT > date_last_enrll_pak) |
     SITE == "Kenya" & (M00_SCRN_OBSSTDAT > date_last_enrll_ke) | 
-   SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
+    SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
     SITE == "Zambia" & (M00_SCRN_OBSSTDAT > date_last_enrll_za) | 
     SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc)  
   ) %>% 
   group_by(SITE) %>% 
-  summarise("Pre-screened for PRISMA, n" = sum(PRESCREEN == 1, na.rm=TRUE),
-            "Eligible based on pre-screening, n(%) <sup>a</sup>" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE), 
+  summarise("Pre-screened, n" = sum(PRESCREEN == 1, na.rm=TRUE),
+            "Eligible based on pre-screen, n(%) <sup>a</sup>" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE), 
                                         " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Screened for PRISMA, n" = sum(SCREEN == 1),
-            "Enrolled in PRISMA, n(%) <sup>b</sup>" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
+            "Screened, n" = sum(SCREEN == 1),
+            "Enrolled, n(%) <sup>b</sup>" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
 ) %>% 
   t() %>% as.data.frame() %>% 
@@ -220,11 +227,11 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
 
 
   ) %>% 
-  plyr::summarise("Pre-screened for PRISMA, n" = sum(PRESCREEN == 1, na.rm=TRUE),
-            "Eligible based on pre-screening, n(%) <sup>a</sup>" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE), 
+  plyr::summarise("Pre-screened, n" = sum(PRESCREEN == 1, na.rm=TRUE),
+            "Eligible based on pre-screen, n(%) <sup>a</sup>" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE), 
                                         " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Screened for PRISMA, n" = sum(SCREEN == 1, na.rm=TRUE),
-            "Enrolled in PRISMA, n(%) <sup>b</sup>" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
+            "Screened, n" = sum(SCREEN == 1, na.rm=TRUE),
+            "Enrolled, n(%) <sup>b</sup>" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
 
 ) %>% 
@@ -240,20 +247,13 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
 prisma_tab1 <- tb_theme1(tb_prescreen_enroll) %>% 
   tab_header(
     title = md("**PRISMA Table 1**")
-    # subtitle = md("*Value: This will provide a snapshot of weekly pre-screening and enrollment progress.*")
   ) %>%
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>a</sup> Denominator is pre-screened (MNH00 completed).</span>")
+    footnote = html("<span style='font-size: 18px'><sup>a</sup> Denominator is n pre-screened (MNH00 completed).</span>")
 ) %>%   
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>b</sup> Denominator is n screened (MNH02 completed).</span>")
 )
-    # tab_footnote(
-    # footnote = html("<span style='font-size: 18px'><sup>b</sup> Denominator is n screened (MNH02 completed).</span>"),
-    # locations = cells_stub(rows = c(
-    #   "Enrolled in PRISMA, n(%)<sup>b</sup>"
-    # ))) %>% 
-  # opt_footnote_marks(marks = "letters")
 ```
 
 ```{r, out.width = '100%'}
@@ -263,8 +263,8 @@ knitr::include_graphics("prisma_tab1.png")
 
 \newpage
 
-### Table 2: Cumulative pre-screening numbers for PRISMA
-*Value:* Distribution of cumulative pre-screening distributions since the start of relaunch. If ineligible, distributions by exclusion criteria are listed below.
+### Table 2: Cumulative pre-screened for PRISMA
+*Value:* Distribution of total pre-screened since the launch of the harmonized PRISMA protocol. If ineligible based on pre-screening, distributions by exclusion reason are listed. 
 
 ```{r}
 ## Cumulative Prescreening criteria 
@@ -273,13 +273,13 @@ knitr::include_graphics("prisma_tab1.png")
 tb_prescreen_all <- MatData_Screen_Enroll %>% 
   filter(PRESCREEN == 1) %>% 
   group_by(SITE) %>% 
-  summarise("Pre-screened for PRISMA, n (MNH00)" = sum(PRESCREEN == 1, na.rm=TRUE),
+  summarise("Pre-screened, n" = sum(PRESCREEN == 1, na.rm=TRUE),
             
-            "Eligible based on pre-screening, n(%)^a^" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm = TRUE), 
+            "Eligible based on pre-screen, n(%)^a^" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm = TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             "No clinical signs of pregnancy" = paste0(sum(PRESCR_PREGSIGN == 0, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_PREGSIGN == 0, na.rm = TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Viable pregnancy with GA>=25 weeks" = paste0(sum(PRESCR_GA25 == 0, na.rm = TRUE), 
+            "Gestational age >=25 weeks" = paste0(sum(PRESCR_GA25 == 0, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_GA25 == 0, na.rm = TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             "Did not meet age requirement" = paste0(sum(PRESCR_AGE == 0, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_AGE == 0, na.rm = TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
@@ -297,12 +297,12 @@ tb_prescreen_all <- MatData_Screen_Enroll %>%
   add_column(
     .before = 1,
     "Total" = MatData_Screen_Enroll %>% 
-  plyr::summarise("Pre-screened for PRISMA, n (MNH00)" = sum(PRESCREEN == 1, na.rm=TRUE),
-            "Eligible based on pre-screening, n(%)^a^" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm = TRUE), 
+  plyr::summarise("Pre-screened, n" = sum(PRESCREEN == 1, na.rm=TRUE),
+            "Eligible based on pre-screen, n(%)^a^" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm = TRUE)/sum(PRESCREEN_DENOM == 1,na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             "No clinical signs of pregnancy" = paste0(sum(PRESCR_PREGSIGN == 0, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_PREGSIGN == 0, na.rm = TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Viable pregnancy with GA>=25 weeks" = paste0(sum(PRESCR_GA25 == 0, na.rm = TRUE), 
+            "Gestational age >=25 weeks" = paste0(sum(PRESCR_GA25 == 0, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_GA25 == 0, na.rm = TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             "Did not meet age requirement" = paste0(sum(PRESCR_AGE == 0, na.rm = TRUE), 
                                         " (", format(sum(PRESCR_AGE == 0, na.rm = TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
@@ -333,7 +333,7 @@ prisma_tab2 <- tb_theme1(tb_prescreen_all) %>%
   row_group_order(groups = c("<span style='font-size: 18px'>Pre-screening</span>",
                   "<span style='font-size: 18px'>Reason for exclusion in pre-screening, n(%) <sup>a</sup></span>")) %>%
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>a</sup> Denominator is pre- screened (MNH00 completed).</span>")
+    footnote = html("<span style='font-size: 18px'><sup>a</sup> Denominator is n pre- screened (MNH00 completed).</span>")
 ) %>%   
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>b</sup> Other reasons for exclusion include: not feasible to collect the minimal required dataset, medical contraindication, comes from outside the catchment area, refusal to be screened, not interested, deferred, needs to seek spousal consent, or does not have time to proceed with enrollment process.</span>")
@@ -351,27 +351,27 @@ knitr::include_graphics("prisma_tab2.png")
 
 \newpage
 
-### Table 3: Cumulative enrollment numbers for PRISMA
+### Table 3: Cumulative enrolled in PRISMA
 *Value:* Distribution of cumulative enrollment and study progress distributions since the start of relaunch. If ineligible, distributions by exclusion criteria are listed below. Each column should sum to 100%.
 
 ```{r}
 
 tb_enroll <- MatData_Screen_Enroll %>%
   group_by(SITE) %>%
-  summarise("Screened for PRISMA (MNH02), n" = sum(SCREEN == 1, na.rm=TRUE),
-            "Prescreen eligible (MNH00) with no Screening (MNH02), n^a^" = sum(PRESCR_ELIGIBLE ==1 & SCREEN == 0, na.rm = TRUE),
-            "Enrolled in PRISMA (MNH02), n(%)^b^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
+  summarise("Screened, n" = sum(SCREEN == 1, na.rm=TRUE),
+            "Missed screening, n^a^" = sum(PRESCR_ELIGIBLE ==1 & SCREEN == 0, na.rm = TRUE),
+            "Enrolled, n(%)^b^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             
-              "Gestational Age at Enrollment, mean (SD)" = paste0(format(round(mean(BOE_GA_WKS_ENROLL, na.rm = TRUE),2), 
+              "Gestational age at enrollment, mean (SD)" = paste0(format(round(mean(BOE_GA_WKS_ENROLL, na.rm = TRUE),2), 
                                                         nsmall=0, digits = 2), " (",format(round(sd(BOE_GA_WKS_ENROLL, 
                                                             na.rm = TRUE),2), nsmall=0, digits = 2), ")"), 
-              "First trimester (<14 wks), n(%)^c^" = paste0(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
+              "Enrolled in 1st trimester, n(%)^c^" = paste0(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
                           format(round(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, 2), nsmall = 0, digits = 2),
     ")"),
             "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
                              " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Viable pregnancy with GA>=20 weeks by US" = paste0(sum(GA20 == 0, na.rm=TRUE),
+            "Gestational age >=20 weeks" = paste0(sum(GA20 == 0, na.rm=TRUE),
                                 " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
                                    " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
@@ -388,23 +388,23 @@ tb_enroll <- MatData_Screen_Enroll %>%
     .before = 1,
     "Total" = MatData_Screen_Enroll %>%
   plyr::summarise("Screened for PRISMA (MNH02), n" = sum(SCREEN == 1, na.rm = TRUE),
-                  "Prescreen eligible (MNH00) with no Screening (MNH02), n^a^" = sum(PRESCR_ELIGIBLE ==1 & SCREEN == 0, na.rm = TRUE),
-            "Enrolled in PRISMA (MNH02), n(%)^b^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
+            "Missed screening, n^a^" = sum(PRESCR_ELIGIBLE ==1 & SCREEN == 0, na.rm = TRUE),
+            "Enrolled, n(%)^b^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Gestational Age at Enrollment, mean (SD)" = paste0(format(round(mean(BOE_GA_WKS_ENROLL, na.rm = TRUE),2), 
+            
+              "Gestational age at enrollment, mean (SD)" = paste0(format(round(mean(BOE_GA_WKS_ENROLL, na.rm = TRUE),2), 
                                                         nsmall=0, digits = 2), " (",format(round(sd(BOE_GA_WKS_ENROLL, 
                                                             na.rm = TRUE),2), nsmall=0, digits = 2), ")"), 
-            "First trimester (<14 wks), n(%)^c^" = paste0(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
+              "Enrolled in 1st trimester, n(%)^c^" = paste0(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
                           format(round(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, 2), nsmall = 0, digits = 2),
     ")"),
-            "Viable pregnancy with GA>=20 weeks by US" = paste0(sum(AGE == 0, na.rm=TRUE),
+            "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
                              " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "GA >= 20 wks by US" = paste0(sum(GA20 == 0, na.rm=TRUE),
+            "Gestational age >=20 weeks" = paste0(sum(GA20 == 0, na.rm=TRUE),
                                 " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
                                    " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-    
-            "Doesn't plan to remain in catchment area" = paste0(sum(CATCHREMAIN == 0, na.rm=TRUE),
+          "Doesn't plan to remain in catchment area" = paste0(sum(CATCHREMAIN == 0, na.rm=TRUE),
                                    " (", format(sum(CATCHREMAIN == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
 
             "Did not consent" = paste0(sum(CONSENT == 0, na.rm=TRUE),
@@ -457,8 +457,8 @@ knitr::include_graphics("prisma_tab3.png")
 
 \newpage
 
-### Figure 1a: Cumulative Enrollment by Site and Week
-*Value:* Illustrate cumulative enrollment status by site over time.
+### Figure 1a: Cumulative enrollment in PRISMA by site
+*Value:* Track total enrollment by site each week since study launch. 
 
 ```{r, echo=FALSE}
 
@@ -471,27 +471,74 @@ enroll_cum <- MatData_Screen_Enroll %>%
   mutate(cum_n = cumsum(n)) %>% 
   ungroup() 
 
+
+# New row with a new date
+new_row <- data.frame(
+  SITE = "ZZ",  # Adjust site name as needed
+  START_DATE_MOM_WK = as.Date(UploadDate) + days(14),  # Adjust the new date
+  n = 0,
+  cum_n = 0
+)
+
+
 enroll_cum$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum$START_DATE_MOM_WK))
 
-enroll_cum %>% 
-  ggplot(aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE)) +
-  geom_point(shape = 15) +
-  geom_line() +
-  scale_x_date(date_breaks = "2 weeks", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), UploadDate)) + 
+enroll_cum <- bind_rows(enroll_cum, new_row)
+
+ggplot() +
+  geom_point(data = enroll_cum, aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE), shape = 15) +
+  geom_line(data = enroll_cum, aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE)) +
+  scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+               expand = c(0, 0)) +
+  scale_color_manual(values = c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3", "white"),
+                     labels = c("Ghana", "India-CMC", "Kenya", "Pakistan", "Zambia", "")) +
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
-        legend.position="bottom",
-        panel.grid.minor = element_blank()) +
-  xlab("Enrollment Week") +
-  ylab("Site Participant Enrolled") +
-  ggtitle("")
+  theme(axis.text.x = element_text(angle = 0, vjust = 1),
+        legend.position = "bottom",
+        legend.direction	= "horizontal",
+        panel.grid.minor = element_blank(),
+        axis.title.x = element_blank(),  # Remove primary x-axis label
+        axis.text.y = element_text(size = 10), 
+        strip.placement = "outside", 
+        strip.background = element_rect(fill = NA, color = "grey"),
+        panel.spacing = unit(0,"cm")) +
+  xlab("Week") +
+  ylab("Number of participants enrolled") +
+  ggtitle("") 
 
 
+# p <- ggplot() +
+#   geom_point(data = enroll_cum, aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE), shape = 15) +
+#   geom_line(data = enroll_cum, aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE)) +
+#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+#                expand = c(0, 0)) +
+#   scale_color_manual(values = c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3", "white"),
+#                      labels = c("Ghana", "India-CMC", "Kenya", "Pakistan", "Zambia", "")) +
+#   facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+#   theme_bw() +
+#   theme(axis.text.x = element_text(angle = 0, vjust = 1),
+#         legend.position = "bottom",
+#         legend.direction	= "horizontal",
+#         panel.grid.minor = element_blank(),
+#         axis.title.x = element_blank(),  # Remove primary x-axis label
+#         axis.text.y = element_text(size = 10), 
+#         strip.placement = "outside", 
+#         strip.background = element_rect(fill = NA, color = "grey"),
+#         panel.spacing = unit(0,"cm")) +
+#   xlab("Week") +
+#   ylab("Number of participants enrolled") +
+#   ggtitle("") 
+# 
+# 
+# ggplot_build(p)$data
+# # #F8766D (Ghana), #00BF7D (Kenya), #00B0F6 (Pakistan), #A3A500 (CMC), #E76BF3	(Zambia)
+# 
 ```
 
 \newpage
 
-###  Figure 1b: Cumulative Enrollment by Week for Each Site
+###  Figure 1b: Cumulative actual versus expected enrollment in PRISMA by site
 *Value:* Compare expected and actual enrollment for each site over time. Calculated by dividing the total target enrollment by 36 months to get the average enrollment per month over the course of three years. We can further divide to get average enrollment per week.
 
 ```{r, echo=FALSE,out.width="49%",out.height="49%",fig.show='hold', fig.align='left'}
@@ -523,16 +570,22 @@ enroll_cum_PA %>%
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  # scale_x_date(date_breaks = "2 weeks", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), UploadDate)) + ## UPDATE EACH RUN\
+  scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+               expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+  theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
-        panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "2 weeks", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), UploadDate)) + ## UPDATE EACH RUN
-  xlab("Enrollment Week") +
-  ylab("Site Participant Expected and Enrolled") +
+        panel.grid.minor = element_blank(),
+        strip.placement = "outside", 
+        strip.background = element_rect(fill = NA, color = "grey"),
+        panel.spacing = unit(0,"cm")) +
+  xlab("Week") +
+  ylab("Number of participants enrolled") +
   ggtitle("Pakistan") 
 
 # kenya
@@ -562,16 +615,21 @@ enroll_cum_KE$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_KE$START_DATE_M
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+               expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+  theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
-        panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "2 weeks", date_labels = ("%m-%d"), limits = c(dmy("20-11-2022"), UploadDate)) +    
-  xlab("Enrollment Week") +
-  ylab("Site Participant Expected and Enrolled") +
+        panel.grid.minor = element_blank(),
+        strip.placement = "outside", 
+        strip.background = element_rect(fill = NA, color = "grey"),
+        panel.spacing = unit(0,"cm")) +
+  xlab("Week") +
+  ylab("Number of participants enrolled") +
   ggtitle("Kenya") 
 
 ## Ghana
@@ -601,16 +659,21 @@ enroll_cum_GA %>%
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+               expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+  theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
-        panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "2 weeks", date_labels = ("%m-%d"), limits = c(dmy("26-12-2022"), UploadDate)) +  
-  xlab("Enrollment Week") +
-  ylab("Site Participant Expected and Enrolled") +
+        panel.grid.minor = element_blank(),
+        strip.placement = "outside", 
+        strip.background = element_rect(fill = NA, color = "grey"),
+        panel.spacing = unit(0,"cm")) +
+  xlab("Week") +
+  ylab("Number of participants enrolled") +
   ggtitle("Ghana")
 
 # Zambia
@@ -640,16 +703,21 @@ enroll_cum_ZA %>%
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+               expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+  theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
-        panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "2 weeks", date_labels = ("%m-%d"), limits = c(dmy("15-12-2022"), UploadDate)) + 
-  xlab("Enrollment Week") +
-  ylab("Site Participant Expected and Enrolled") +
+        panel.grid.minor = element_blank(),
+        strip.placement = "outside", 
+        strip.background = element_rect(fill = NA, color = "grey"),
+        panel.spacing = unit(0,"cm")) +
+  xlab("Week") +
+  ylab("Number of participants enrolled") +
   ggtitle("Zambia") 
 
 
@@ -680,23 +748,28 @@ enroll_cum_CMC %>%
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+               expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
+  theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
-        panel.grid.minor = element_blank()) +
-  scale_x_date(date_breaks = "2 weeks", date_labels = ("%m-%d"), limits = c(dmy("18-07-2023"), UploadDate)) + 
-  xlab("Enrollment Week") +
-  ylab("Site Participant Expected and Enrolled") +
+        panel.grid.minor = element_blank(),
+        strip.placement = "outside", 
+        strip.background = element_rect(fill = NA, color = "grey"),
+        panel.spacing = unit(0,"cm")) +
+  xlab("Week") +
+  ylab("Number of participants enrolled") +
   ggtitle("India-CMC")
 
 ```
 
 \newpage
 
-### Table 4: Study Status for PRISMA MNH Study 
+### Table 4: Overview of PRISMA participant study status
 *Value:* Distribution of current status among enrolled women. Each column should sum to 100%.
 
 ```{r}
@@ -706,15 +779,15 @@ tb_status <- MatData_Screen_Enroll %>%
   group_by(SITE) %>% 
   summarise(
     "N" = paste0("(n=", sum(ENROLL==1, na.rm = TRUE), ")"),
-    "Ongoing participants" = paste0(sum(is.na(M23_CLOSE_DSDECOD)), 
+    "Enrolled and ongoing" = paste0(sum(is.na(M23_CLOSE_DSDECOD)), 
                                         " (", format(sum(is.na(M23_CLOSE_DSDECOD))/sum(ENROLL_DENOM==1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
     "Completed 1-year follow-up after live birth or stillbirth" = paste0(sum(M23_CLOSE_DSDECOD == 1, na.rm=TRUE), 
                                         " (", format(sum(M23_CLOSE_DSDECOD == 1, na.rm=TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
     "Completed 42-day follow-up after spontaneous abortion (miscarriage) or induced abortion" = paste0(sum(M23_CLOSE_DSDECOD == 2, na.rm=TRUE), 
                                         " (", format(sum(M23_CLOSE_DSDECOD == 2, na.rm=TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-    "Mother died before completion" = paste0(sum(M23_CLOSE_DSDECOD == 3, na.rm=TRUE), 
+    "Died before completion" = paste0(sum(M23_CLOSE_DSDECOD == 3, na.rm=TRUE), 
                                         " (", format(sum(M23_CLOSE_DSDECOD == 3, na.rm=TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-    "Withdrew study" = paste0(sum(M23_CLOSE_DSDECOD == 4, na.rm=TRUE), 
+    "Withdrew from study" = paste0(sum(M23_CLOSE_DSDECOD == 4, na.rm=TRUE), 
                                         " (", format(sum(M23_CLOSE_DSDECOD == 4, na.rm=TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
     "Terminated from study" = paste0(sum(M23_CLOSE_DSDECOD == 5, na.rm=TRUE), 
                                         " (", format(sum(M23_CLOSE_DSDECOD == 5, na.rm=TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
@@ -730,16 +803,16 @@ tb_status <- MatData_Screen_Enroll %>%
       filter(ENROLL == 1) %>% 
   plyr::summarise(
     "N" = paste0("(n=", sum(ENROLL == 1, na.rm = TRUE), ")"),
-    "Ongoing participants" = paste0(sum(is.na(M23_CLOSE_DSDECOD)), 
+    "Enrolled and ongoing" = paste0(sum(is.na(M23_CLOSE_DSDECOD)), 
                                         " (", format(sum(is.na(M23_CLOSE_DSDECOD))/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
     
     "Completed 1-year follow-up after live birth or stillbirth" = paste0(sum(M23_CLOSE_DSDECOD == 1, na.rm=TRUE), 
                                         " (", format(sum(M23_CLOSE_DSDECOD == 1, na.rm=TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
     "Completed 42-day follow-up after spontaneous abortion (miscarriage) or induced abortion" = paste0(sum(M23_CLOSE_DSDECOD == 2, na.rm=TRUE), 
                                         " (", format(sum(M23_CLOSE_DSDECOD == 2, na.rm=TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-    "Mother died before completion" = paste0(sum(M23_CLOSE_DSDECOD == 3, na.rm=TRUE), 
+    "Died before completion" = paste0(sum(M23_CLOSE_DSDECOD == 3, na.rm=TRUE), 
                                         " (", format(sum(M23_CLOSE_DSDECOD == 3, na.rm=TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-    "Withdrew study" = paste0(sum(M23_CLOSE_DSDECOD == 4, na.rm=TRUE), 
+    "Withdrew from study" = paste0(sum(M23_CLOSE_DSDECOD == 4, na.rm=TRUE), 
                                         " (", format(sum(M23_CLOSE_DSDECOD == 4, na.rm=TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
     "Terminated from study" = paste0(sum(M23_CLOSE_DSDECOD == 5, na.rm=TRUE), 
                                         " (", format(sum(M23_CLOSE_DSDECOD == 5, na.rm=TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
@@ -757,11 +830,11 @@ prisma_tab4 <- tb_theme1(tb_status) %>%
     title = md("**PRISMA Table 4**")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>Study status, n (%)<sup>a</sup></span>"),
+    label = html("<span style='font-size: 18px'>Participant study status, n(%)<sup>a</sup></span>"),
     rows = 2:8
   ) %>%
     row_group_order(groups = c(NA,
-                  "<span style='font-size: 18px'>Study status, n (%)<sup>a</sup></span>")) %>%
+                  "<span style='font-size: 18px'>Participant study status, n(%)<sup>a</sup></span>")) %>%
 tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n enrolled.</span>")
 ) 
@@ -775,10 +848,10 @@ knitr::include_graphics("prisma_tab4.png")
 
 \newpage
 
-### Table 5: PRISMA Visit Completion (Late Windows) 
-*Value:* Among women successfully contacted, are forms completed for each visit? If there is no late window for a visit, the on-time windows are used. 
+### Table 5: ANC and PNC visit completion for PRISMA
+*Value:* Among women successfully contacted, percent who had visit forms completed within the visit window (including late window, if specified).
 
-*Goal:* 90% completion (100% completion for enrollment)
+*Goal:* 100% completion for enrollment; 90% completion
 
 *Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
 
@@ -1054,28 +1127,28 @@ VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>%
 table5 <- bind_rows(VISIT_COMPLETE_ANC,
           VISIT_COMPLETE_PNC) %>% 
     `rownames<-` (c(## anc (1-10)
-                 "Enrollment (Late window: None)", ## NONE - SKIP WINDOW
+                 "Enrollment (None)", ## NONE - SKIP WINDOW
                  "Denominator, n",
-                 "ANC=20 (Late window: 23 to 25wks)",
+                 "ANC-20 (23 to 25wks)",
                  "Denominator, n ",
-                 "ANC=28 (Late window: None)", ## NONE - SKIP WINDOW
+                 "ANC-28 (None)", ## NONE - SKIP WINDOW
                  "Denominator, n  ",
-                 "ANC=32 (Late window: 31 to 33)", ## use on time windows
+                 "ANC-32 (31 to 33wks)", ## use on time windows
                  "Denominator, n   ",
-                 "ANC=36 (Late window: 38 to delivery)", ## use on time windows
+                 "ANC-36 (38wks to delivery)", ## use on time windows
                  "Denominator, n    ",
                  ## pnc (11-22)
-                 "PNC=0 (Late window: None)", ## NONE - SKIP WINDOW
+                 "PNC-0 (None)", ## NONE - SKIP WINDOW
                  "Denominator, n     ",
-                 "PNC=1 (Late window: None)", ## NONE - SKIP WINDOW
+                 "PNC-1 (None)", ## NONE - SKIP WINDOW
                  "Denominator, n      ",
-                 "PNC=4 (Late window: None)", ## NONE - SKIP WINDOW
+                 "PNC-4 (None)", ## NONE - SKIP WINDOW
                  "Denominator, n       ",
-                 "PNC=6 (Late window: 8 to 12wks)",
+                 "PNC-6 (8 to 12wks)",
                  "Denominator, n        ",
-                 "PNC=26 (Late window: 29 to 39wks)",
+                 "PNC-26 (29 to 39wks)",
                  "Denominator, n^a^         ",
-                 "PNC=52 (Late window: 55 to 64wks)",
+                 "PNC-52 (55 to 64wks)",
                  "Denominator, n^a^          "
                  )
                 ) %>% 
@@ -1091,10 +1164,10 @@ prisma_tab5_1 <- tb_theme1(table5_anc) %>%
     subtitle = md("*Continued on next page*")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>ANC Visits</span>"),
+    label = html("<span style='font-size: 18px'>ANC visits (late visit window)</span>"),
     rows = 1:10
   ) %>%
-    row_group_order(groups = c("<span style='font-size: 18px'>ANC Visits</span>")) %>%
+    row_group_order(groups = c("<span style='font-size: 18px'>ANC visits (late visit window)</span>")) %>%
   tab_style(
       style = list(
         cell_text(weight = "bold")
@@ -1105,11 +1178,11 @@ prisma_tab5_1 <- tb_theme1(table5_anc) %>%
       style = list(
         cell_text(indent = px(0))
         ),
-      locations = cells_stub(rows = c('Enrollment (Late window: None)',
-                 "ANC=20 (Late window: 23 to 25wks)",
-                 "ANC=28 (Late window: None)", ## NONE - SKIP WINDOW
-                 "ANC=32 (Late window: 31 to 33)", ## use on time windows
-                 "ANC=36 (Late window: 38 to delivery)")) ## use on time windows
+      locations = cells_stub(rows = c('Enrollment (None)',
+                 "ANC-20 (23 to 25wks)",
+                 "ANC-28 (None)", ## NONE - SKIP WINDOW
+                 "ANC-32 (31 to 33wks)", ## use on time windows
+                 "ANC-36 (38wks to delivery)")) ## use on time windows
 ) %>% 
   tab_style(
       style = list(
@@ -1122,10 +1195,7 @@ prisma_tab5_1 <- tb_theme1(table5_anc) %>%
                  "Denominator, n    "))
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>a</sup> excludes participants with a reported miscarriage `(FETAL_LOSS_DSDECOD==1 [MNH04])` who are only expected to have PNC0-6.</span>")
-) %>% 
-tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed late window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table..</span>")
+    footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed late window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table.</span>")
 ) 
 
  
@@ -1135,10 +1205,10 @@ prisma_tab5_2 <- tb_theme1(table5_pnc) %>%
     subtitle = md("*Continued*")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC Visits</span>"),
+    label = html("<span style='font-size: 18px'>PNC visits (late visit window)</span>"),
     rows = 1:12
   ) %>%
-    row_group_order(groups = c("<span style='font-size: 18px'>PNC Visits</span>")) %>%
+    row_group_order(groups = c("<span style='font-size: 18px'>PNC visits (late visit window)</span>")) %>%
   tab_style(
       style = list(
         cell_text(weight = "bold")
@@ -1150,12 +1220,12 @@ prisma_tab5_2 <- tb_theme1(table5_pnc) %>%
         cell_text(indent = px(0))
         ),
       locations = cells_stub(rows = c(
-                 "PNC=0 (Late window: None)", ## NONE - SKIP WINDOW
-                 "PNC=1 (Late window: None)", ## NONE - SKIP WINDOW
-                 "PNC=4 (Late window: None)", ## NONE - SKIP WINDOW
-                 "PNC=6 (Late window: 8 to 12wks)",
-                 "PNC=26 (Late window: 29 to 39wks)",
-                 "PNC=52 (Late window: 55 to 64wks)"))
+                 "PNC-0 (None)", ## NONE - SKIP WINDOW
+                 "PNC-1 (None)", ## NONE - SKIP WINDOW
+                 "PNC-4 (None)", ## NONE - SKIP WINDOW
+                 "PNC-6 (8 to 12wks)",
+                 "PNC-26 (29 to 39wks)",
+                 "PNC-52 (55 to 64wks)"))
 ) %>% 
   tab_style(
       style = list(
@@ -1171,9 +1241,6 @@ prisma_tab5_2 <- tb_theme1(table5_pnc) %>%
 ) %>% 
 tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>a</sup> excludes participants with a reported miscarriage `(FETAL_LOSS_DSDECOD==1 [MNH04])` who are only expected to have PNC0-6.</span>")
-) %>% 
-tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed late window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table..</span>")
 ) 
 
 
@@ -1193,8 +1260,8 @@ knitr::include_graphics("prisma_tab5_2.png")
 
 \newpage
 
-### Table 6: ANC Protocol Compliance
-*Value:* Among women successfully contacted during the ANC period, are all expected forms for the visit complete? 
+### Table 6: ANC protocol compliance for PRISMA
+*Value:* Among women successfully contacted during the ANC period, percent who had all expected visit forms completed. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
 
 *Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
 
@@ -1804,16 +1871,16 @@ prisma_tab6_1 <- tb_theme1(table6_1) %>%
     title = md("**PRISMA Table 6** *(continued on next page)*")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>Enrollment, n(%)<sup>a</sup> [Target window: <20wks]</span>"),
+    label = html("<span style='font-size: 18px'>Enrollment visit, n(%)<sup>a</sup> [Target window: <20wks]</span>"),
     rows = 2:10
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>ANC = 20, n(%)<sup>b</sup> [Target window: 23 to 25wks]</span>"),
+    label = html("<span style='font-size: 18px'>ANC-20 visit, n(%)<sup>b</sup> [Target window: 18 to 25wks]</span>"),
     rows = 11:16
   ) %>%
     row_group_order(groups = c(NA,
-                               "<span style='font-size: 18px'>Enrollment, n(%)<sup>a</sup> [Target window: <20wks]</span>",
-                               "<span style='font-size: 18px'>ANC = 20, n(%)<sup>b</sup> [Target window: 23 to 25wks]</span>")) %>%
+                               "<span style='font-size: 18px'>Enrollment visit, n(%)<sup>a</sup> [Target window: <20wks]</span>",
+                               "<span style='font-size: 18px'>ANC-20 visit, n(%)<sup>b</sup> [Target window: 18 to 25wks]</span>")) %>%
   tab_style(
       style = list(
         cell_text(weight = "bold")
@@ -1828,10 +1895,10 @@ prisma_tab6_1 <- tb_theme1(table6_1) %>%
                                       "Denominator, n^b^ "))
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n completed any form with visit status=complete AND visit type=Enrollment AND passed late window with >19 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n completed any form with visit status=complete AND visit type=Enrollment AND passed late window with >=19 weeks gestation.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n completed any form with visit status=complete AND visit type=ANC20 AND passed late window with >22 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n completed any form with visit status=complete AND visit type=ANC-20 AND passed late window with >25 weeks gestation.</span>")
 ) 
 
 ## PART 2
@@ -1840,21 +1907,21 @@ prisma_tab6_2 <- tb_theme1(table6_2) %>%
     title = md("**PRISMA Table 6** *(continued)*")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>ANC = 28, n(%)<sup>c</sup> [Target window: 26 to 30wks]</span>"),
+    label = html("<span style='font-size: 18px'>ANC-28 visit, n(%)<sup>c</sup> [Target window: 26 to 30wks]</span>"),
     rows = 2:7
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>ANC = 32, n(%)<sup>d</sup> [Target window: 31 to 33wks]</span>"),
+    label = html("<span style='font-size: 18px'>ANC-32 visit, n(%)<sup>d</sup> [Target window: 31 to 33wks]</span>"),
     rows = 8:14
   ) %>%
  tab_row_group(
-    label = html("<span style='font-size: 18px'>ANC = 36, n(%)<sup>e</sup> [Target window: 34 to 38wks]</span>"),
+    label = html("<span style='font-size: 18px'>ANC-36 visit, n(%)<sup>e</sup> [Target window: 34 to 38wks]</span>"),
     rows = 15:20
   ) %>%
     row_group_order(groups = c(NA,
-                               "<span style='font-size: 18px'>ANC = 28, n(%)<sup>c</sup> [Target window: 26 to 30wks]</span>",
-                               "<span style='font-size: 18px'>ANC = 32, n(%)<sup>d</sup> [Target window: 31 to 33wks]</span>", 
-                               "<span style='font-size: 18px'>ANC = 36, n(%)<sup>e</sup> [Target window: 34 to 38wks]</span>")) %>%
+                               "<span style='font-size: 18px'>ANC-28 visit, n(%)<sup>c</sup> [Target window: 26 to 30wks]</span>",
+                               "<span style='font-size: 18px'>ANC-32 visit, n(%)<sup>d</sup> [Target window: 31 to 33wks]</span>", 
+                               "<span style='font-size: 18px'>ANC-36 visit, n(%)<sup>e</sup> [Target window: 34 to 38wks]</span>")) %>%
   tab_style(
       style = list(
         cell_text(weight = "bold")
@@ -1870,13 +1937,13 @@ prisma_tab6_2 <- tb_theme1(table6_2) %>%
                                       "Denominator, n^e^    "))
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n completed any form with visit status=complete ANDvisit type=ANC28  AND passed late window with >30 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n completed any form with visit status=complete ANDvisit type=ANC-28  AND passed late window with >30 weeks gestation.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>d</sup> denominator is n completed any form with visit status=complete AND visit type=ANC32  AND passed late window with>33 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>d</sup> denominator is n completed any form with visit status=complete AND visit type=ANC-32  AND passed late window with>33 weeks gestation.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed any form with visit status=complete AND visit type=ANC36  AND passed late window with >38 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed any form with visit status=complete AND visit type=ANC-36  AND passed late window with >38 weeks gestation.</span>")
 ) %>% 
 tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>Note:</sup> Passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table.</span>")
@@ -1896,8 +1963,8 @@ knitr::include_graphics("prisma_tab6_2.png")
 
 \newpage
 
-### Table 7: ANC Form Completion
-*Value:* Among women successfully contacted during the ANC period, are forms completed regardless of visit status?
+### Table 7: ANC form completion for PRISMA
+*Value:* Among women successfully contacted during the ANC period, percent with forms completed regardless of visit status. A form is considered completed when a form has been submitted for a participant.
 
 *Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
 
@@ -2564,16 +2631,16 @@ prisma_tab7_1 <- tb_theme1(table7_1) %>%
     title = md("**PRISMA Table 7** *(continued on next page)*")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>Enrollment, n(%)<sup>a</sup> [Target window: <20wks]</span>"),
+    label = html("<span style='font-size: 18px'>Enrollment visit, n(%)<sup>a</sup> [Target window: <20wks]</span>"),
     rows = 2:10
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>ANC = 20, n(%)<sup>b</sup> [Target window: 23 to 25wks]</span>"),
+    label = html("<span style='font-size: 18px'>ANC-20 visit, n(%)<sup>b</sup> [Target window: 18 to 25wks]</span>"),
     rows = 11:17
   ) %>%
     row_group_order(groups = c(NA,
-                               "<span style='font-size: 18px'>Enrollment, n(%)<sup>a</sup> [Target window: <20wks]</span>",
-                               "<span style='font-size: 18px'>ANC = 20, n(%)<sup>b</sup> [Target window: 23 to 25wks]</span>")) %>%
+                               "<span style='font-size: 18px'>Enrollment visit, n(%)<sup>a</sup> [Target window: <20wks]</span>",
+                               "<span style='font-size: 18px'>ANC-20 visit, n(%)<sup>b</sup> [Target window: 18 to 25wks]</span>")) %>%
   tab_style(
       style = list(
         cell_text(weight = "bold")
@@ -2588,10 +2655,10 @@ prisma_tab7_1 <- tb_theme1(table7_1) %>%
                                       "Denominator, n "))
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n completed any form with any visit status AND visit type=Enrollment AND passed late window with >19 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n completed any form with any visit status AND visit type=Enrollment AND passed late window with >=19 weeks gestation.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>b</sup> passed window denominators for all visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the particpant is removed from this table.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n completed any form with any visit status AND visit type=ANC-20 AND passed late window with >=22 weeks gestation.</span>")
 ) 
 
 ## PART 2
@@ -2600,21 +2667,21 @@ prisma_tab7_2 <- tb_theme1(table7_2) %>%
     title = md("**PRISMA Table 7** *(continued)*")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>ANC = 28, n(%)<sup>c</sup> [Target window: 26 to 30wks]</span>"),
+    label = html("<span style='font-size: 18px'>ANC-28 visit, n(%)<sup>c</sup> [Target window: 26 to 30wks]</span>"),
     rows = 2:7
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>ANC = 32, n(%)<sup>d</sup> [Target window: 31 to 33wks]</span>"),
+    label = html("<span style='font-size: 18px'>ANC-32 visit, n(%)<sup>d</sup> [Target window: 31 to 33wks]</span>"),
     rows = 8:15
   ) %>%
  tab_row_group(
-    label = html("<span style='font-size: 18px'>ANC = 36, n(%)<sup>e</sup> [Target window: 34 to 38wks]</span>"),
+    label = html("<span style='font-size: 18px'>ANC-36 visit, n(%)<sup>e</sup> [Target window: 34 to 38wks]</span>"),
     rows = 16:21
   ) %>%
     row_group_order(groups = c(NA,
-                               "<span style='font-size: 18px'>ANC = 28, n(%)<sup>c</sup> [Target window: 26 to 30wks]</span>",
-                               "<span style='font-size: 18px'>ANC = 32, n(%)<sup>d</sup> [Target window: 31 to 33wks]</span>", 
-                               "<span style='font-size: 18px'>ANC = 36, n(%)<sup>e</sup> [Target window: 34 to 38wks]</span>")) %>%
+                               "<span style='font-size: 18px'>ANC-28 visit, n(%)<sup>c</sup> [Target window: 26 to 30wks]</span>",
+                               "<span style='font-size: 18px'>ANC-32 visit, n(%)<sup>d</sup> [Target window: 31 to 33wks]</span>", 
+                               "<span style='font-size: 18px'>ANC-36 visit, n(%)<sup>e</sup> [Target window: 34 to 38wks]</span>")) %>%
   tab_style(
       style = list(
         cell_text(weight = "bold")
@@ -2630,13 +2697,13 @@ prisma_tab7_2 <- tb_theme1(table7_2) %>%
                                       "Denominator, n    "))
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n completed any form with any visit status AND visit type=ANC28 AND passed late window with >30 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n completed any form with any visit status AND visit type=ANC-28 AND passed late window with >30 weeks gestation.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>d</sup> denominator is n completed any form with any visit status AND visit type=ANC32 AND passed late window with>33 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>d</sup> denominator is n completed any form with any visit status AND visit type=ANC-32 AND passed late window with>33 weeks gestation.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed any form with any visit status AND visit type=ANC36 AND passed late window with >38 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed any form with any visit status AND visit type=ANC-36 AND passed late window with >38 weeks gestation.</span>")
 ) 
 
 ```
@@ -2655,8 +2722,8 @@ knitr::include_graphics("prisma_tab7_2.png")
 
 \newpage
 
-### Table 8: IPC Visit Completion & Protocol Compliance
-*Value:* Among women successfully contacted during the IPC period, are all expected forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
+### Table 8: IPC visit completion and PRISMA protocol compliance for IPC
+*Value:* Among women successfully contacted during the IPC period, percent who have expected visit forms completed. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
 
 ```{r}
 
@@ -2813,7 +2880,7 @@ table8 <- bind_rows(IPC_Total,
   `rownames<-`(c("IPC (Target window: Delivery to 72 hours)",
                  "Denominator, n",
                  "MNH09 Labor & Delivery", 
-                 "MNH10 Maternal Post-Delivery Outcome", 
+                 "MNH10 Post-Delivery Outcome", 
                  "MNH11 Newborn Birth Outcome")
                )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
@@ -2873,9 +2940,9 @@ knitr::include_graphics("prisma_tab8.png")
 
 \newpage
 
-### Figure 2: Distribution of gestational age of participants who passed the IPC window and do not yet have a pregnancy outcome reported
+### Figure 2: Distribution of gestational ages of participants who passed the IPC window and do not yet have a pregnancy outcome reported
 
-*Value:* Among participants who have passed their IPC window and do not have any IPC forms, how overdue are they? Distributions of estimated gestational age at the time of data upload is shown below.
+*Value:* Gestational age of participants who have passed the target IPC window and do not have any IPC forms. 
 
 ```{r, echo=FALSE}
 
@@ -2903,8 +2970,8 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
                      label = as.character(seq(42, 80, by = 2)),
                      limits = c(294,560)) +
   scale_y_continuous(labels = scales::number_format(scale = 1, accuracy = 1)) +
-  xlab("Estimated Gestational Age At Time of Upload (weeks)") +
-  ylab("Count")
+  xlab("Estimated Gestational Age") +
+  ylab("Number of participants")
 
 
 # min(figure2$AGE_AT_UPLOAD_DAYS)
@@ -2912,8 +2979,8 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
 
 \newpage
 
-### Table 9: PNC Protocol Compliance (Maternal Forms)
-*Value:* Among women successfully contacted during the PNC period, are all expected forms for the visit complete? 
+### Table 9: PNC protocol compliance for PRISMA maternal forms
+*Value:* Among women with PNC visits marked as complete, percent that have all expected visit forms completed. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
 
 *Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
 
@@ -3358,22 +3425,22 @@ prot_compliance_pnc <- bind_rows(birthoutcome,
                  ## PNC0 (2-4)
                   "Denominator, n",
                   "MNH06 Maternal POC ",
-                  "MNH12 Mat Clinical ",
+                  "MNH12 Mat Clinical Status",
                  ## PNC1 (5-7)
                  "Denominator, n ",
                  "MNH06 Maternal POC  ",
-                 "MNH12 Mat Clinical  ",
+                 "MNH12 Mat Clinical Status ",
                  ## PNC4 (8-10)
                  "Denominator, n  ",
                  "MNH06 Maternal POC   ",
-                 "MNH12 Mat Clinical   ",
+                 "MNH12 Mat Clinical Status  ",
                  ## PNC6 (11-17)
                  "Denominator, n   ",
                  "MNH05 Maternal Anthro    ",
                  "MNH06 Maternal POC    ",
                  "MNH07 Maternal Specimen    ",
                  "MNH08 Maternal Lab    ",
-                 "MNH12 Mat Clinical    ",
+                 "MNH12 Mat Clinical  Status  ",
                  "MNH25 Maternal Depression    ",
                  ## PNC26 (18-23)
                  "Denominator, n    ",
@@ -3381,12 +3448,12 @@ prot_compliance_pnc <- bind_rows(birthoutcome,
                  "MNH06 Maternal POC     ",
                  "MNH07 Maternal Specimen     ",
                  "MNH08 Maternal Lab     ",
-                 "MNH12 Mat Clinical     ",
+                 "MNH12 Mat Clinical  Status   ",
                  ##PNC52 24-27)
                  "Denominator, n     ",
                  "MNH05 Maternal Anthro      ",
                  "MNH06 Maternal POC      ",
-                 "MNH12 Mat Clinical      "
+                 "MNH12 Mat Clinical  Status    "
                  )
                )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
@@ -3403,22 +3470,22 @@ prisma_tab9_1 <- tb_theme1(table9_1) %>%
     title = md("**PRISMA Table 9** *(continued on next page)*")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 0, n(%)<sup>b</sup> [Target window: 3 to 5 days]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-0 visit, n(%)<sup>b</sup> [Target window: 3 to 5 days]</span>"),
     rows = 2:4
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 1, n(%)<sup>c</sup> [Target window: 7 to 14 days]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-1 visit, n(%)<sup>c</sup> [Target window: 7 to 14 days]</span>"),
     rows = 5:7
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 4, n(%)<sup>d</sup> [Target window: 28 to 35 days]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-4 visit, n(%)<sup>d</sup> [Target window: 28 to 35 days]</span>"),
     rows = 8:10
   ) %>%
 
     row_group_order(groups = c(NA,
-                               "<span style='font-size: 18px'>PNC = 0, n(%)<sup>b</sup> [Target window: 3 to 5 days]</span>",
-                               "<span style='font-size: 18px'>PNC = 1, n(%)<sup>c</sup> [Target window: 7 to 14 days]</span>",
-                               "<span style='font-size: 18px'>PNC = 4, n(%)<sup>d</sup> [Target window: 28 to 35 days]</span>")) %>%
+                               "<span style='font-size: 18px'>PNC-0 visit, n(%)<sup>b</sup> [Target window: 3 to 5 days]</span>",
+                               "<span style='font-size: 18px'>PNC-1 visit, n(%)<sup>c</sup> [Target window: 7 to 14 days]</span>",
+                               "<span style='font-size: 18px'>PNC-4 visit, n(%)<sup>d</sup> [Target window: 28 to 35 days]</span>")) %>%
   tab_style(
       style = list(
         cell_text(weight = "bold")
@@ -3437,13 +3504,13 @@ prisma_tab9_1 <- tb_theme1(table9_1) %>%
     footnote = html("<span style='font-size: 18px'><sup>a</sup> n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09.</span>")  
 ) %>%
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n completed any form with visit status=complete AND visit type=PNC0 AND passed late window with >5 days postpartum.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n completed any form with visit status=complete AND visit type=PNC-0 AND passed late window with >5 days postpartum.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n completed any form with visit status=complete AND visit type=PNC1 AND passed late window with 14 days postpartum.</span>")  
+    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n completed any form with visit status=complete AND visit type=PNC-1 AND passed late window with 14 days postpartum.</span>")  
 ) %>% 
   tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>d</sup> denominator is n completed any form with visit status=complete AND visit type=PNC4 AND passed late window with >35 days postpartum.</span>")  
+    footnote = html("<span style='font-size: 18px'><sup>d</sup> denominator is n completed any form with visit status=complete AND visit type=PNC-4 AND passed late window with >35 days postpartum.</span>")  
 ) %>% 
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table.</span>")  
@@ -3457,22 +3524,22 @@ prisma_tab9_2 <- tb_theme1(table9_2) %>%
     title = md("**PRISMA Table 9** *(continued)*")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 6, n(%)<sup>e</sup> [Target window: 8 to 12 wks]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-6 visit, n(%)<sup>e</sup> [Target window: 6 to 12 wks]</span>"),
     rows = 2:8
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 26, n(%)<sup>f</sup> [Target window: 29 to 39 wks]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-26 visit, n(%)<sup>f</sup> [Target window: 26 to 39 wks]</span>"),
     rows = 9:14
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 52, n(%)<sup>g</sup> [Target window: 55 to 54 wks]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-52 visit, n(%)<sup>g</sup> [Target window: 52 to 64 wks]</span>"),
     rows = 15:18
   ) %>%
 
     row_group_order(groups = c(NA,
-                               "<span style='font-size: 18px'>PNC = 6, n(%)<sup>e</sup> [Target window: 8 to 12 wks]</span>",
-                               "<span style='font-size: 18px'>PNC = 26, n(%)<sup>f</sup> [Target window: 29 to 39 wks]</span>",
-                               "<span style='font-size: 18px'>PNC = 52, n(%)<sup>g</sup> [Target window: 55 to 54 wks]</span>")) %>%
+                               "<span style='font-size: 18px'>PNC-6 visit, n(%)<sup>e</sup> [Target window: 6 to 12 wks]</span>",
+                               "<span style='font-size: 18px'>PNC-26 visit, n(%)<sup>f</sup> [Target window: 26 to 39 wks]</span>",
+                               "<span style='font-size: 18px'>PNC-52 visit, n(%)<sup>g</sup> [Target window: 52 to 64 wks]</span>")) %>%
   tab_style(
       style = list(
         cell_text(weight = "bold")
@@ -3491,16 +3558,16 @@ prisma_tab9_2 <- tb_theme1(table9_2) %>%
     footnote = html("<span style='font-size: 18px'><sup>a</sup> n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09.</span>")  
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed any form with visit status=complete AND visit type=PNC6 AND passed late window with >7 wks postpartum.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed any form with visit status=complete AND visit type=PNC-6 AND passed late window with >12 wks postpartum.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>f</sup> denominator is n completed any form with visit status=complete AND visit type=PNC26 AND passed late window with >28 wks postpartum.</span>")  
+    footnote = html("<span style='font-size: 18px'><sup>f</sup> denominator is n completed any form with visit status=complete AND visit type=PNC-26 AND passed late window with >39 wks postpartum.</span>")  
 ) %>% 
   tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>g</sup> denominator is n completed any form wit visit status=complete AND visit type=PNC52 AND passed late window with >54 wks postpartum.</span>")  
+    footnote = html("<span style='font-size: 18px'><sup>g</sup> denominator is n completed any form wit visit status=complete AND visit type=PNC-52 AND passed late window with >64 wks postpartum.</span>")  
 ) %>% 
   tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table.</span>")  
+    footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If a date of birth is missing, the particpant is removed from this table.</span>")  
 )  
 
 
@@ -3522,8 +3589,8 @@ knitr::include_graphics("prisma_tab9_2.png")
 
 \newpage
 
-### Table 10: PNC Form Completion (Maternal Forms)
-*Value:* Among women successfully contacted during the PNC period, are forms completed regardless of visit status?
+### Table 10: PNC visit maternal form completion for PRISMA
+*Value:* Among women successfully contacted during the PNC period, percent who have expected forms completed regardless of visits status. A form is considered completed when a form has been submitted for a participant. 
 
 *Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
 
@@ -3976,26 +4043,26 @@ form_completion_pnc <- bind_rows(birthoutcome,
                                  PNC26, 
                                  PNC52
           ) %>%
-    `rownames<-`(c("Participants with a birth outcome,, n^a^",
+    `rownames<-`(c("Participants with a birth outcome, n^a^",
                  ## PNC0 (2-4)
                   "Denominator, n",
                   "MNH06 Maternal POC ",
-                  "MNH12 Mat Clinical ",
+                  "MNH12 Mat Clinical Status ",
                  ## PNC1 (5-7)
                  "Denominator, n ",
                  "MNH06 Maternal POC  ",
-                 "MNH12 Mat Clinical  ",
+                 "MNH12 Mat Clinical Status  ",
                  ## PNC4 (8-10)
                  "Denominator, n  ",
                  "MNH06 Maternal POC   ",
-                 "MNH12 Mat Clinical   ",
+                 "MNH12 Mat Clinical Status   ",
                  ## PNC6 (11-17)
                  "Denominator, n   ",
                  "MNH05 Maternal Anthro    ",
                  "MNH06 Maternal POC    ",
                  "MNH07 Maternal Specimen    ",
                  "MNH08 Maternal Lab    ",
-                 "MNH12 Mat Clinical    ",
+                 "MNH12 Mat Clinical Status    ",
                  "MNH25 Maternal Depression    ",
                  ## PNC26 (18-23)
                  "Denominator, n    ",
@@ -4003,12 +4070,12 @@ form_completion_pnc <- bind_rows(birthoutcome,
                  "MNH06 Maternal POC     ",
                  "MNH07 Maternal Specimen     ",
                  "MNH08 Maternal Lab     ",
-                 "MNH12 Mat Clinical     ",
+                 "MNH12 Mat Clinical Status     ",
                  ##PNC52 24-27)
                  "Denominator, n     ",
                  "MNH05 Maternal Anthro      ",
                  "MNH06 Maternal POC      ",
-                 "MNH12 Mat Clinical      "
+                 "MNH12 Mat Clinical Status      "
                  )
                )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
@@ -4024,22 +4091,22 @@ prisma_tab10_1 <- tb_theme1(table10_1) %>%
     title = md("**PRISMA Table 10** *(continued on next page)*")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 0, n(%)<sup>b</sup> [Target window: 3 to 5 days]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-0 visit, n(%)<sup>b</sup> [Target window: 3 to 5 days]</span>"),
     rows = 2:4
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 1, n(%)<sup>c</sup> [Target window: 7 to 14 days]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-1 visit, n(%)<sup>c</sup> [Target window: 7 to 14 days]</span>"),
     rows = 5:7
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 4, n(%)<sup>d</sup> [Target window: 28 to 35 days]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-4 visit, n(%)<sup>d</sup> [Target window: 28 to 35 days]</span>"),
     rows = 8:10
   ) %>%
 
     row_group_order(groups = c(NA,
-                               "<span style='font-size: 18px'>PNC = 0, n(%)<sup>b</sup> [Target window: 3 to 5 days]</span>",
-                               "<span style='font-size: 18px'>PNC = 1, n(%)<sup>c</sup> [Target window: 7 to 14 days]</span>",
-                               "<span style='font-size: 18px'>PNC = 4, n(%)<sup>d</sup> [Target window: 28 to 35 days]</span>")) %>%
+                               "<span style='font-size: 18px'>PNC-0 visit, n(%)<sup>b</sup> [Target window: 3 to 5 days]</span>",
+                               "<span style='font-size: 18px'>PNC-1 visit, n(%)<sup>c</sup> [Target window: 7 to 14 days]</span>",
+                               "<span style='font-size: 18px'>PNC-4 visit, n(%)<sup>d</sup> [Target window: 28 to 35 days]</span>")) %>%
   tab_style(
       style = list(
         cell_text(weight = "bold")
@@ -4058,13 +4125,13 @@ prisma_tab10_1 <- tb_theme1(table10_1) %>%
     footnote = html("<span style='font-size: 18px'><sup>a</sup> n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09.</span>")  
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n completed any form with any visit status AND visit type=PNC0 AND passed late window with >5 days postpartum.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n completed any form with any visit status AND visit type=PNC-0 AND passed late window with >5 days postpartum.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n completed any form with any visit status AND visit type=PNC1 AND passed late window with 14 days postpartum.</span>")  
+    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n completed any form with any visit status AND visit type=PNC-1 AND passed late window with 14 days postpartum.</span>")  
 ) %>% 
   tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>d</sup> denominator is n completed any form with any visit status AND visit type=PNC4 AND passed late window with >35 days postpartum.</span>")  
+    footnote = html("<span style='font-size: 18px'><sup>d</sup> denominator is n completed any form with any visit status AND visit type=PNC-4 AND passed late window with >35 days postpartum.</span>")  
 ) %>% 
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the participant is removed from this table.</span>")  
@@ -4078,22 +4145,22 @@ prisma_tab10_2 <- tb_theme1(table10_2) %>%
     title = md("**PRISMA Table 10** *(continued)*")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 6, n(%)<sup>e</sup> [Target window: 8 to 12 wks]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-6 visit, n(%)<sup>e</sup> [Target window: 6 to 12wks]</span>"),
     rows = 2:8
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 26, n(%)<sup>f</sup> [Target window: 29 to 39 wks]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-26 visit, n(%)<sup>f</sup> [Target window: 26 to 39wks]</span>"),
     rows = 9:14
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>PNC = 52, n(%)<sup>g</sup> [Target window: 55 to 54 wks]</span>"),
+    label = html("<span style='font-size: 18px'>PNC-52 visit, n(%)<sup>g</sup> [Target window: 52 to 64wks]</span>"),
     rows = 15:18
   ) %>%
 
     row_group_order(groups = c(NA,
-                               "<span style='font-size: 18px'>PNC = 6, n(%)<sup>e</sup> [Target window: 8 to 12 wks]</span>",
-                               "<span style='font-size: 18px'>PNC = 26, n(%)<sup>f</sup> [Target window: 29 to 39 wks]</span>",
-                               "<span style='font-size: 18px'>PNC = 52, n(%)<sup>g</sup> [Target window: 55 to 54 wks]</span>")) %>%
+                               "<span style='font-size: 18px'>PNC-6 visit, n(%)<sup>e</sup> [Target window: 6 to 12wks]</span>",
+                               "<span style='font-size: 18px'>PNC-26 visit, n(%)<sup>f</sup> [Target window: 26 to 39wks]</span>",
+                               "<span style='font-size: 18px'>PNC-52 visit, n(%)<sup>g</sup> [Target window: 52 to 64wks]</span>")) %>%
   tab_style(
       style = list(
         cell_text(weight = "bold")
@@ -4112,13 +4179,13 @@ prisma_tab10_2 <- tb_theme1(table10_2) %>%
     footnote = html("<span style='font-size: 18px'><sup>a</sup>  n is any participant with any birth outcome defined by `BIRTH_DSTERM_INFX` in MNH09.</span>")  
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed any form with any visit status AND visit type=PNC6 AND passed late window with >7 wks postpartum.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed any form with any visit status AND visit type=PNC-6 AND passed late window with >12 wks postpartum.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>f</sup> denominator is n completed any form with any visit status AND visit type=PNC26 AND passed late window with >28 wks postpartum.</span>")  
+    footnote = html("<span style='font-size: 18px'><sup>f</sup> denominator is n completed any form with any visit status AND visit type=PNC-26 AND passed late window with >39 wks postpartum.</span>")  
 ) %>% 
   tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>g</sup> denominator is n completed any form with any visit status AND visit type=PNC52 AND passed late window with >54 wks postpartum.</span>")  
+    footnote = html("<span style='font-size: 18px'><sup>g</sup> denominator is n completed any form with any visit status AND visit type=PNC-52 AND passed late window with >64 wks postpartum.</span>")  
 ) %>% 
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the participant is removed from this table.</span>")  
@@ -4139,8 +4206,8 @@ knitr::include_graphics("prisma_tab10_2.png")
 
 \newpage
 
-### Table 11: MNH25 Protocol Compliance
-*Value:* Among women successfully contacted during the ANC or PNC period, are all expected MNH25 Maternal Depression forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). MNH25 can be completed either during individual visits (e.g., ANC20) or during combined visits after the gestational age window has passed (e.g., combined Enrollment and ANC20 visits). The denominators in this table are based on the latest window for eligible visits. For example, the denominator for MNH25 completed at ANC32 is the number of participants who have passed the ANC36 late window to allow for combined visits.
+### Table 11: Protocol compliance for PRISMA depression assessment
+*Value:* Among women successfully contacted during the ANC or PNC period who have passed the expected visit window, percent that have MNH25 complete. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). MNH25 can be completed either during individual visits (e.g., ANC20) or during combined visits after the gestational age window has passed (e.g., combined Enrollment and ANC20 visits). The denominators in this table are based on the latest window for eligible visits. For example, the denominator for MNH25 completed at ANC32 is the number of participants who have passed the ANC36 late window to allow for combined visits.
 
 *Numerator:* MNH25 with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i AND (has not delivered OR delivered with gestational age > late visit window) AND (has not closed out OR closed out with closeout date > visit window)
 
@@ -4156,7 +4223,7 @@ prot_compliance_depression <- Prot_Compliance_MNH25 %>%
       summarise(
         
       # ANC 20
-        "MNH25 at ANC20^a^" = paste0(
+        "ANC20^a^" = paste0(
           format(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -4166,7 +4233,7 @@ prot_compliance_depression <- Prot_Compliance_MNH25 %>%
           format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
 
       ## ANC 32
-        "MNH25 at ANC32^b^" = paste0(
+        "ANC32^b^" = paste0(
           format(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -4176,7 +4243,7 @@ prot_compliance_depression <- Prot_Compliance_MNH25 %>%
           format(sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
         
      ### PNC 6      
-     "MNH25 at PNC6^c^" = paste0(
+     "PNC6^c^" = paste0(
           format(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -4194,7 +4261,7 @@ prot_compliance_depression <- Prot_Compliance_MNH25 %>%
         "Total" = Prot_Compliance_MNH25%>% 
           plyr::summarise(
       # ANC 20
-        "MNH25 at ANC20^a^" = paste0(
+        "ANC20^a^" = paste0(
           format(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M25_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -4204,7 +4271,7 @@ prot_compliance_depression <- Prot_Compliance_MNH25 %>%
           format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
 
       ## ANC 32
-        "MNH25 at ANC32^b^" = paste0(
+        "ANC32^b^" = paste0(
           format(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M25_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -4214,7 +4281,7 @@ prot_compliance_depression <- Prot_Compliance_MNH25 %>%
           format(sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
         
      ### PNC 6      
-     "MNH25 at PNC6^c^" = paste0(
+     "PNC6^c^" = paste0(
           format(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M25_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -4243,7 +4310,7 @@ prisma_table11 <- tb_theme1(prisma_table11) %>%
     title = md("**PRISMA Table 11**")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>MNH25 Maternal Depression</span>"),
+    label = html("<span style='font-size: 18px'>Depression assessment (MNH25)</span>"),
     rows = 1:6
   ) %>%
   tab_style(
@@ -4261,13 +4328,13 @@ prisma_table11 <- tb_theme1(prisma_table11) %>%
       locations = cells_row_groups()
 ) %>%
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n passed ANC20 late window with >25 weeks gestation AND (has not delivered OR delivered with gestational age >25wks) AND (has not closed out OR closed out with closeout date >25wks).</span>")
+    footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n passed ANC-20 late window with >25 weeks gestation AND (has not delivered OR delivered with gestational age >25wks) AND (has not closed out OR closed out with closeout date >25wks).</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n passed ANC36 late window with >42 weeks gestation AND (has not delivered OR delivered with gestational age >32wks) AND (has not closed out OR closed out with closeout date >32wks).</span>")
+    footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n passed ANC-36 late window with >42 weeks gestation AND (has not delivered OR delivered with gestational age >32wks) AND (has not closed out OR closed out with closeout date >32wks).</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n passed PNC6 late window with >12 weeks postpartum AND (has not closed out OR closed out with closeout date >12wks postpartum).</span>")
+    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n passed PNC-6 late window with >12 weeks postpartum AND (has not closed out OR closed out with closeout date >12wks postpartum).</span>")
 ) %>% 
 tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>ANC Note:</sup> passed window denominators for ANC visits are calculated by EDD reported in MNH01 (US_EDD_BRTHDAT). If an EDD is missing, the participant is removed from this table.</span>")
@@ -4286,8 +4353,9 @@ knitr::include_graphics("prisma_table11.png")
 \newpage
 
 
-### Figure 3a. ANC Data Availability, by Form and Visit (Heat maps)
-*Value:* Among women who are passed due or have had the visit, what percent of forms are complete? 
+### Figure 3a. Heat maps of form completion for ANC visits in PRISMA 
+*Value:* Percent of visit forms completed among women who were expected for an ANC visit, regardless of visit completion status.
+
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
 
 *Denominator:* Passed late window for visit type = i AND (has not delivered OR delivered with gestational age > late visit window) AND (has not closed out OR closed out with closeout date > visit window) OR has any form with visit type = i
@@ -4532,14 +4600,15 @@ out1  <- heat_map_data_anc %>%
                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Form") +
-  ggtitle(paste0(UNIQUE_VISITS[1])) +
+  xlab("Expected forms") +
+  ylab("Study site") + 
+  ggtitle(paste0("Form completion at ",tolower(UNIQUE_VISITS[1]), " visit (target window: <20wks)"))  +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8, face = "bold",),
-        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black"),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
         legend.margin = margin(grid::unit(0, "cm")),
@@ -4559,14 +4628,15 @@ out2  <- heat_map_data_anc %>%
                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Form") +
-  ggtitle(paste0(UNIQUE_VISITS[2])) +
+  xlab("Expected forms") +
+  ylab("Study site") + 
+  ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[2]), " visit (target window: 23 to 25wks)"))  +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8, face = "bold",),
-        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black"),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
         legend.margin = margin(grid::unit(0, "cm")),
@@ -4586,14 +4656,15 @@ out3  <- heat_map_data_anc %>%
                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Form") +
-  ggtitle(paste0(UNIQUE_VISITS[3])) +
+  xlab("Expected forms") +
+  ylab("Study site") +
+  ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[3]), " visit (target window: 26 to 30wks)"))  +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8, face = "bold",),
-        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black"),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
         legend.margin = margin(grid::unit(0, "cm")),
@@ -4613,14 +4684,15 @@ out4  <- heat_map_data_anc %>%
                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Form") +
-  ggtitle(paste0(UNIQUE_VISITS[4])) +
+  xlab("Expected forms") +
+  ylab("Study site") +
+  ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[4]), " visit (target window: 31 to 33wks)"))  +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8, face = "bold",),
-        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black"),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
         legend.margin = margin(grid::unit(0, "cm")),
@@ -4640,14 +4712,15 @@ out5  <- heat_map_data_anc %>%
                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
                     drop = FALSE) +
   labs(fill = "Percent /nComplete") +
-  xlab("Form") +
-  ggtitle(paste0(UNIQUE_VISITS[5])) +
+  xlab("Expected forms") +
+  ylab("Study site") +
+  ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[5]), " visit (target window 34 to 38wks)"))  +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8, face = "bold",),
-        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black"),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
         legend.margin = margin(grid::unit(0, "cm")),
@@ -4682,8 +4755,9 @@ out5 + theme(legend.position = "bottom")
 
 \newpage
 
-### Figure 3b. PNC Data Availability, by Form and Visit (Heat maps)
-*Value:* Among women who are passed due or have had the visit, what percent of forms are complete? 
+### Figure 3b. Heat maps of form completion for PNC visits in PRISMA 
+*Value:* Percent of visit forms completed among women who were expected for an PNC visit, regardless of visit completion status.
+
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
 
 *Denominator:* Passed late window for visit type = i AND (has not closed out OR closed out with closeout date > visit window) OR has any form with visit type = i
@@ -4922,14 +4996,15 @@ out1  <- heat_map_data_pnc %>%
                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Form") +
-  ggtitle(paste0(UNIQUE_VISITS[1])) +
+  xlab("Expected forms") +
+  ylab("Study site") +
+  ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[1]), " visit (target window: 3 to 5 days)"))  +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8, face = "bold",),
-        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black"),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
         legend.margin = margin(grid::unit(0, "cm")),
@@ -4937,7 +5012,7 @@ out1  <- heat_map_data_pnc %>%
         plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
         plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
         plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.15)  # Adjust the ratio to make the tiles shorter
+  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
 
 out2  <- heat_map_data_pnc %>% 
   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
@@ -4949,14 +5024,15 @@ out2  <- heat_map_data_pnc %>%
                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Form") +
-  ggtitle(paste0(UNIQUE_VISITS[2])) +
+  xlab("Expected forms") +
+  ylab("Study site") +
+  ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[2]), " visit (target window: 7 to 14 days)"))  +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8, face = "bold",),
-        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black"),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
         legend.margin = margin(grid::unit(0, "cm")),
@@ -4964,7 +5040,7 @@ out2  <- heat_map_data_pnc %>%
         plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
         plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
         plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.15)  # Adjust the ratio to make the tiles shorter
+  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
 
 out3  <- heat_map_data_pnc %>% 
   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
@@ -4976,14 +5052,15 @@ out3  <- heat_map_data_pnc %>%
                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Form") +
-  ggtitle(paste0(UNIQUE_VISITS[3])) +
+  xlab("Expected forms") +
+  ylab("Study site") +
+  ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[3]), " visit (target window: 28 to 25 days)"))  +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8, face = "bold",),
-        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black"),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
         legend.margin = margin(grid::unit(0, "cm")),
@@ -4991,7 +5068,7 @@ out3  <- heat_map_data_pnc %>%
         plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
         plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
         plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.15)  # Adjust the ratio to make the tiles shorter
+  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
 
 out4  <- heat_map_data_pnc %>% 
   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
@@ -5003,14 +5080,15 @@ out4  <- heat_map_data_pnc %>%
                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Form") +
-  ggtitle(paste0(UNIQUE_VISITS[4])) +
+  xlab("Expected forms") +
+  ylab("Study site") +
+  ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[4]), " visit (target window: 6 to 12wks)"))  +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8, face = "bold",),
-        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black"),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
         legend.margin = margin(grid::unit(0, "cm")),
@@ -5030,14 +5108,15 @@ out5  <- heat_map_data_pnc %>%
                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Form") +
-  ggtitle(paste0(UNIQUE_VISITS[5])) +
+  xlab("Expected forms") +
+  ylab("Study site") +
+  ggtitle(paste0("Form completion at ",tolower(UNIQUE_VISITS[5]), " visit (target window: 26 to 39wks)"))  +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8, face = "bold",),
-        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black"),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
         legend.margin = margin(grid::unit(0, "cm")),
@@ -5047,34 +5126,35 @@ out5  <- heat_map_data_pnc %>%
         plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
   coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
 
-
-out6  <- heat_map_data_pnc %>% 
-  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-  filter(VISIT == UNIQUE_VISITS[6]) %>% 
-  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
-  scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-                    drop = FALSE) +
-  labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Form") +
-  ggtitle(paste0(UNIQUE_VISITS[6])) +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8, face = "bold",),
-        axis.title.x = element_text(colour = "black", size = 10, face = "bold", margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, face = "bold", colour = "black"),
-        legend.text = element_text(size = 8),
-        axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.15)  # Adjust the ratio to make the tiles shorter
-
+# 
+# out6  <- heat_map_data_pnc %>% 
+#   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+#   filter(VISIT == UNIQUE_VISITS[6]) %>% 
+#   ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+#   geom_tile(color = "grey40", size = 0.2) +
+#   scale_fill_manual(values = custom_palette,
+#                     labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+#                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+#                     drop = FALSE) +
+#   labs(fill = str_wrap("Percent Complete", width = 8)) +
+#   xlab("Expected forms") +
+#   ylab("Study site") +
+#   ggtitle(paste0("Form completion at ",tolower(UNIQUE_VISITS[6]), " visit (target window: 52 to 64wks)"))  +
+#   guides(fill = guide_legend(reverse = TRUE)) +
+#   theme_minimal() +
+#   theme(legend.position = "bottom",
+#         axis.text.x = element_text(size = 8),
+#         axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+#         axis.text.y = element_text(size = 8, colour = "black"),
+#         legend.text = element_text(size = 8),
+#         axis.title.y = element_blank(),
+#         legend.margin = margin(grid::unit(0, "cm")),
+#         legend.key.width = grid::unit(0.5, "cm"),
+#         plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+#         plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+#         plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+#   coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+# 
 ```
 
 ```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
@@ -5110,16 +5190,54 @@ out5 + theme(legend.position = "bottom")
 
 ```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
 # grid.arrange(legend_gtable)
-out6 + theme(legend.position = "bottom")
+# out6 + theme(legend.position = "bottom")
 ```
-
 
 \newpage
 
-## **2. ReMAPP**
+### Table 12. Summary of PRISMA infant outcomes.  
+**Denominator:** All livebirths unless otherwise specified. All missing is excluded.  
 
-### Table 1: MNH26 Protocol Compliance
-*Value:* Among women successfully contacted during the ANC or PNC period, are all expected MNH26 Maternal Fatigue forms for the visit complete? A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). The table below shows protocol compliance distributions for MNH26 forms following site launch of ReMAPP. These forms can be filled out either during individual visits (e.g., ANC20) or during combined visits after the gestational age window has passed (e.g., combined Enrollment and ANC20 visits).For example, the denominator for MNH25 completed at ANC32 is the number of participants who have passed the ANC36 late window to allow for combined visits.
+*For more detailed output, please refer to the infant outcomes report.*
+
+```{r}
+
+## this data is generated in the infant outcomes report code linked here in github: https://github.com/PRiSMA-Study/PRISMA-Public/blob/main/PRISMA-Infant-Constructed-Outcomes/Infant-Constructed-Variables.R
+
+
+infantoutcomes_output <- tb_theme1(infantoutcomes_summary) %>% 
+  tab_header(
+    title = md("**PRISMA Table 12**")
+  )  %>% 
+tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>a</sup>All live births with MNH09 and MNH11 filled out AND have passed the risk period with a visit OR died within the risk period (risk period: age = 28days).</span>")
+ ) %>% 
+  tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>b</sup>All live births with MNH09 and MNH11 filled out AND have passed the risk period with a visit OR died within the risk period (risk period: age = 365days).</span>")
+ ) %>% 
+  tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>c</sup>All infants with a birth outcome reported in MNH04 `(PRG_DSDECOD)` or MNH11 `(INF_DSTERM)`.</span>")
+ ) %>% 
+  tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>d</sup>All infants with a fetal loss reported in MNH04 `(PRG_DSDECOD)` or birth outcome in MNH09 `(BIRTH_DSTERM_INF1)`.</span>")
+ ) 
+
+
+
+```
+
+```{r, out.width = '100%'}
+infantoutcomes_output <- infantoutcomes_output %>% gtsave("infantoutcomes_output.png", expand = 10)
+knitr::include_graphics("infantoutcomes_output.png")
+```
+
+\newpage
+
+
+## **2. ReMAPP Study Monitoring Report**
+
+### Table 1: Protocol compliance for ReMAPP fatigue assessment
+*Value:* Percent of fatigue assessments (MNH26) completed among women expected for visits in the ANC and PNC periods, regardless of visit completion status. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). The table below shows protocol compliance distributions for MNH26 forms following site launch of ReMAPP. These forms can be filled out either during individual visits (e.g., ANC20) or during combined visits after the gestational age window has passed (e.g., combined Enrollment and ANC20 visits).For example, the denominator for MNH26 completed at ANC32 is the number of participants who have passed the ANC36 late window to allow for combined visits.
 
 *Numerator:* MNH26 with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i AND (has not delivered OR delivered with gestational age > late visit window) AND (has not closed out OR closed out with closeout date > visit window)
 
@@ -5136,7 +5254,7 @@ prot_compliance_fatigue <- Prot_Compliance_MNH26 %>%
       summarise(
         
       # ANC 20
-        "MNH26 at ANC20^a^" = paste0(
+        "ANC20^a^" = paste0(
           format(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -5146,7 +5264,7 @@ prot_compliance_fatigue <- Prot_Compliance_MNH26 %>%
           format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
 
       ## ANC 32
-        "MNH26 at ANC32^b^" = paste0(
+        "ANC32^b^" = paste0(
           format(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -5156,7 +5274,7 @@ prot_compliance_fatigue <- Prot_Compliance_MNH26 %>%
           format(sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
         
      ### PNC 6      
-     "MNH26 at PNC6^c^" = paste0(
+     "PNC6^c^" = paste0(
           format(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -5175,7 +5293,7 @@ prot_compliance_fatigue <- Prot_Compliance_MNH26 %>%
           plyr::summarise(
             
       # ANC 20
-        "MNH26 at ANC20^a^" = paste0(
+        "ANC20^a^" = paste0(
           format(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M26_ANCLESS20_NUM == 1, na.rm = TRUE)/sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -5185,7 +5303,7 @@ prot_compliance_fatigue <- Prot_Compliance_MNH26 %>%
           format(sum(PC_ANCLESS20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
 
       ## ANC 32
-        "MNH26 at ANC32^b^" = paste0(
+        "ANC32^b^" = paste0(
           format(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M26_ANCOVER31_NUM == 1, na.rm = TRUE)/sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -5195,7 +5313,7 @@ prot_compliance_fatigue <- Prot_Compliance_MNH26 %>%
           format(sum(PC_ANCOVER31_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)), 
         
      ### PNC 6      
-     "MNH26 at PNC6^c^" = paste0(
+     "PNC6^c^" = paste0(
           format(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
           format(round(sum(M26_VISIT_COMPLETE_10 == 1 & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
@@ -5225,7 +5343,7 @@ remapp_table1 <- tb_theme1(remapp_table1) %>%
     title = md("**ReMAPP Table 1**")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>MNH26 Maternal Fatigue</span>"),
+    label = html("<span style='font-size: 18px'>Fatigue assessments (MNH26)</span>"),
     rows = 1:6
   ) %>%
   tab_style(
@@ -5270,7 +5388,7 @@ knitr::include_graphics("remapp_table1.png")
 
 \newpage
 
-### Table 2: ReMAPP healthy cohort eligibility
+### Table 2: Participant eligibility for the ReMAPP healthy cohort
 *Value:* This table will be updated as lab measurements are updated and reported. Those who are unknown may move into eligible or ineligible categories based on updated lab reports. Those who are eligible were enrolled in PRISMA following the launch of ReMAPP at each site. Distributions of eligibility criteria are outlined in Table 2 below.
 
 ```{r}
@@ -5286,7 +5404,7 @@ remapp_table2 <- healthyOutcome %>%
                                         " (", format(sum(HEALTHY_ELIGIBLE == 1, na.rm=TRUE)/sum(ENROLL == 1)*100, digits = 2, nsmall=0), ")"),
             "Ineligible for healthy cohort, n(%)" = paste0(sum(HEALTHY_ELIGIBLE == 0, na.rm=TRUE),
                              " (", format(sum(HEALTHY_ELIGIBLE == 0, na.rm=TRUE)/sum(ENROLL == 1)*100, digits = 2, nsmall=0), ")"),
-            "Pending, n(%)" = paste0(sum(HEALTHY_ELIGIBLE == 3, na.rm=TRUE),
+            "Pending, n(%)^a^" = paste0(sum(HEALTHY_ELIGIBLE == 3, na.rm=TRUE),
                                 " (", format(sum(HEALTHY_ELIGIBLE == 3, na.rm=TRUE)/sum(ENROLL == 1)*100, digits = 2, nsmall=0), ")")
   ) %>% 
     t() %>% as.data.frame() %>% 
@@ -5301,7 +5419,7 @@ remapp_table2 <- healthyOutcome %>%
                                         " (", format(sum(HEALTHY_ELIGIBLE == 1, na.rm=TRUE)/sum(ENROLL==1)*100, digits = 2, nsmall=0), ")"),
             "Ineligible, n(%)" = paste0(sum(HEALTHY_ELIGIBLE == 0, na.rm=TRUE),
                              " (", format(sum(HEALTHY_ELIGIBLE == 0, na.rm=TRUE)/sum(ENROLL == 1)*100, digits = 2, nsmall=0), ")"),
-            "Pending, n(%)" = paste0(sum(HEALTHY_ELIGIBLE == 3, na.rm=TRUE),
+            "Pending, n(%)^a^" = paste0(sum(HEALTHY_ELIGIBLE == 3, na.rm=TRUE),
                                 " (", format(sum(HEALTHY_ELIGIBLE == 3, na.rm=TRUE)/sum(ENROLL == 1)*100, digits = 2, nsmall=0), ")")
   ) %>% 
       t() %>% unlist()
@@ -5320,7 +5438,7 @@ remapp_table2 <- tb_theme1(remapp_table2) %>%
     title = md("**ReMAPP Table 2**")
   ) %>%
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n enrolled in PRISMA.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>a</sup> a participant is considered pending if default values 55 or -5 are reported for any of the criteria.</span>")
 )
 
 ```
@@ -5332,8 +5450,8 @@ knitr::include_graphics("remapp_table2.png")
 
 \newpage
 
-### Figure 1: ReMAPP healthy cohort eligibility and missingness by criteria by site.
-*Value:* This figure will show the distribution of each healthy cohort criteria among women enrolled in ReMAPP. Missing means missing form, missing diagnosed or measured data, note that it includes pending data (test not performed yet or result pending).
+### Figure 1: Eligibility status and missingness by ReMAPP healthy cohort criteria 
+*Value:* Illustrates the distribution of each healthy cohort criteria (C1-C19) among women enrolled in PRISMA since ReMAPP launch. Missing means missing form, note that it includes pending data (test not performed yet or result pending).
 
 ```{r}
 plot_criteria <- df_eli_long 
@@ -5358,35 +5476,34 @@ plot_criteria %>%
         legend.text = element_text(size = 8),)
 
 ```
-* Missing means missing form, missing diagnosed or measured data, note that it includes pending data (test not performed yet or result pending).
 
-**Explanation of variable C1-C19:**
+**Description of eligibility criteria (C1-C19):**
 
-* C1 -- CRIT_AGE: Aged 18 to 34 years;
-* C2 -- CRIT_GA: Gestational age <14 weeks 
-* C3 -- CRIT_BMI_MUAC: Pre-pregnancy or early pregnancy body mass index (BMI) of >18.5 and <30 kg/m2 AND mid-upper arm circumference (MUAC) > 23cm 
-* C4 -- CRIT_HEIGHT: Height ≥150 cm 
-* C5 -- CRIT_SINGLEPREG: Singleton pregnancy 
-* C6 -- CRIT_IRON: Not iron deficient (serum ferritin >15 mcg/L– adjusted for inflammation) 
-* C7 -- CRIT_INFLAM: No subclinical inflammation (CRP≤5 and/or AGP≤1) 
-* C8 -- CRIT_BP: Systolic blood pressure <140 mmHg and diastolic blood pressure <90 mmHg 
-* C9 -- CRIT_LBW: No previous reported low birth weight delivery
-* C10 -- CRIT_STILLBIRTH: No previous reported stillbirth
-* C11 -- CRIT_UNPL_CESARIAN: No previous reported unplanned cesarean delivery
-* C12 -- CRIT_HEMOGLOBINOPATHIES: No hemoglobinopathies: SS, SC, SE, EE, CC, SD-Punjab, Sβthal, Eβthal, Cβthal, CD-Punjab, ED-Punjab, D-D-Punjab, D-Punjabβthal, Thalassemia major, Thalassemia intermedia, glucose-6-phosphate dehydrogenase deficiency, or Alpha thalassemia
-* C13 -- CRIT_SMOKE: No reported cigarette smoking, tobacco chewing, or betel nut use during pregnancy
-* C14 -- CRIT_DRINK: No reported alcohol consumption during pregnancy
-* C15 -- CRIT_CHRONIC: No known history or current chronic disease including cancer, kidney disease, and cardiac conditions
-* C16 -- CRIT_HIV: No known history or current HIV
-* C17 -- CRIT_MALARIA: No current malaria infection (per rapid diagnostic test)
-* C18 -- CRIT_HEPATITISB: No current Hepatitis B virus infection (per rapid diagnostic test)
-* C19 -- CRIT_HEPATITISC: No current Hepatitis C virus infection (per rapid diagnostic test)
+* C1: Aged 18 to 34 years;
+* C2: Gestational age <14 weeks 
+* C3: Pre-pregnancy or early pregnancy body mass index (BMI) of >18.5 and <30 kg/m2 AND mid-upper arm circumference (MUAC) > 23cm 
+* C4: Height ≥153 cm 
+* C5: Singleton pregnancy 
+* C6: Not iron deficient (serum ferritin >15 mcg/L– adjusted for inflammation) 
+* C7: No subclinical inflammation (CRP>=5 mg/L and/or AGP>=1 g/L) 
+* C8: Systolic blood pressure <140 mmHg and diastolic blood pressure <90 mmHg 
+* C9: No previous reported low birth weight delivery
+* C10: No previous reported stillbirth
+* C11: No previous reported unplanned cesarean delivery
+* C12: No hemoglobinopathies: SS, SC, SE, EE, CC, SD-Punjab, Sβthal, Eβthal, Cβthal, CD-Punjab, ED-Punjab, D-D-Punjab, D-Punjabβthal, Thalassemia major, Thalassemia intermedia, glucose-6-phosphate dehydrogenase deficiency, or Alpha thalassemia
+* C13: No reported cigarette smoking, tobacco chewing, or betel nut use during pregnancy
+* C14: No reported alcohol consumption during pregnancy
+* C15: No known history or current chronic disease including cancer, kidney disease, and cardiac conditions
+* C16: No known history or current HIV
+* C17: No current malaria infection (per rapid diagnostic test)
+* C18: No current Hepatitis B virus infection (per rapid diagnostic test)
+* C19: No current Hepatitis C virus infection (per rapid diagnostic test)
 
 \newpage
 
 
-### Table 3: CBC Hemoglobin measurements for participants in ReMAPP per visit. 
-*Value:* Were all the required CBC hemoglobin measurements taken as directed by the protocol?
+### Table 3: Protocol compliance for ReMAPP hemoglobin measurements by CBC  
+*Value:* Protocol compliance for CBC hemoglobin measurements at required ReMAPP study visits, regardless of visit completion status. 
 
 ```{r}
 ## denominators: 
@@ -5412,9 +5529,9 @@ remapp_table3 <- MatData_Hb_Visit %>%
             "ANC36" = paste0(sum(HB_COMPLETED_5 == 1, na.rm = TRUE),
                                         " (", format(sum(HB_COMPLETED_5 == 1, na.rm = TRUE)/sum(DenHBV5 == 1, na.rm = TRUE)*100, digits = 2, nsmall=0), ")"),
   
-            "PNC6" = paste0(sum(HB_COMPLETED_10 == 1),
+            "PNC6" = paste0(sum(HB_COMPLETED_10 == 1, na.rm = TRUE),
                                         " (", format(sum(HB_COMPLETED_10 == 1, na.rm = TRUE)/sum(DenHBV10 == 1, na.rm = TRUE)*100, digits = 2, nsmall=0), ")")
-  
+
 ) %>%
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
@@ -5436,24 +5553,26 @@ remapp_table3 <- MatData_Hb_Visit %>%
             "ANC36" = paste0(sum(HB_COMPLETED_5 == 1, na.rm = TRUE),
                                         " (", format(sum(HB_COMPLETED_5 == 1, na.rm = TRUE)/sum(DenHBV5 == 1, na.rm = TRUE)*100, digits = 2, nsmall=0), ")"),
   
-            "PNC6" = paste0(sum(HB_COMPLETED_10 == 1),
+            "PNC6" = paste0(sum(HB_COMPLETED_10 == 1, na.rm = TRUE),
                                         " (", format(sum(HB_COMPLETED_10 == 1, na.rm = TRUE)/sum(DenHBV10 == 1, na.rm = TRUE)*100, digits = 2, nsmall=0), ")")
-  
+                    
+
 ) %>%
       t() %>% unlist()
   )
+
 
 ```
 
 ```{r}
 
 remapp_table3 <- remapp_table3 %>%    
-  `rownames<-`(c("Total enrolled since ReMAPP launch",
-                  "ANC < 20, n(%)^a^",
-                  "ANC = 20, n(%)^b^",
-                  "ANC = 28, n(%)^c^",
-                  "ANC = 36, n(%)^d^",
-                  "PNC = 6, n(%)^e^"
+  `rownames<-`(c("Total enrolled in PRISMA since ReMAPP launch",
+                  "Enrollment visit (<20wks), n(%)^a^",
+                  "ANC-20 visit, n(%)^b^",
+                  "ANC-28 visit, n(%)^c^",
+                  "ANC-36 visit, n(%)^d^",
+                  "PNC-6 visit, n(%)^e^"
                  )) %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
   mutate_all(funs(str_replace(., "NA", "0"))) 
@@ -5467,16 +5586,16 @@ tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n enrolled during ReMAPP study period.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n completed MNH08 with visit type=ANC20 OR missed late window with >22 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n completed MNH08 with visit type=ANC-20 OR missed late window with >25 weeks gestation.</span>")
 ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n completed  MNH08 with visit type=ANC28 OR missed late window with >30 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n completed  MNH08 with visit type=ANC-28 OR missed late window with >30 weeks gestation.</span>")
 ) %>% 
   tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>d</sup> denominator is n completed  MNH08 with visit type=ANC36 OR missed late window with >38 weeks gestation.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>d</sup> denominator is n completed  MNH08 with visit type=ANC-36 OR missed late window with >38 weeks gestation.</span>")
 ) %>% 
   tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed  MNH08 with visit type=PNC6 OR missed late window with >12 weeks postpartum</span>")
+    footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed  MNH08 with visit type=PNC-6 OR missed late window with >12 weeks postpartum</span>")
 ) 
 
 ```
@@ -5488,10 +5607,9 @@ knitr::include_graphics("remapp_table3.png")
 
 \newpage
 
-### Figure 2: Hemoglobin measures by gestational age for participants enrolled in PRISMA MNH 
+### Figure 2: Plot of PRISMA hemoglobin measurements using any method by gestational age
 
 ```{r}
-
 ## x axis in days
 MatData_Hb_GA_Visit <- MatData_Hb_GA_Visit %>% filter(GA > 0)
 
@@ -5500,17 +5618,20 @@ ggplot(data = MatData_Hb_GA_Visit,
   geom_point(alpha = 0.25)  +
     facet_grid(rows = vars(SITE)) +
     theme_bw() +
-    ylim(0,20) +
+    ylim(0,25) +
     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         legend.position="bottom",
-        legend.title = element_blank(),
-        panel.grid.minor = element_blank()) +
+        panel.grid.minor = element_blank(),
+                # Adjust facet label font size
+        strip.text = element_text(size = 8) # You can modify the size as needed
+        ) +
   scale_x_continuous(breaks = c(0,49,98,147,198,245, 294),
                      label = c("0", "7", "14", "21", "28", "35", "42"), 
                      limits = c(0,294)) +
   xlab("Gestational Age (weeks)") +
   ylab("Hemoglobin (g/dL)") +
-  scale_color_brewer(palette="Set1")
+  scale_color_brewer(palette="Set1") + 
+  labs(color = "Method") 
 
 ```
 

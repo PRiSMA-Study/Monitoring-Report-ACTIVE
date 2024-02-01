@@ -36,7 +36,7 @@ library(readxl)
 
 # UPDATE EACH RUN # 
 # set upload date 
-UploadDate = "2023-11-24"
+UploadDate = "2024-01-26"
 
 # UPDATE EACH RUN # 
 # create vector of all sites with data in the upload 
@@ -111,15 +111,16 @@ mnh02_ids <- mnh02_Kenya %>% select(MOMID,PREGID, SCRNID) %>%
   mutate(MOMID = ifelse(MOMID == "N/A",NA, MOMID),
          PREGID = ifelse(is.na(MOMID), NA, PREGID))
 
-mnh01_Kenya <- mnh01_Kenya %>% select(-MOMID, -PREGID) %>%
+mnh01_Kenya <- mnh01_Kenya %>% 
+  select(-MOMID, -PREGID) %>%
   left_join(mnh02_ids, by = c("SCRNID")) 
 
 rm(mnh02_ids)
 
 # replace empty momid and pregid with NA
 mnh01_Kenya <- mnh01_Kenya %>% 
-  mutate(MOMID = ifelse(str_detect(MOMID, "k"), MOMID, NA),
-         PREGID = ifelse(str_detect(PREGID, "k"), PREGID, NA))
+  mutate(MOMID = ifelse(str_detect(MOMID, "K"), MOMID, NA),
+         PREGID = ifelse(str_detect(PREGID, "K"), PREGID, NA))
 
 mnh02_Kenya <- mnh02_Kenya %>% 
   mutate(MOMID = ifelse(str_detect(MOMID, "K"), MOMID, NA),
@@ -144,6 +145,13 @@ myfiles <- lapply(myfiles, function (x){
 ## convert to individual dataframes
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
+
+# ## 12/-8 update for zambia - they had all ZAPPS variables 
+variable_names <- read_excel("~/PRiSMAv2Data/PRISMA-Data-Queries-GW/R/PRiSMA-MNH-Data-Dictionary-Repository-V.2.3-MAR272023.xlsx")
+variable_names <- variable_names %>% filter(Form == "MNH01") %>% pull(`Variable Name`)
+
+mnh01_Zambia <- mnh01_Zambia %>%  select(all_of(variable_names))
+
 
 # replace empty momid and pregid with NA
 mnh01_Zambia <- mnh01_Zambia %>% 
@@ -179,7 +187,8 @@ list2env(myfiles, globalenv())
 mnh02_ids <- mnh02_Ghana %>% select(MOMID,PREGID, SCRNID) 
 
 mnh01_Ghana <- mnh01_Ghana %>% 
-  left_join(mnh02_ids, by = c("MOMID","PREGID")) 
+  select(-SCRNID) %>%
+  left_join(mnh02_ids, by = c("MOMID", "PREGID")) 
 
 rm(mnh02_ids)
 #************************India-CMC************************
@@ -219,19 +228,22 @@ rm(mnh02_ids)
   mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
          PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
 
-
 #*************************************************
 #* Merge all data by form and site 
 #*************************************************
-# Remove ghana data this week 
+# Remove lists made in the stacked data
 # List all objects in the global environment
-# objects <- ls()
+objects <- ls()
 # 
 # # Identify data frames that match the pattern
-# data_frames_to_delete <- objects[grep("_Ghana", objects)]
+data_frames_to_delete_1 <- objects[grep("m0", objects)]
+data_frames_to_delete_2 <- objects[grep("m2", objects)]
+
 # 
 # # Remove identified data frames
-# rm(list = data_frames_to_delete)
+rm(list = data_frames_to_delete_1)
+rm(list = data_frames_to_delete_2)
+
 
 #******M00
 
@@ -404,7 +416,6 @@ if (exists("m01") == TRUE) {
   save(m01_merged, file= paste0(path_to_save, "m01_merged",".RData",sep = ""))
   
 }
-
 
 #******M02 
 
@@ -2562,7 +2573,6 @@ table(m13_merged$SITE, m13_merged$M13_TYPE_VISIT)
 ## look at all m25 visits by site 
 table(m25_merged$SITE, m25_merged$M25_TYPE_VISIT)
 
-
 table(m05_merged$SITE, m05_merged$M05_TYPE_VISIT)
 table(m26_merged$SITE, m26_merged$M26_TYPE_VISIT)
 
@@ -2592,8 +2602,8 @@ setwd(paste0("~/Monitoring Report/data/stacked/" ,UploadDate))
 lapply(1:length(files_list), function(i) write.csv(files_list[[i]],
                                                    file = paste0(names(files_list[i]), ".csv"),
                                                    row.names = FALSE))
-# # 
-# # 
+# 
+# 
 m22_merged_ke <- m22_merged %>% filter(SITE == "Kenya")
 table(m22_merged$M22_DVDECOD, m22_merged$SITE)
 view(table(m22_merged_ke$M22_DTL_DVTERM, m22_merged_ke$SITE))

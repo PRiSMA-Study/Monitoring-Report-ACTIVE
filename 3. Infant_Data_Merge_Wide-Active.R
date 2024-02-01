@@ -24,7 +24,7 @@ rm(list = ls())
 library(tidyverse)
 library(lubridate)
 library(readxl)
-UploadDate = "2023-11-24"
+UploadDate = "2024-01-26"
 
 #*****************************************************************************
 #* Import merged data 
@@ -329,11 +329,8 @@ InfData_Wide <- left_join(InfData_Wide, non_sched_form_wide_all, by =c("SITE", "
   relocate(any_of(c("SCRNID", "MOMID", "PREGID", "INFANTID")), .after = SITE) %>% 
   distinct()
 
-# table(InfData_Wide$INFANTID, useNA = "ifany")
 table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_7)
 table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_8)
-
-
 #*****************************************************************************
 #* Export wide dataset 
 #*****************************************************************************
