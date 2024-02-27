@@ -36,7 +36,7 @@ library(readxl)
 
 # UPDATE EACH RUN # 
 # set upload date 
-UploadDate = "2024-01-26"
+UploadDate = "2024-02-23"
 
 # UPDATE EACH RUN # 
 # create vector of all sites with data in the upload 
@@ -126,6 +126,8 @@ mnh02_Pakistan <- mnh02_Pakistan %>%
 
 # rename MOMID variable in mnh28
 # mnh28_Pakistan <- mnh28_Pakistan %>% rename("MOMID" = "VR.ID")
+# mnh08_Pakistan <- mnh08_Pakistan %>% rename("MOMID" = "Ï..MOMID")
+
 gc()
 #************************Kenya************************
 site = "Kenya"
@@ -141,7 +143,6 @@ myfiles <- lapply(myfiles, function (x){
   upper <- toupper(names(x))
   setnames(x, upper)
 })
-
 
 
 ## convert to individual dataframes 
@@ -172,8 +173,8 @@ mnh02_Kenya <- mnh02_Kenya %>%
 mnh28_Kenya <- mnh28_Kenya %>% rename("INFANTID" = "INFANTID_INF")
 #************************Zambia************************
 site = "Zambia"
-# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
-setwd("D:/Users/stacie.loisate/Documents/2023-01-26")
+setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+
 ## import raw .CSVs in wide format
 temp = list.files(pattern="*.csv")
 myfiles = lapply(temp, read.csv)
@@ -271,6 +272,44 @@ rm(mnh02_ids)
   mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
          PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
 
+
+#************************India-SAS************************
+site = "India_SAS"
+
+setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+
+## import raw .CSVs in wide format 
+temp = list.files(pattern="*.csv")
+myfiles = lapply(temp, read.csv)
+
+#  ## make sure all column names are uppercase 
+myfiles <- lapply(myfiles, function (x){
+  upper <- toupper(names(x))
+  setnames(x, upper)
+})
+
+site = "India-SAS"
+
+## convert to individual dataframes 
+names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+list2env(myfiles, globalenv())
+
+## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
+mnh02_ids <- `mnh02_India-SAS` %>% select(MOMID,PREGID, SCRNID)
+`mnh01_India-SAS` <- `mnh01_India-SAS` %>% select(-MOMID, -PREGID) %>%
+  left_join(mnh02_ids, by = c("SCRNID")) 
+
+rm(mnh02_ids)
+
+# replace empty momid and pregid with NA
+`mnh01_India-SAS` <- `mnh01_India-SAS` %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
+
+
+`mnh02_India-SAS` <- `mnh02_India-SAS` %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
 
 #*************************************************
 #* Merge all data by form and site 
@@ -1221,6 +1260,7 @@ if (exists("m12") == TRUE) {
   save(m12_merged, file= paste0(path_to_save, "m12_merged",".RData",sep = ""))
   
 }
+
 
 #******M13
 #* INFANT FORM - INFANTID
