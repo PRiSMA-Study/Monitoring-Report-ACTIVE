@@ -2,7 +2,7 @@
 #* MATERNAL WIDE DATASET BY VISIT 
 #*Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #*Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 25 October 2023
+#* Last updated: 24 Feb 2024
 
 #*Output:   
 #* 1. MatData_Wide.RData wide dataset by MOMID and visit type (one row for each woman at each visit)
@@ -32,7 +32,7 @@ library(lubridate)
 library(readxl)
 library(tidyverse)
 
-UploadDate = "2024-01-26"
+UploadDate = "2024-02-23"
 
 #*****************************************************************************
 #* Import merged data 
@@ -114,34 +114,36 @@ m01_enroll <- m01_merged %>% filter(M01_TYPE_VISIT == 1) %>% ## only want enroll
          GA_US_DAYS_FTS3 =  ifelse(SITE=="India-CMC" & M01_CAL_GA_WKS_AGE_FTS3!= -7 & M01_CAL_GA_DAYS_AGE_FTS3 != -7,  (M01_CAL_GA_WKS_AGE_FTS3 * 7 + M01_CAL_GA_DAYS_AGE_FTS3), GA_US_DAYS_FTS3),
          GA_US_DAYS_FTS4 =  ifelse(SITE=="India-CMC" & M01_CAL_GA_WKS_AGE_FTS4!= -7 & M01_CAL_GA_DAYS_AGE_FTS4 != -7,  (M01_CAL_GA_WKS_AGE_FTS4 * 7 + M01_CAL_GA_DAYS_AGE_FTS4), GA_US_DAYS_FTS4)) %>% 
   #  pull the largest GA for multiple fetuses + convert to weeks
-  mutate(US_GA_DAYS = pmax(GA_US_DAYS_FTS1, GA_US_DAYS_FTS2, GA_US_DAYS_FTS3, GA_US_DAYS_FTS4, na.rm = TRUE)) %>% ## where GA_US_DAYS_FTSx is the reported GA by ultrasound (added together M01_US_GA_WKS_AGE_FTSx and M01_US_GA_DAYS_AGE_FTSx to get a single estimate in days)
-  mutate(US_GA_WKS = US_GA_DAYS %/% 7) %>% 
+  mutate(US_GA_DAYS_ENROLL = pmax(GA_US_DAYS_FTS1, GA_US_DAYS_FTS2, GA_US_DAYS_FTS3, GA_US_DAYS_FTS4, na.rm = TRUE)) %>% ## where GA_US_DAYS_FTSx is the reported GA by ultrasound (added together M01_US_GA_WKS_AGE_FTSx and M01_US_GA_DAYS_AGE_FTSx to get a single estimate in days)
+  mutate(US_GA_WKS_ENROLL = US_GA_DAYS_ENROLL %/% 7) %>% 
   #  convert ga by LMP to days and wks
-  mutate(LMP_GA_DAYS =  ifelse(M01_GA_LMP_WEEKS_SCORRES != -7 & M01_GA_LMP_DAYS_SCORRES != -7,  (M01_GA_LMP_WEEKS_SCORRES * 7 + M01_GA_LMP_DAYS_SCORRES), NA)) %>% 
-  mutate(LMP_GA_WKS = LMP_GA_DAYS %/% 7) %>%
+  mutate(LMP_GA_DAYS_ENROLL =  ifelse(M01_GA_LMP_WEEKS_SCORRES != -7 & M01_GA_LMP_DAYS_SCORRES != -7,  (M01_GA_LMP_WEEKS_SCORRES * 7 + M01_GA_LMP_DAYS_SCORRES), NA)) %>% 
+  mutate(LMP_GA_WKS_ENROLL = LMP_GA_DAYS_ENROLL %/% 7) %>%
   ## generate indicator variable for missing US 
-  mutate(MISSING_BOTH_US_LMP = ifelse((US_GA_WKS < 0 & LMP_GA_WKS < 0) | 
-                                        (is.na(US_GA_WKS) & is.na(LMP_GA_WKS)), 1, 0)) %>% 
+  mutate(MISSING_BOTH_US_LMP = ifelse((US_GA_WKS_ENROLL < 0 & LMP_GA_WKS_ENROLL < 0) | 
+                                        (is.na(US_GA_WKS_ENROLL) & is.na(LMP_GA_WKS_ENROLL)), 1, 0)) %>% 
   #  calculate the difference in days between reported LMP and reported US
-  mutate(GA_DIFF_DAYS = LMP_GA_DAYS-US_GA_DAYS) %>%
+  mutate(GA_DIFF_DAYS = LMP_GA_DAYS_ENROLL-US_GA_DAYS_ENROLL) %>%
   #  obtain best obstetric estimate in weeks
-  mutate(BOE_GA_DAYS_ENROLL = case_when(LMP_GA_DAYS %/% 7 < 9 ~
+  mutate(BOE_GA_DAYS_ENROLL = case_when(LMP_GA_DAYS_ENROLL %/% 7 < 9 ~
                                           if_else(abs(GA_DIFF_DAYS) <= 5,
-                                                  LMP_GA_DAYS,
-                                                  US_GA_DAYS),
-                                        LMP_GA_DAYS %/% 7 < 16 ~
+                                                  LMP_GA_DAYS_ENROLL,
+                                                  US_GA_DAYS_ENROLL),
+                                        LMP_GA_DAYS_ENROLL %/% 7 < 16 ~
                                           if_else(abs(GA_DIFF_DAYS) <=7,
-                                                  LMP_GA_DAYS, US_GA_DAYS),
-                                        LMP_GA_DAYS %/% 7 >= 16 ~
+                                                  LMP_GA_DAYS_ENROLL, US_GA_DAYS_ENROLL),
+                                        LMP_GA_DAYS_ENROLL %/% 7 >= 16 ~
                                           if_else(abs(GA_DIFF_DAYS) <=10,
-                                                  LMP_GA_DAYS, US_GA_DAYS),
-                                        TRUE ~ US_GA_DAYS)) %>%
+                                                  LMP_GA_DAYS_ENROLL, US_GA_DAYS_ENROLL),
+                                        TRUE ~ US_GA_DAYS_ENROLL)) %>%
   mutate(BOE_GA_WKS_ENROLL = BOE_GA_DAYS_ENROLL %/% 7) %>% 
   # generate EDD based on BOE 
   # "zero out" GA and obtain the estimated "date of conception" 
-  mutate(EST_CONCEP_DATE = M01_US_OHOSTDAT - BOE_GA_DAYS_ENROLL) %>% 
+  mutate(EST_CONCEP_DATE = M01_US_OHOSTDAT - US_GA_DAYS_ENROLL) %>% 
   # add 280 days to EST_CONCEP_DATE to generate EDD based on BOE 
-  mutate(EDD_BOE = EST_CONCEP_DATE + 280) 
+  mutate(EDD_BOE = EST_CONCEP_DATE + 280) %>% 
+  ## EDD based on ultrasound 
+  mutate(EDD_US =  EST_CONCEP_DATE + 280)
 
 ## Only select ID variables from MNH02 to merge into MNH01 
 m02_wide <- m02_merged %>% select(SITE, SCRNID, MOMID, PREGID, M02_SCRN_OBSSTDAT) 
@@ -149,8 +151,8 @@ m02_wide <- m02_merged %>% select(SITE, SCRNID, MOMID, PREGID, M02_SCRN_OBSSTDAT
 ## Merge enrollment form with US form to get GA at enrollment -- SUBSET OF DATA 
 enroll_bind <- full_join(m02_wide, m01_enroll, by = c("SITE", "SCRNID")) %>% distinct()
 enroll_bind <- enroll_bind %>% relocate(c(MOMID,PREGID), .after = SCRNID) %>% 
-  select(SITE,SCRNID, MOMID, PREGID, EST_CONCEP_DATE, BOE_GA_DAYS_ENROLL, 
-         BOE_GA_WKS_ENROLL, EDD_BOE, M02_SCRN_OBSSTDAT) %>% distinct()
+  select(SITE,SCRNID, MOMID, PREGID, EST_CONCEP_DATE, US_GA_DAYS_ENROLL, 
+         US_GA_WKS_ENROLL, EDD_US,EDD_BOE, BOE_GA_DAYS_ENROLL, M02_SCRN_OBSSTDAT) %>% distinct()
 
 ## merge momid and pregid into mnh01 to merge in later 
 m02_ids <- m02_merged %>% select(SITE, SCRNID, MOMID, PREGID) ## export mnh02 ids
@@ -165,7 +167,8 @@ m01_to_bind <- m01_merged %>%
   # remove unscheduled visits 
   filter(M01_TYPE_VISIT!=13, M01_TYPE_VISIT!=14) %>% 
   # merge in enrollment data including BOE and EST_CONCEP_DATE
-  left_join(enroll_bind[c("SITE", "SCRNID", "MOMID", "PREGID", "EST_CONCEP_DATE")], by = c("SITE", "SCRNID", "MOMID", "PREGID")) %>% 
+  left_join(enroll_bind[c("SITE", "SCRNID", "MOMID", "PREGID", "EST_CONCEP_DATE",
+                          "BOE_GA_DAYS_ENROLL", "EDD_BOE")], by = c("SITE", "SCRNID", "MOMID", "PREGID")) %>% 
   # generate gestational age at each visit 
   mutate(M01_GESTAGE_AT_VISIT_DAYS = as.numeric(VISIT_DATE - EST_CONCEP_DATE, na.rm= TRUE)) %>% 
   # add in variable for GA at visit in WEEKS 
@@ -175,7 +178,7 @@ m01_to_bind <- m01_merged %>%
   # rename visit date 
   rename("M01_VISIT_DATE" = VISIT_DATE,
          "TYPE_VISIT" = M01_TYPE_VISIT) %>% 
-  select(-EST_CONCEP_DATE)
+  select(-EST_CONCEP_DATE, -BOE_GA_DAYS_ENROLL, -EDD_BOE)
 
 m00_to_bind <- m00_merged %>% 
   mutate(TYPE_VISIT = 1)
@@ -255,8 +258,8 @@ for(i in names(anc_data)){
 
 # Merge all ANC (minus MNH00-03) forms together 
 anc_data_wide <- anc_visit_out %>% reduce(full_join, by =  c("SITE","SCRNID", "MOMID", "PREGID", "TYPE_VISIT",
-                                                             "BOE_GA_DAYS_ENROLL", "BOE_GA_WKS_ENROLL", "EST_CONCEP_DATE",
-                                                             "M02_SCRN_OBSSTDAT", "EDD_BOE")) %>% distinct()
+                                                             "US_GA_DAYS_ENROLL", "US_GA_WKS_ENROLL", "EST_CONCEP_DATE",
+                                                             "M02_SCRN_OBSSTDAT","BOE_GA_DAYS_ENROLL","EDD_BOE", "EDD_US")) %>% distinct()
 
 # Merge MNH00,MNH01, MNH02, and MNH03 back into the data using the full merged dataset created above (dataframe name = enroll_bind_all)
 anc_data_wide <- anc_data_wide %>% 
@@ -296,14 +299,15 @@ visit_anc_1 <- anc_data_wide_visit %>%
            is.na(M02_SCRN_OBSSTDAT) ~ 0)) %>% 
   rename_with(~paste0(., "_", 1), 
               .cols = -c("SITE", "SCRNID", "MOMID", "PREGID", contains("M02"), contains("M00"), 
-                         "EST_CONCEP_DATE", "BOE_GA_DAYS_ENROLL", 
-                         "BOE_GA_WKS_ENROLL", "EDD_BOE")) 
+                         "EST_CONCEP_DATE", "US_GA_DAYS_ENROLL", 
+                         "US_GA_WKS_ENROLL", "EDD_US", "EDD_BOE", "BOE_GA_DAYS_ENROLL")) 
 
 ## NOTE: Forms that only get filled out at enrollment (visit 1) (MNH00, MNH02, MNH03) will need to be removed from the other visit data as to not have duplicates
 m00_to_remove <- grep("M00_", names(anc_data_wide_visit))
 m02_to_remove <- grep("M02_", names(anc_data_wide_visit))
 m03_to_remove <- grep("M03_", names(anc_data_wide_visit))
-baseline_to_remove <- c("EST_CONCEP_DATE", "BOE_GA_DAYS_ENROLL", "BOE_GA_WKS_ENROLL", "EDD_BOE")
+baseline_to_remove <- c("EST_CONCEP_DATE", "US_GA_DAYS_ENROLL", "US_GA_WKS_ENROLL",
+                        "EDD_US", "EDD_BOE", "BOE_GA_DAYS_ENROLL")
 
 ## Extract Visit 2 (ANC 20)
 visit_anc_2 <- anc_data_wide_visit %>% 
@@ -587,19 +591,20 @@ pnc_data_wide <- pnc_visit_out %>% reduce(full_join, by =  c("SITE", "MOMID", "P
 #   relocate(any_of(c("MOMID", "PREGID")), .after = SITE)
 # out_IDS <- test[duplicated(test[,1:3]),]
 # dim(out_IDS)
+
 gc()
 #*****************************************************************************
 #* Merge all ANC, IPC, PNC data to get wide dataset BY VISIT 
 #* One row for each mom at each visit 
 #*****************************************************************************
 
-### MERGE ALL TOGETHER - BY VISIT 
-out <- list(anc_data_wide_visit, ipc_data_wide_visit, pnc_data_wide_visit)
-MatData_Wide_Visit <- out %>% reduce(full_join, by =  c("SITE", "MOMID", "PREGID", "TYPE_VISIT"))  
-
-## Merge in maternal closeout form (MNH23) -- only filled out once which is why we merge it at the end  
-MatData_Wide_Visit <- left_join(MatData_Wide_Visit, m23_merged, by =c("SITE", "MOMID", "PREGID"))
-
+# ### MERGE ALL TOGETHER - BY VISIT 
+# out <- list(anc_data_wide_visit, ipc_data_wide_visit, pnc_data_wide_visit)
+# MatData_Wide_Visit <- out %>% reduce(full_join, by =  c("SITE", "MOMID", "PREGID", "TYPE_VISIT"))  
+# 
+# ## Merge in maternal closeout form (MNH23) -- only filled out once which is why we merge it at the end  
+# MatData_Wide_Visit <- left_join(MatData_Wide_Visit, m23_merged, by =c("SITE", "MOMID", "PREGID"))
+# 
 # # export
 # setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
 # #dt=format(Sys.time(), "%Y-%m-%d")
@@ -608,18 +613,82 @@ MatData_Wide_Visit <- left_join(MatData_Wide_Visit, m23_merged, by =c("SITE", "M
 #* Merge all ANC, IPC, PNC data to get wide dataset 
 #* #* One row for each mom 
 #*****************************************************************************
-### MERGE ALL TOGETHER - BY MOMID, PREGID, SCRNID  
+rm(list=ls()[! ls() %in% c("anc_data_wide","ipc_data_wide", "pnc_data_wide", "m23_merged", "UploadDate")])
+
+# ### MERGE ALL TOGETHER - BY MOMID, PREGID, SCRNID  
+# anc_data_wide <- anc_data_wide %>% filter(SITE != "India-SAS")
+# ipc_data_wide <- ipc_data_wide %>% filter(SITE != "India-SAS")
+# pnc_data_wide <- pnc_data_wide %>% filter(SITE != "India-SAS")
+# 
+gc()
+
+## only pull the variables we need for monitoring report 
+MatNames_sheet <- read_excel("~/Monitoring Report/code/varNames_sheet.xlsx", sheet = "MaternalVars")
+
+anc_data_wide <- anc_data_wide %>% 
+  select(matches(MatNames_sheet$varname), 
+         US_GA_WKS_ENROLL, US_GA_DAYS_ENROLL,
+         M02_SCRN_OBSSTDAT,EDD_US,BOE_GA_DAYS_ENROLL,
+         EST_CONCEP_DATE,
+         contains("_TYPE_VISIT_"), 
+         contains("_VISIT_COMPLETE"), 
+         contains("M04_ANC_OBSSTDAT_"),
+         contains("M12_VISIT_OBSSTDAT_"),
+         contains("GESTAGE_AT_VISIT_DAYS"),
+         contains("GESTAGE_AT_VISIT_WKS"),
+         contains("GESTAGE_AT_BIRTH_"), 
+         contains("_PNC_AT_VISIT_"),
+         contains("_GA_LMP_DAYS_SCORRES_"),
+         contains("M04_FETAL_LOSS_DSSTDAT"),
+         contains("M09_DELIV_DSSTDAT_INF"),
+         contains("VISIT_DATE"),
+         M00_KNOWN_DOBYN_SCORRES) 
+
+ipc_data_wide <- ipc_data_wide %>% 
+  select(matches(MatNames_sheet$varname), 
+         contains("_TYPE_VISIT_"), 
+         contains("_VISIT_COMPLETE"), 
+         contains("M04_ANC_OBSSTDAT_"),
+         contains("M12_VISIT_OBSSTDAT_"),
+         contains("GESTAGE_AT_VISIT_DAYS"),
+         contains("GESTAGE_AT_VISIT_WKS"),
+         contains("GESTAGE_AT_BIRTH_"), 
+         contains("_PNC_AT_VISIT_"),
+         contains("_GA_LMP_DAYS_SCORRES_"),
+         contains("M04_FETAL_LOSS_DSSTDAT"),
+         contains("M09_DELIV_DSSTDAT_INF"),
+         contains("VISIT_DATE")) 
+
+pnc_data_wide <- pnc_data_wide %>% 
+  select(matches(MatNames_sheet$varname), 
+         contains("_TYPE_VISIT_"), 
+         contains("_VISIT_COMPLETE"), 
+         contains("M04_ANC_OBSSTDAT_"),
+         contains("M12_VISIT_OBSSTDAT_"),
+         contains("GESTAGE_AT_VISIT_DAYS"),
+         contains("GESTAGE_AT_VISIT_WKS"),
+         contains("GESTAGE_AT_BIRTH_"), 
+         contains("_PNC_AT_VISIT_"),
+         contains("_GA_LMP_DAYS_SCORRES_"),
+         contains("M04_FETAL_LOSS_DSSTDAT"),
+         contains("VISIT_DATE")) 
+
+gc()
+
+## merge data together
 out <- list(anc_data_wide, ipc_data_wide, pnc_data_wide)
 MatData_Wide <- out %>% reduce(full_join, by = c("SITE", "MOMID", "PREGID"))  %>%
   relocate(DOB, .after = PREGID) %>% distinct()
 
 gc()
+
 ## Merge in maternal closeout form (MNH23) -- only filled out once which is why we merge it at the end  
 MatData_Wide <- full_join(MatData_Wide, m23_merged, by =c("SITE", "MOMID", "PREGID")) %>% 
   relocate(any_of(c("SCRNID", "MOMID", "PREGID")), .after = SITE) %>% 
   distinct()
 
 gc()
+
 # check for duplicates:
 # test <- MatData_Wide %>%
 #   relocate(any_of(c("SCRNID", "MOMID", "PREGID")), .after = SITE)

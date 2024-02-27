@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-01-30)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-02-27)"
 output:
   pdf_document:
     toc: no
@@ -29,7 +29,7 @@ library(webshot2)
 library(grid)
 library(gridExtra)
 
-UploadDate = "2024-01-26" 
+UploadDate = "2024-02-23" 
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
 
@@ -99,7 +99,7 @@ tb_theme1 <- function(matrix){
     ) %>%
     fmt_markdown(columns = everything()) %>%
     tab_options(table.width = pct(100)) %>%
-    cols_width(1 ~ px(280))
+    cols_width(1 ~ px(240)) ## to make rows more spread out, reduce this number 
 } 
 
 
@@ -134,17 +134,18 @@ setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/tables/"))
 
 **Versions:**
 
-**Date issued:** 2024-01-30
+**Date issued:** 2024-02-27
 
-**Included data last updated in Synapse:** 2024-01-26
+**Included data last updated in Synapse:** 2024-02-23
 
 #### **Last enrollment date: **
-  + Kenya: 2024-01-26
-  + Pakistan: 2024-01-19
-  + Ghana : 2023-12-28
-  + Zambia : 2024-01-23
-  + India CMC : 2024-01-12
- 
+  + Kenya: 2024-02-23
+  + Pakistan: 2024-02-16
+  + Ghana : 2024-01-25
+  + Zambia : 2024-02-07
+  + India CMC : 2024-02-09
+  + India SAS : 2024-02-16
+
 ```{r, results='hide' }
 #check last day of screening and enrollment
 lastscreen <- MatData_Screen_Enroll %>%
@@ -155,6 +156,7 @@ lastscreen <- MatData_Screen_Enroll %>%
   ungroup()
 
 lastenroll <- MatData_Screen_Enroll %>%
+  filter(M02_SCRN_OBSSTDAT <= UploadDate) %>% 
   filter(ENROLL == 1) %>% 
   select(M00_SCRN_OBSSTDAT, M02_SCRN_OBSSTDAT, SITE) %>%
   group_by(SITE) %>%
@@ -164,13 +166,14 @@ lastenroll <- MatData_Screen_Enroll %>%
  # table(lastscreen$last_screen, lastscreen$SITE)
  table(lastenroll$last_enroll, lastenroll$SITE)
 ## 
-
 ##new 
 date_last_enrll_pak <- lastenroll %>% filter(SITE == "Pakistan") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_ke <- lastenroll %>% filter(SITE == "Kenya") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_ga <- lastenroll %>% filter(SITE == "Ghana") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_za <- lastenroll %>% filter(SITE == "Zambia") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_cmc <- lastenroll %>% filter(SITE == "India-CMC") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
+date_last_enrll_sas <- lastenroll %>% filter(SITE == "India-SAS") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
+
 
 
 ```
@@ -195,6 +198,8 @@ MatData_Screen_Enroll$date_last_enrll_ke = date_last_enrll_ke
 MatData_Screen_Enroll$date_last_enrll_ga = date_last_enrll_ga
 MatData_Screen_Enroll$date_last_enrll_za = date_last_enrll_za
 MatData_Screen_Enroll$date_last_enrll_cmc = date_last_enrll_cmc
+MatData_Screen_Enroll$date_last_enrll_sas = date_last_enrll_sas
+
 
 tb_prescreen_enroll <- MatData_Screen_Enroll %>% 
   filter(
@@ -202,7 +207,8 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
     SITE == "Kenya" & (M00_SCRN_OBSSTDAT > date_last_enrll_ke) | 
     SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
     SITE == "Zambia" & (M00_SCRN_OBSSTDAT > date_last_enrll_za) | 
-    SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc)  
+    SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc) |
+    SITE == "India-SAS" & (M00_SCRN_OBSSTDAT > date_last_enrll_sas) 
   ) %>% 
   group_by(SITE) %>% 
   summarise("Pre-screened, n" = sum(PRESCREEN == 1, na.rm=TRUE),
@@ -223,8 +229,8 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
     SITE == "Kenya" & (M00_SCRN_OBSSTDAT > date_last_enrll_ke) | 
     SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
     SITE == "Zambia" & (M00_SCRN_OBSSTDAT > date_last_enrll_za) |
-    SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc) 
-
+    SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc) |
+    SITE == "India-SAS" & (M00_SCRN_OBSSTDAT > date_last_enrll_sas) 
 
   ) %>% 
   plyr::summarise("Pre-screened, n" = sum(PRESCREEN == 1, na.rm=TRUE),
@@ -315,6 +321,9 @@ tb_prescreen_all <- MatData_Screen_Enroll %>%
 ) %>% 
       t() %>% unlist()
   ) 
+
+
+
 ```
 
 ```{r}
@@ -346,7 +355,94 @@ prisma_tab2 <- prisma_tab2 %>% gtsave("prisma_tab2.png", expand = 10)
 knitr::include_graphics("prisma_tab2.png")
 ```
 
+\newpage
 
+### Figure 1: Reasons for exclusion in pre-screening for PRISMA
+*Value:* Distribution by exclusion criteria among those who are ineligible in pre-screening are listed below. Each row should sum to 100%. 
+
+```{r, echo=FALSE}
+
+### STACKED BAR CHART
+total_bysite <- MatData_Screen_Enroll %>% 
+  filter(PRESCREEN == 1 & PRESCREEN_DENOM == 1 & PRESCR_ELIGIBLE==0) %>% 
+  select(SITE, PRESCR_PREGSIGN, PRESCR_GA25, PRESCR_AGE, PRESCR_CATCHAREA, PRESCR_OTHER,CONSENT_PRESCREEN) %>%
+  rename( "No clinical signs of pregnancy" = PRESCR_PREGSIGN,
+          "Gestational age >=25 weeks" = PRESCR_GA25,
+          "Did not meet age requirement" = PRESCR_AGE,
+          "Outside catchment area" = PRESCR_CATCHAREA,
+          "Other reason" = PRESCR_OTHER,
+          "Did not consent" = CONSENT_PRESCREEN,
+           ) %>% 
+  pivot_longer(-SITE) %>% 
+  group_by(SITE, name) %>% 
+  summarise(n = sum(value==0, na.rm = TRUE),
+            n_pct = as.numeric(format(n/n()*100,digits = 2, nsmall=0))) 
+ 
+
+total_allsites <- MatData_Screen_Enroll %>% 
+  filter(PRESCREEN == 1 & PRESCREEN_DENOM == 1 & PRESCR_ELIGIBLE==0) %>% 
+  select(SITE, PRESCR_PREGSIGN, PRESCR_GA25, PRESCR_AGE, PRESCR_CATCHAREA, PRESCR_OTHER,CONSENT_PRESCREEN) %>%
+  rename( "No clinical signs of pregnancy" = PRESCR_PREGSIGN,
+          "Gestational age >=25 weeks" = PRESCR_GA25,
+          "Did not meet age requirement" = PRESCR_AGE,
+          "Outside catchment area" = PRESCR_CATCHAREA,
+          "Other reason" = PRESCR_OTHER,
+          "Did not consent" = CONSENT_PRESCREEN,
+           ) %>% 
+    pivot_longer(-SITE) %>% 
+  group_by(name) %>% 
+  summarise(n = sum(value==0, na.rm = TRUE),
+            n_pct = as.numeric(format(n/n()*100,digits = 2, nsmall=0))) %>% 
+  mutate(SITE ="Total")
+
+
+total_inelg = MatData_Screen_Enroll %>% 
+  filter(PRESCR_ELIGIBLE == 0) %>% 
+  select(SITE, PRESCR_ELIGIBLE) %>% 
+  group_by(SITE) %>% 
+  summarise(n_ineligible = sum(PRESCR_ELIGIBLE==0, na.rm = TRUE)) 
+
+barchart_data_out <- bind_rows(total_bysite, total_allsites) %>% 
+  left_join(total_inelg, by = c("SITE")) %>% 
+  mutate(n_ineligible = ifelse(row_number() == 1, n_ineligible, NA)) %>%
+  ungroup()
+
+
+desired_order <- unique(factor(barchart_data_out$SITE,
+                        levels=rev(c("Total", "Ghana", "India-CMC", "India-SAS", "Kenya", "Pakistan", "Zambia"))))
+
+desired_order2 <- unique(factor(barchart_data_out$name,
+                        levels=c("No clinical signs of pregnancy",
+                                "Gestational age >=25 weeks",
+                                "Did not meet age requirement",
+                                "Outside catchment area",
+                                "Other reason",
+                                "Did not consent")))
+
+ggplot(barchart_data_out %>% mutate(SITE = factor(SITE, levels = desired_order)), 
+       aes(fill = name, y = n_pct, x = SITE)) + 
+geom_bar(position="stack", stat="identity") +
+geom_text(aes(label = n_ineligible, x = SITE, y = n_pct+0.25), 
+            position = position_stack(vjust = 1), hjust = 0.12, color = "black", size = 2.5) +
+  coord_flip() +  
+  scale_fill_manual(values = c("#b40e20", "#e58600", "#e2d300", "#47acc8", "#01a08a","#0c775e"), #
+                     labels = c("No clinical signs of pregnancy", "Gestational age >=25 weeks",
+                                "Did not meet age requirement", "Outside catchment area",
+                                "Other reason", "Did not consent"),
+                    breaks=  c("No clinical signs of pregnancy", "Gestational age >=25 weeks",
+                                "Did not meet age requirement", "Outside catchment area",
+                                "Other reason", "Did not consent"),
+                    name = NULL) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 0, vjust = 1),
+        legend.position = "bottom",
+        legend.direction	= "horizontal",
+        panel.grid.minor = element_blank()) +
+  xlab("") +
+  ylab("Percentage") +
+  ggtitle("") 
+
+```
 
 
 \newpage
@@ -363,11 +459,11 @@ tb_enroll <- MatData_Screen_Enroll %>%
             "Enrolled, n(%)^b^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             
-              "Gestational age at enrollment, mean (SD)" = paste0(format(round(mean(BOE_GA_WKS_ENROLL, na.rm = TRUE),2), 
-                                                        nsmall=0, digits = 2), " (",format(round(sd(BOE_GA_WKS_ENROLL, 
+              "Gestational age at enrollment, mean (SD)" = paste0(format(round(mean(US_GA_WKS_ENROLL, na.rm = TRUE),2), 
+                                                        nsmall=0, digits = 2), " (",format(round(sd(US_GA_WKS_ENROLL, 
                                                             na.rm = TRUE),2), nsmall=0, digits = 2), ")"), 
-              "Enrolled in 1st trimester, n(%)^c^" = paste0(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
-                          format(round(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, 2), nsmall = 0, digits = 2),
+              "Enrolled in 1st trimester, n(%)^c^" = paste0(sum(US_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
+                          format(round(sum(US_GA_WKS_ENROLL < 14, na.rm = TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, 2), nsmall = 0, digits = 2),
     ")"),
             "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
                              " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
@@ -392,11 +488,11 @@ tb_enroll <- MatData_Screen_Enroll %>%
             "Enrolled, n(%)^b^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             
-              "Gestational age at enrollment, mean (SD)" = paste0(format(round(mean(BOE_GA_WKS_ENROLL, na.rm = TRUE),2), 
-                                                        nsmall=0, digits = 2), " (",format(round(sd(BOE_GA_WKS_ENROLL, 
+              "Gestational age at enrollment, mean (SD)" = paste0(format(round(mean(US_GA_WKS_ENROLL, na.rm = TRUE),2), 
+                                                        nsmall=0, digits = 2), " (",format(round(sd(US_GA_WKS_ENROLL, 
                                                             na.rm = TRUE),2), nsmall=0, digits = 2), ")"), 
-              "Enrolled in 1st trimester, n(%)^c^" = paste0(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
-                          format(round(sum(BOE_GA_WKS_ENROLL < 14, na.rm = TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, 2), nsmall = 0, digits = 2),
+              "Enrolled in 1st trimester, n(%)^c^" = paste0(sum(US_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
+                          format(round(sum(US_GA_WKS_ENROLL < 14, na.rm = TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, 2), nsmall = 0, digits = 2),
     ")"),
             "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
                              " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
@@ -457,7 +553,91 @@ knitr::include_graphics("prisma_tab3.png")
 
 \newpage
 
-### Figure 1a: Cumulative enrollment in PRISMA by site
+### Figure 2: Reasons for exclusion in screening for PRISMA
+*Value:* Distribution by exclusion criteria among those who are ineligible in screening are listed below. Each row should sum to 100%. 
+
+```{r, echo=FALSE}
+### STACKED BAR CHART
+total_bysite <- MatData_Screen_Enroll %>% 
+  filter(SCREEN == 1 & SCREEN_DENOM == 1 & ENROLL==0) %>% 
+  select(SITE, AGE, GA20, CATCHAREA, CATCHREMAIN, CONSENT) %>%
+  rename( "Did not meet age requirement" = AGE,
+          "Gestational age >=20 weeks" = GA20,
+          "Outside catchment area" = CATCHAREA,
+          "Doesn't plan to remain in catchment area" = CATCHREMAIN,
+          "Did not consent" = CONSENT
+           ) %>% 
+  pivot_longer(-SITE) %>% 
+  group_by(SITE, name) %>% 
+  summarise(n = sum(value==0, na.rm = TRUE),
+            n_pct = as.numeric(format(n/n()*100,digits = 2, nsmall=0))) 
+ 
+
+total_allsites <- MatData_Screen_Enroll %>% 
+  filter(SCREEN == 1 & SCREEN_DENOM == 1 & ENROLL==0) %>% 
+  select(SITE, AGE, GA20, CATCHAREA, CATCHREMAIN, CONSENT) %>%
+  rename( "Did not meet age requirement" = AGE,
+          "Gestational age >=20 weeks" = GA20,
+          "Outside catchment area" = CATCHAREA,
+          "Doesn't plan to remain in catchment area" = CATCHREMAIN,
+          "Did not consent" = CONSENT
+           ) %>% 
+  pivot_longer(-SITE) %>% 
+  group_by(name) %>% 
+  summarise(n = sum(value==0, na.rm = TRUE),
+            n_pct = as.numeric(format(n/n()*100,digits = 2, nsmall=0))) %>% 
+  mutate(SITE ="Total")
+
+
+total_inelg = MatData_Screen_Enroll %>% 
+  filter(ENROLL == 0) %>% 
+  select(SITE, ENROLL) %>% 
+  group_by(SITE) %>% 
+  summarise(n_ineligible = sum(ENROLL==0, na.rm = TRUE)) 
+
+barchart_data_out <- bind_rows(total_bysite, total_allsites) %>% 
+  left_join(total_inelg, by = c("SITE")) %>% 
+  mutate(n_ineligible = ifelse(row_number() == 1, n_ineligible, NA)) %>%
+  ungroup()
+
+
+desired_order <- unique(factor(barchart_data_out$SITE,
+                        levels=rev(c("Total", "Ghana", "India-CMC", "India-SAS", "Kenya", "Pakistan", "Zambia"))))
+
+desired_order2 <- unique(factor(barchart_data_out$name,
+                          levels = c( "Did not meet age requirement",
+                                  "Gestational age >=20 weeks",
+                                  "Outside catchment area",
+                                  "Doesn't plan to remain in catchment area",
+                                  "Did not consent")))
+
+ggplot(barchart_data_out %>% mutate(SITE = factor(SITE, levels = desired_order)), 
+       aes(fill = name, y = n_pct, x = SITE)) + 
+geom_bar(position="stack", stat="identity") +
+geom_text(aes(label = n_ineligible, x = SITE, y = n_pct+0.25), 
+            position = position_stack(vjust = 1), hjust = 0.12, color = "black", size = 3) +
+  coord_flip() +  
+  scale_fill_manual(values = c("#b40e20", "#e58600", "#e2d300", "#47acc8", "#01a08a","#0c775e"), #
+                     labels = c("Did not meet age requirement","Gestational age >=20 weeks",
+                                  "Outside catchment area", "Doesn't plan to remain in catchment area", "Did not consent"),
+                     breaks=  c("Did not meet age requirement","Gestational age >=20 weeks",
+                                  "Outside catchment area", "Doesn't plan to remain in catchment area", "Did not consent"),
+                     name = NULL,
+                     guide = guide_legend(nrow = 3)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 0, vjust = 1),
+        legend.position = "bottom",
+        legend.direction	= "horizontal",
+        panel.grid.minor = element_blank()) +
+  xlab("") +
+  ylab("Percentage") +
+  ggtitle("") 
+
+```
+
+\newpage
+
+### Figure 3a: Cumulative enrollment in PRISMA by site
 *Value:* Track total enrollment by site each week since study launch. 
 
 ```{r, echo=FALSE}
@@ -465,33 +645,35 @@ knitr::include_graphics("prisma_tab3.png")
 enroll_cum <- MatData_Screen_Enroll %>% 
   arrange("", by_group=START_DATE_MOM_WK) %>% 
   filter(ENROLL == 1 & !is.na(START_DATE_MOM_WK), 
-         START_DATE_MOM_WK > dmy("21/09/2022")) %>% 
+         START_DATE_MOM_WK > dmy("21/09/2022"),
+         START_DATE_MOM_WK <= UploadDate) %>% 
   group_by(SITE, START_DATE_MOM_WK) %>% 
   summarise(n = n()) %>% 
   mutate(cum_n = cumsum(n)) %>% 
   ungroup() 
 
 
-# New row with a new date
-new_row <- data.frame(
-  SITE = "ZZ",  # Adjust site name as needed
-  START_DATE_MOM_WK = as.Date(UploadDate) + days(14),  # Adjust the new date
-  n = 0,
-  cum_n = 0
-)
+# # New row with a new date
+# new_row <- data.frame(
+#   SITE = "ZZ",  # Adjust site name as needed
+#   START_DATE_MOM_WK = as.Date(UploadDate) + days(14),  # Adjust the new date
+#   n = 0,
+#   cum_n = 0
+# )
 
-
+# make sure date in date class
 enroll_cum$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum$START_DATE_MOM_WK))
-
-enroll_cum <- bind_rows(enroll_cum, new_row)
+# confirm order of sites to coordinate with colors
+enroll_cum$SITE <- factor(enroll_cum$SITE,
+                          levels=c("Ghana", "India-CMC", "Kenya", "Pakistan", "Zambia","India-SAS")) #
 
 ggplot() +
   geom_point(data = enroll_cum, aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE), shape = 15) +
   geom_line(data = enroll_cum, aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE)) +
   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
                expand = c(0, 0)) +
-  scale_color_manual(values = c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3", "white"),
-                     labels = c("Ghana", "India-CMC", "Kenya", "Pakistan", "Zambia", "")) +
+  scale_color_manual(values = c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3","orange"), #
+                     labels = c("Ghana", "India-CMC", "Kenya", "Pakistan", "Zambia","India-SAS")) + #
   facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0, vjust = 1),
@@ -538,12 +720,15 @@ ggplot() +
 
 \newpage
 
-###  Figure 1b: Cumulative actual versus expected enrollment in PRISMA by site
-*Value:* Compare expected and actual enrollment for each site over time. Calculated by dividing the total target enrollment by 36 months to get the average enrollment per month over the course of three years. We can further divide to get average enrollment per week.
+###  Figure 3b: Cumulative actual versus expected enrollment in PRISMA by site
+*Value:* Compare expected and actual enrollment for each site over time. Calculated by dividing the total target enrollment by 36 months to get the average enrollment per month over the course of three years (one year for India-SAS). We can further divide to get average enrollment per week.
 
 ```{r, echo=FALSE,out.width="49%",out.height="49%",fig.show='hold', fig.align='left'}
 
-## pakistan
+#****************
+# Pakistan
+#****************
+
 enroll_cum_PA <- MatData_Screen_Enroll %>% 
   arrange("", by_group=START_DATE_MOM_WK) %>% 
   filter(SCREEN == 1 & SITE == "Pakistan" & !is.na(START_DATE_MOM_WK), 
@@ -563,6 +748,18 @@ enroll_cum_PA <- MatData_Screen_Enroll %>%
   ungroup() 
 
 enroll_cum_PA$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_PA$START_DATE_MOM_WK))
+# max_y will help us plot the year annotations on the figures
+# max_y <- max(enroll_cum_PA$expect_cum) * 1.05
+# 
+# # midpoint will help us plot the year annotations on the figures
+# midpoint <- enroll_cum_PA %>% 
+#   mutate(year = year(START_DATE_MOM_WK)) %>% 
+#   group_by(year) %>%
+#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
+#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
+#                                    TRUE ~NA),
+#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
+#                                    TRUE ~NA))
 
 enroll_cum_PA %>% 
   ggplot(aes(x = START_DATE_MOM_WK)) +
@@ -570,13 +767,14 @@ enroll_cum_PA %>%
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
-  # scale_x_date(date_breaks = "2 weeks", date_labels = ("%m-%d"), limits = c(dmy("25-09-2022"), UploadDate)) + ## UPDATE EACH RUN\
+  geom_vline(xintercept = ymd("2024-01-01")) +
+  geom_vline(xintercept = ymd("2023-01-01")) +
   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
-  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
@@ -584,11 +782,14 @@ enroll_cum_PA %>%
         strip.placement = "outside", 
         strip.background = element_rect(fill = NA, color = "grey"),
         panel.spacing = unit(0,"cm")) +
-  xlab("Week") +
+  xlab("Month") +
   ylab("Number of participants enrolled") +
   ggtitle("Pakistan") 
 
-# kenya
+#****************
+# Kenya
+#****************
+
 enroll_cum_KE <- MatData_Screen_Enroll %>% 
   arrange("", by_group=START_DATE_MOM_WK) %>% 
   filter(SCREEN == 1 & SITE == "Kenya" & !is.na(START_DATE_MOM_WK), 
@@ -608,19 +809,33 @@ enroll_cum_KE <- MatData_Screen_Enroll %>%
   ungroup() 
 
 enroll_cum_KE$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_KE$START_DATE_MOM_WK))
+# max_y will help us plot the year annotations on the figures
+# max_y <- max(enroll_cum_KE$expect_cum) * 1.05
+# 
+# # midpoint will help us plot the year annotations on the figures
+# midpoint <- enroll_cum_KE %>% 
+#   mutate(year = year(START_DATE_MOM_WK)) %>% 
+#   group_by(year) %>%
+#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
+#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
+#                                    TRUE ~NA),
+#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
+#                                    TRUE ~NA))
 
- enroll_cum_KE %>% 
+enroll_cum_KE %>% 
   ggplot(aes(x = START_DATE_MOM_WK)) +
   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  geom_vline(xintercept = ymd("2024-01-01")) +
+  geom_vline(xintercept = ymd("2023-01-01")) +
   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
-  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
@@ -628,11 +843,14 @@ enroll_cum_KE$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_KE$START_DATE_M
         strip.placement = "outside", 
         strip.background = element_rect(fill = NA, color = "grey"),
         panel.spacing = unit(0,"cm")) +
-  xlab("Week") +
+  xlab("Month") +
   ylab("Number of participants enrolled") +
   ggtitle("Kenya") 
 
-## Ghana
+#****************
+# Ghana
+#****************
+
 enroll_cum_GA <- MatData_Screen_Enroll %>%
   arrange("", by_group=START_DATE_MOM_WK) %>%
   filter(SCREEN == 1 & SITE == "Ghana" & !is.na(START_DATE_MOM_WK),
@@ -652,19 +870,31 @@ enroll_cum_GA <- MatData_Screen_Enroll %>%
   ungroup()
 
 enroll_cum_GA$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_GA$START_DATE_MOM_WK))
-
+# # max_y will help us plot the year annotations on the figures
+# max_y <- max(enroll_cum_GA$expect_cum) * 1.05
+# 
+# # midpoint will help us plot the year annotations on the figures
+# midpoint <- enroll_cum_GA %>% 
+#   mutate(year = year(START_DATE_MOM_WK)) %>% 
+#   group_by(year) %>%
+#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
+#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
+#                                    TRUE ~NA),
+#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
+#                                    TRUE ~NA))
 enroll_cum_GA %>%
   ggplot(aes(x = START_DATE_MOM_WK)) +
   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
-  geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  geom_line(aes(y = enroll_cum, color = "Enrolled")) +  
+  geom_vline(xintercept = ymd("2024-01-01")) +
   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
-  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
@@ -672,15 +902,19 @@ enroll_cum_GA %>%
         strip.placement = "outside", 
         strip.background = element_rect(fill = NA, color = "grey"),
         panel.spacing = unit(0,"cm")) +
-  xlab("Week") +
+  xlab("Month") +
   ylab("Number of participants enrolled") +
   ggtitle("Ghana")
 
+#****************
 # Zambia
+#****************
+
 enroll_cum_ZA <- MatData_Screen_Enroll %>% 
   arrange("", by_group=START_DATE_MOM_WK) %>% 
   filter(SCREEN == 1 & SITE == "Zambia" & !is.na(START_DATE_MOM_WK), 
-         START_DATE_MOM_WK > dmy("15/12/2022")) %>% 
+         START_DATE_MOM_WK > dmy("15/12/2022"), 
+         START_DATE_MOM_WK <= UploadDate) %>% 
   group_by(START_DATE_MOM_WK) %>% 
   summarise(enroll_n=sum(ENROLL==1),
             expect_n=mean(EXPECT)) %>% 
@@ -696,6 +930,18 @@ enroll_cum_ZA <- MatData_Screen_Enroll %>%
   ungroup() 
 
 enroll_cum_ZA$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_ZA$START_DATE_MOM_WK))
+# # max_y will help us plot the year annotations on the figures
+# max_y <- max(enroll_cum_ZA$expect_cum) * 1.05
+# 
+# # midpoint will help us plot the year annotations on the figures
+# midpoint <- enroll_cum_ZA %>% 
+#   mutate(year = year(START_DATE_MOM_WK)) %>% 
+#   group_by(year) %>%
+#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
+#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
+#                                    TRUE ~NA),
+#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
+                                   # TRUE ~NA))
 
 enroll_cum_ZA %>% 
   ggplot(aes(x = START_DATE_MOM_WK)) +
@@ -703,12 +949,14 @@ enroll_cum_ZA %>%
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  geom_vline(xintercept = ymd("2024-01-01")) +
+  geom_vline(xintercept = ymd("2023-01-01")) +
   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
-  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
@@ -716,12 +964,14 @@ enroll_cum_ZA %>%
         strip.placement = "outside", 
         strip.background = element_rect(fill = NA, color = "grey"),
         panel.spacing = unit(0,"cm")) +
-  xlab("Week") +
+  xlab("Month") +
   ylab("Number of participants enrolled") +
   ggtitle("Zambia") 
 
-
+#****************
 # India CMC
+#****************
+
 enroll_cum_CMC <- MatData_Screen_Enroll %>% 
   arrange("", by_group=START_DATE_MOM_WK) %>% 
   filter(SCREEN == 1 & SITE == "India-CMC" & !is.na(START_DATE_MOM_WK), 
@@ -741,6 +991,18 @@ enroll_cum_CMC <- MatData_Screen_Enroll %>%
   ungroup() 
 
 enroll_cum_CMC$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_CMC$START_DATE_MOM_WK))
+# max_y will help us plot the year annotations on the figures
+# max_y <- max(enroll_cum_CMC$expect_cum) * 1.05
+# 
+# # midpoint will help us plot the year annotations on the figures
+# midpoint <- enroll_cum_CMC %>% 
+#   mutate(year = year(START_DATE_MOM_WK)) %>% 
+#   group_by(year) %>%
+#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
+#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
+#                                    TRUE ~NA),
+#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
+#                                    TRUE ~NA))
 
 enroll_cum_CMC %>% 
   ggplot(aes(x = START_DATE_MOM_WK)) +
@@ -748,12 +1010,13 @@ enroll_cum_CMC %>%
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  geom_vline(xintercept = ymd("2024-01-01")) + 
   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
-  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
@@ -761,9 +1024,77 @@ enroll_cum_CMC %>%
         strip.placement = "outside", 
         strip.background = element_rect(fill = NA, color = "grey"),
         panel.spacing = unit(0,"cm")) +
-  xlab("Week") +
+  xlab("Month") +
   ylab("Number of participants enrolled") +
-  ggtitle("India-CMC")
+  ggtitle("India-CMC")  
+
+#****************
+# India SAS 
+#****************
+
+enroll_cum_SAS <- MatData_Screen_Enroll %>% 
+  arrange("", by_group=START_DATE_MOM_WK) %>% 
+  filter(SCREEN == 1 & SITE == "India-SAS" & !is.na(START_DATE_MOM_WK), 
+         START_DATE_MOM_WK > dmy("01/12/2023")) %>% 
+  group_by(START_DATE_MOM_WK) %>% 
+  summarise(enroll_n=sum(ENROLL==1),
+            expect_n=mean(EXPECT)) %>% 
+  mutate(
+  gap = as.numeric(ymd(START_DATE_MOM_WK)-lag(ymd(START_DATE_MOM_WK))),
+  expect_n = case_when(
+    gap <= 1 ~ expect_n,
+    gap > 1 ~ expect_n*gap,
+    is.na(gap) ~ expect_n
+  )) %>% 
+  mutate(expect_cum=cumsum(expect_n),
+         enroll_cum=cumsum(enroll_n))%>% 
+  ungroup() 
+
+enroll_cum_SAS$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_SAS$START_DATE_MOM_WK))
+
+# # max_y will help us plot the year annotations on the figures
+# max_y <- max(enroll_cum_SAS$expect_cum) * 1.05
+# 
+# # midpoint will help us plot the year annotations on the figures
+# midpoint <- enroll_cum_SAS %>% 
+#   mutate(year = year(START_DATE_MOM_WK)) %>% 
+#   group_by(year) %>%
+#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
+#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
+#                                    TRUE ~NA),
+#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
+#                                    TRUE ~NA))
+
+enroll_cum_SAS %>%
+  ggplot(aes(x = START_DATE_MOM_WK)) +
+  geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
+  geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
+  geom_line(aes(y = expect_cum, color = "Expected")) +
+  geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  scale_x_date(date_breaks = "month", date_labels = ("%b"),
+               expand = c(0, 0)) +
+  scale_color_manual("",
+                     breaks=c("Expected","Enrolled"),
+                     values = c("orange", "royalblue1")) +
+  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free", switch= "x") +
+  geom_vline(xintercept = ymd("2024-01-01")) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 0),
+        legend.position="bottom",
+        panel.grid.minor = element_blank(),
+        strip.placement = "outside",
+        strip.background = element_rect(fill = NA, color = "grey"),
+        panel.spacing = unit(0,"cm")) +
+  xlab("Month") +
+  ylab("Number of participants enrolled") +
+  ggtitle("India-SAS") 
+  # geom_rect(aes(xmin = midpoint$midpoint_2023 - days(2), xmax = midpoint$midpoint_2023 + days(5), ymin = max_y - (max_y * 0.1) - 0.1, ymax = max_y), fill = "grey", color = NA, alpha = 0.5) +
+  # annotate("text", x = midpoint$midpoint_2023, y = max_y-(max_y*.075), label = "2023", vjust = 0, hjust = 0) +
+  # # annotate("text", x = midpoint$midpoint_2024-3, y = max_y-(max_y*.075), label = "2024", vjust = 0, hjust = 0) 
+  # geom_rect(aes(xmin = midpoint$midpoint_2024 - days(5), xmax = midpoint$midpoint_2024 + days(2), ymin = max_y - (max_y * 0.1) - 0.1, ymax = max_y), fill = "grey", color = NA, alpha = 0.5) +
+  # # annotate("text", x = midpoint$midpoint_2024-3, y = max_y-(max_y*.075), label = "2024", vjust = 0, hjust = 0) 
+  # geom_text(aes(x = midpoint$midpoint_2024 - days(3), y = max_y - (max_y * 0.075), label = "2024"), vjust = 0, hjust = 0, color = "black", size = 4)
+
 
 ```
 
@@ -1153,7 +1484,9 @@ table5 <- bind_rows(VISIT_COMPLETE_ANC,
                  )
                 ) %>% 
     mutate_all(funs(str_replace(., "NaN", "0"))) %>%
-    mutate_all(funs(str_replace(., "NA", "0"))) 
+    mutate_all(funs(str_replace(., "NA", "0"))) %>% 
+    mutate_at(vars(everything()), ~ifelse(is.na(.), "0 (0)", .))
+
 
 table5_anc <- table5[c(1:10),]
 table5_pnc <- table5[c(11:22),]
@@ -1413,7 +1746,7 @@ ENROLLMENT <- Prot_Compliance_Anc %>%
 )
 
 ANC20 <- Prot_Compliance_Anc %>% 
-    filter(BOE_GA_WKS_ENROLL <= 17) %>% 
+    filter(US_GA_WKS_ENROLL <= 17) %>% 
     rowwise() %>% 
     group_by(SITE) %>% 
     summarise(
@@ -1465,7 +1798,7 @@ ANC20 <- Prot_Compliance_Anc %>%
     add_column(
       .before = 1,
       "Total" = Prot_Compliance_Anc %>%
-      filter(BOE_GA_WKS_ENROLL <= 17) %>% 
+      filter(US_GA_WKS_ENROLL <= 17) %>% 
         plyr::summarise(
           
       "Denominator" = paste0(
@@ -2118,7 +2451,7 @@ ENROLLMENT <- Form_Completion_Anc %>%
 
 ## ANC20
 ANC20 <- Form_Completion_Anc %>% 
-    filter(BOE_GA_WKS_ENROLL <= 17) %>% 
+    filter(US_GA_WKS_ENROLL <= 17) %>% 
     rowwise() %>% 
     group_by(SITE) %>% 
     summarise(
@@ -2183,7 +2516,7 @@ ANC20 <- Form_Completion_Anc %>%
     add_column(
       .before = 1,
       "Total" = Form_Completion_Anc %>% 
-      filter(BOE_GA_WKS_ENROLL <= 17) %>% 
+      filter(US_GA_WKS_ENROLL <= 17) %>% 
         plyr::summarise(
                 
     "Denominator" = paste0(
@@ -2884,7 +3217,11 @@ table8 <- bind_rows(IPC_Total,
                  "MNH11 Newborn Birth Outcome")
                )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
-  mutate_all(funs(str_replace(., "NA", "0"))) 
+  mutate_all(funs(str_replace(., "NA", "0"))) %>%   
+  mutate_at(vars(everything()), ~ifelse(is.na(.), "0 (0)", .))
+
+
+
 
 ## table 8
 prisma_tab8 <- tb_theme1(table8) %>% 
@@ -2940,7 +3277,7 @@ knitr::include_graphics("prisma_tab8.png")
 
 \newpage
 
-### Figure 2: Distribution of gestational ages of participants who passed the IPC window and do not yet have a pregnancy outcome reported
+### Figure 4: Distribution of gestational ages of participants who passed the IPC window and do not yet have a pregnancy outcome reported
 
 *Value:* Gestational age of participants who have passed the target IPC window and do not have any IPC forms. 
 
@@ -2949,7 +3286,7 @@ knitr::include_graphics("prisma_tab8.png")
 figure2 <- MatData_Ipc_Visits_Mat %>%
   # only include participants who are enrolled and who do not have a pregnancy end (ENDPREG_DAYS == NA)
   filter(GA42_MISSING_IPC==1, CLOSED_OUT != 1) %>%
-  select(SITE, MOMID, PREGID, EST_CONCEP_DATE, CLOSED_OUT, M23_CLOSE_DSSTDAT) %>%
+  select(SITE, MOMID, PREGID,DOB, EST_CONCEP_DATE, CLOSED_OUT, M23_CLOSE_DSSTDAT) %>%
   # generate variable for upload date
   mutate(UPLOADDATE = ymd(UploadDate)) %>% 
   # calculate the age of particpant TODAY (at date of upload)
@@ -2959,8 +3296,8 @@ figure2 <- MatData_Ipc_Visits_Mat %>%
 # max(figure2$AGE_AT_UPLOAD_DAYS)
 ## work on automating min and max labels and breaks
 ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
-  geom_histogram(binwidth = 7) +
-  facet_grid(rows = vars(SITE)) +
+  geom_histogram(binwidth = 7, fill = "skyblue4", color  ="black") +
+  facet_grid(rows = vars(SITE), scales = "free") +
   theme_bw() +
   theme(axis.text.x = element_text(vjust = 1, hjust=1),
         legend.position="bottom",
@@ -2972,6 +3309,30 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
   scale_y_continuous(labels = scales::number_format(scale = 1, accuracy = 1)) +
   xlab("Estimated Gestational Age") +
   ylab("Number of participants")
+
+# pak_subset <-figure2 %>% filter(SITE == "Pakistan") %>% 
+#   mutate(AGE_AT_UPLOAD_WKS = AGE_AT_UPLOAD_DAYS %/% 7) 
+# 
+# data_dictionary <- data.frame("varname" = names(pak_subset),
+#                               "definition" = c("site", 
+#                                                "momid",
+#                                                "pregnancy id",
+#                                                "date of birth; if this is NA then no DOB has been reported for this participant.",
+#                                                "estimated date of conception. calculated using teh date of enrollment ultrasound and gestational age at enrollment (est_concep_date = ultrasound date - GA at ultrasound).",
+#                                                "binary variable for close out. if a particpant has a closeout form, this will be a 1; if no closeout form, this will be a 0.",
+#                                                "date of closeout from closeout form.",
+#                                                "date of most recent upload.",
+#                                                "estimated age in days at time of recent upload. calculated by taking upload date - estimated conception date.",
+#                                                "estimated age in weeks at time of recent upload. calculated by taking upload date - estimated conception date."))
+# path = paste0("D:/Users/stacie.loisate/Documents/Analysis/pak_momids_over42wks.xlsx")
+# # path = paste("output/",UploadDate, "_intergrowth_bw_ga_outrange_report", ".xlsx", sep = "")
+# header_st <- createStyle(textDecoration = "Bold")
+# 
+# list_of_datasets <- list("Dictionary" = data_dictionary, "Report" = pak_subset)
+# 
+# write.xlsx(list_of_datasets, file = path,
+#            headerStyle = createStyle(textDecoration = "Bold"))
+# 
 
 
 # min(figure2$AGE_AT_UPLOAD_DAYS)
@@ -3457,7 +3818,8 @@ prot_compliance_pnc <- bind_rows(birthoutcome,
                  )
                )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
-  mutate_all(funs(str_replace(., "NA", "0"))) 
+  mutate_all(funs(str_replace(., "NA", "0"))) %>% 
+  mutate_at(vars(everything()), ~ifelse(is.na(.), "0 (0)", .))
 
 
 table9_1 <- prot_compliance_pnc[c(1:10),]
@@ -4079,7 +4441,9 @@ form_completion_pnc <- bind_rows(birthoutcome,
                  )
                )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
-  mutate_all(funs(str_replace(., "NA", "0"))) 
+  mutate_all(funs(str_replace(., "NA", "0"))) %>% 
+  mutate_at(vars(everything()), ~ifelse(is.na(.), "0 (0)", .))
+
 
 
 table10_1 <- form_completion_pnc[c(1:10),]
@@ -4353,7 +4717,7 @@ knitr::include_graphics("prisma_table11.png")
 \newpage
 
 
-### Figure 3a. Heat maps of form completion for ANC visits in PRISMA 
+### Figure 5a. Heat maps of form completion for ANC visits in PRISMA 
 *Value:* Percent of visit forms completed among women who were expected for an ANC visit, regardless of visit completion status.
 
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
@@ -4415,7 +4779,7 @@ ENROLLMENT_PCT <- Heat_Maps_Anc %>%
 
 
 ANC20_PCT <- Heat_Maps_Anc %>% 
-  filter(BOE_GA_WKS_ENROLL <= 17) %>% 
+  filter(US_GA_WKS_ENROLL <= 17) %>% 
   rowwise() %>% 
   group_by(SITE) %>% 
   summarise(
@@ -4755,7 +5119,7 @@ out5 + theme(legend.position = "bottom")
 
 \newpage
 
-### Figure 3b. Heat maps of form completion for PNC visits in PRISMA 
+### Figure 5b. Heat maps of form completion for PNC visits in PRISMA 
 *Value:* Percent of visit forms completed among women who were expected for an PNC visit, regardless of visit completion status.
 
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
@@ -5127,9 +5491,9 @@ out5  <- heat_map_data_pnc %>%
   coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
 
 # 
-# out6  <- heat_map_data_pnc %>% 
+# out6  <- heat_map_data_pnc %>%
 #   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-#   filter(VISIT == UNIQUE_VISITS[6]) %>% 
+#   filter(VISIT == UNIQUE_VISITS[6]) %>%
 #   ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
 #   geom_tile(color = "grey40", size = 0.2) +
 #   scale_fill_manual(values = custom_palette,
@@ -5152,9 +5516,9 @@ out5  <- heat_map_data_pnc %>%
 #         legend.key.width = grid::unit(0.5, "cm"),
 #         plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
 #         plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-#         plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
+#         plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) +
 #   coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
-# 
+
 ```
 
 ```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
@@ -5186,12 +5550,11 @@ out5 + theme(legend.position = "bottom")
 
 ```
 
-\newpage
+<!-- \newpage -->
 
-```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
-# grid.arrange(legend_gtable)
-# out6 + theme(legend.position = "bottom")
-```
+<!-- # ```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'} -->
+<!-- # out6 + theme(legend.position = "bottom") -->
+<!-- # ``` -->
 
 \newpage
 
@@ -5470,7 +5833,7 @@ plot_criteria %>%
   theme_bw() +  
   theme(strip.background=element_rect(fill="white"),
         axis.text = element_text(size = 7),
-        axis.text.x = element_text(size = 6),
+        axis.text.x = element_text(size = 6, angle = 90),  # Rotate x-axis labels by 180 degrees
         legend.key.size = unit(0.38,"cm"),
         legend.title = element_blank(),
         legend.text = element_text(size = 8),)
@@ -5555,7 +5918,6 @@ remapp_table3 <- MatData_Hb_Visit %>%
   
             "PNC6" = paste0(sum(HB_COMPLETED_10 == 1, na.rm = TRUE),
                                         " (", format(sum(HB_COMPLETED_10 == 1, na.rm = TRUE)/sum(DenHBV10 == 1, na.rm = TRUE)*100, digits = 2, nsmall=0), ")")
-                    
 
 ) %>%
       t() %>% unlist()
@@ -5622,8 +5984,8 @@ ggplot(data = MatData_Hb_GA_Visit,
     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1),
         legend.position="bottom",
         panel.grid.minor = element_blank(),
-                # Adjust facet label font size
-        strip.text = element_text(size = 8) # You can modify the size as needed
+    # Adjust facet label font size
+        strip.text = element_text(size = 7) # You can modify the size as needed
         ) +
   scale_x_continuous(breaks = c(0,49,98,147,198,245, 294),
                      label = c("0", "7", "14", "21", "28", "35", "42"), 

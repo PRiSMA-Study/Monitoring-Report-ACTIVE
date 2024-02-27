@@ -2,7 +2,7 @@
 #* INFANT WIDE DATASET by VISIT 
 #*Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #*Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 25 October 2023
+#* Last updated: 24 Feb 2024
 
 #*Output:   
 #* 1. InfData_Wide.RData wide dataset by INFANTID and visit type (one row for each infant at each visit)
@@ -24,7 +24,7 @@ rm(list = ls())
 library(tidyverse)
 library(lubridate)
 library(readxl)
-UploadDate = "2024-01-26"
+UploadDate = "2024-02-23"
 
 #*****************************************************************************
 #* Import merged data 
