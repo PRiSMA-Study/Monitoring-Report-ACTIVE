@@ -2,7 +2,7 @@
 #*Function: Read in raw data and merged all sites data by form 
 #*Input: Raw .csvs for each site 
 #*Output: .RData file for each form that is merged for all sites 
-#* Last updated: 20 November 2023
+#* Last updated: 24 Feb 2024
 
 
 ## STEPS ## 
@@ -36,7 +36,7 @@ library(readxl)
 
 # UPDATE EACH RUN # 
 # set upload date 
-UploadDate = "2024-01-26"
+UploadDate = "2024-02-23"
 
 # UPDATE EACH RUN # 
 # create vector of all sites with data in the upload 
@@ -61,173 +61,217 @@ dir.create(file.path(merged_dir, date_dir), showWarnings = FALSE)
 dir.create(file.path(cleaned_dir, date_dir), showWarnings = FALSE)
 
 #*****************************************************************************
-#*Will need to set directory and read data for each country 
-#*****************************************************************************
-# set working directory to network drive 
-site = "Pakistan"
-setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
-
-## import raw .CSVs in wide format 
-temp = list.files(pattern="*.csv")
-myfiles = lapply(temp, read.csv)
-
-#  ## make sure all column names are uppercase 
-myfiles <- lapply(myfiles, function (x){
-  upper <- toupper(names(x))
-  setnames(x, upper)
-})
-
-## convert to individual dataframes 
-names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
-list2env(myfiles, globalenv())
-
-# replace empty momid and pregid with NA
-mnh02_Pakistan <- mnh02_Pakistan %>% 
-  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
-         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
-
-# rename MOMID variable in mnh28
-mnh28_Pakistan <- mnh28_Pakistan %>% rename("MOMID" = "VR.ID")
-#************************Kenya************************
-site = "Kenya"
-setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
-
-## import raw .CSVs in wide format 
-temp = list.files(pattern="*.csv")
-myfiles = lapply(temp, read.csv)
-
-#  ## make sure all column names are uppercase 
-myfiles <- lapply(myfiles, function (x){
-  upper <- toupper(names(x))
-  setnames(x, upper)
-})
-
-## convert to individual dataframes 
-names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
-list2env(myfiles, globalenv())
-
-## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
-mnh02_ids <- mnh02_Kenya %>% select(MOMID,PREGID, SCRNID) %>% 
-  mutate(MOMID = ifelse(MOMID == "N/A",NA, MOMID),
-         PREGID = ifelse(is.na(MOMID), NA, PREGID))
-
-mnh01_Kenya <- mnh01_Kenya %>% 
-  select(-MOMID, -PREGID) %>%
-  left_join(mnh02_ids, by = c("SCRNID")) 
-
-rm(mnh02_ids)
-
-# replace empty momid and pregid with NA
-mnh01_Kenya <- mnh01_Kenya %>% 
-  mutate(MOMID = ifelse(str_detect(MOMID, "K"), MOMID, NA),
-         PREGID = ifelse(str_detect(PREGID, "K"), PREGID, NA))
-
-mnh02_Kenya <- mnh02_Kenya %>% 
-  mutate(MOMID = ifelse(str_detect(MOMID, "K"), MOMID, NA),
-         PREGID = ifelse(str_detect(PREGID, "K"), PREGID, NA))
-
-# rename infantid variable in mnh28
-mnh28_Kenya <- mnh28_Kenya %>% rename("INFANTID" = "INFANTID_INF")
-#************************Zambia************************
-site = "Zambia"
-setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
-
-## import raw .CSVs in wide format
-temp = list.files(pattern="*.csv")
-myfiles = lapply(temp, read.csv)
-
-#  ## make sure all column names are uppercase
-myfiles <- lapply(myfiles, function (x){
-  upper <- toupper(names(x))
-  setnames(x, upper)
-})
-
-## convert to individual dataframes
-names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
-list2env(myfiles, globalenv())
-
-# ## 12/-8 update for zambia - they had all ZAPPS variables 
-variable_names <- read_excel("~/PRiSMAv2Data/PRISMA-Data-Queries-GW/R/PRiSMA-MNH-Data-Dictionary-Repository-V.2.3-MAR272023.xlsx")
-variable_names <- variable_names %>% filter(Form == "MNH01") %>% pull(`Variable Name`)
-
-mnh01_Zambia <- mnh01_Zambia %>%  select(all_of(variable_names))
-
-
-# replace empty momid and pregid with NA
-mnh01_Zambia <- mnh01_Zambia %>% 
-  mutate(MOMID = ifelse(str_detect(MOMID, "Z"), MOMID, NA),
-         PREGID = ifelse(str_detect(PREGID, "Z"), PREGID, NA))
-
-mnh02_Zambia <- mnh02_Zambia %>% 
-  mutate(MOMID = ifelse(str_detect(MOMID, "Z"), MOMID, NA),
-         PREGID = ifelse(str_detect(PREGID, "Z"), PREGID, NA))
-
-# rename MOMID variable in mnh28
-mnh28_Zambia <- mnh28_Zambia %>% rename("MOMID" = "PTID")
-
-#************************Ghana************************
-site = "Ghana"
-setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
-
-## import raw .CSVs in wide format 
-temp = list.files(pattern="*.csv")
-myfiles = lapply(temp, read.csv)
-
-#  ## make sure all column names are uppercase 
-myfiles <- lapply(myfiles, function (x){
-  upper <- toupper(names(x))
-  setnames(x, upper)
-})
-
-## convert to individual dataframes 
-names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
-list2env(myfiles, globalenv())
-
-## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
-mnh02_ids <- mnh02_Ghana %>% select(MOMID,PREGID, SCRNID) 
-
-mnh01_Ghana <- mnh01_Ghana %>% 
-  select(-SCRNID) %>%
-  left_join(mnh02_ids, by = c("MOMID", "PREGID")) 
-
-rm(mnh02_ids)
-#************************India-CMC************************
-site = "India_CMC"
-
-setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
-
-## import raw .CSVs in wide format 
-temp = list.files(pattern="*.csv")
-myfiles = lapply(temp, read.csv)
-
-#  ## make sure all column names are uppercase 
-myfiles <- lapply(myfiles, function (x){
-  upper <- toupper(names(x))
-  setnames(x, upper)
-})
-
-site = "India-CMC"
-
-## convert to individual dataframes 
-names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
-list2env(myfiles, globalenv())
-
-## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
-mnh02_ids <- `mnh02_India-CMC` %>% select(MOMID,PREGID, SCRNID)
-`mnh01_India-CMC` <- `mnh01_India-CMC` %>% select(-MOMID, -PREGID) %>%
-  left_join(mnh02_ids, by = c("SCRNID")) 
-
-rm(mnh02_ids)
-
-# replace empty momid and pregid with NA
-`mnh01_India-CMC` <- `mnh01_India-CMC` %>% 
-  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
-         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
-
-`mnh02_India-CMC` <- `mnh02_India-CMC` %>% 
-  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
-         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
-
+# #*Will need to set directory and read data for each country 
+# #*****************************************************************************
+# # set working directory to network drive 
+# site = "Pakistan"
+# # setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+# setwd(paste("Z:/SynapseCSVs/",site,"/", "2024-02-02", sep = ""))
+# 
+# ## import raw .CSVs in wide format 
+# temp = list.files(pattern="*.csv")
+# myfiles = lapply(temp, read.csv)
+# 
+# #  ## make sure all column names are uppercase 
+# myfiles <- lapply(myfiles, function (x){
+#   upper <- toupper(names(x))
+#   setnames(x, upper)
+# })
+# 
+# ## convert to individual dataframes 
+# names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+# list2env(myfiles, globalenv())
+# 
+# # replace empty momid and pregid with NA
+# mnh02_Pakistan <- mnh02_Pakistan %>% 
+#   mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+#          PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
+# 
+# # rename MOMID variable in mnh28
+# mnh28_Pakistan <- mnh28_Pakistan %>% rename("MOMID" = "VR.ID")
+# 
+# mnh08_Pakistan <- mnh08_Pakistan %>% rename("MOMID" = "Ï..MOMID")
+# 
+# #************************Kenya************************
+# 
+# site = "Kenya"
+# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+# 
+# ## import raw .CSVs in wide format 
+# temp = list.files(pattern="*.csv")
+# myfiles = lapply(temp, read.csv)
+# 
+# #  ## make sure all column names are uppercase 
+# myfiles <- lapply(myfiles, function (x){
+#   upper <- toupper(names(x))
+#   setnames(x, upper)
+# })
+# 
+# ## convert to individual dataframes 
+# names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+# list2env(myfiles, globalenv())
+# 
+# ## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
+# mnh02_ids <- mnh02_Kenya %>% select(MOMID,PREGID, SCRNID) %>% 
+#   mutate(MOMID = ifelse(MOMID == "N/A",NA, MOMID),
+#          PREGID = ifelse(is.na(MOMID), NA, PREGID))
+# 
+# mnh01_Kenya <- mnh01_Kenya %>% 
+#   select(-MOMID, -PREGID) %>%
+#   left_join(mnh02_ids, by = c("SCRNID")) 
+# 
+# rm(mnh02_ids)
+# 
+# # replace empty momid and pregid with NA
+# mnh01_Kenya <- mnh01_Kenya %>% 
+#   mutate(MOMID = ifelse(str_detect(MOMID, "K"), MOMID, NA),
+#          PREGID = ifelse(str_detect(PREGID, "K"), PREGID, NA))
+# 
+# mnh02_Kenya <- mnh02_Kenya %>% 
+#   mutate(MOMID = ifelse(str_detect(MOMID, "K"), MOMID, NA),
+#          PREGID = ifelse(str_detect(PREGID, "K"), PREGID, NA))
+# 
+# # rename infantid variable in mnh28
+# mnh28_Kenya <- mnh28_Kenya %>% rename("INFANTID" = "INFANTID_INF")
+# #************************Zambia************************
+# site = "Zambia"
+# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+# 
+# ## import raw .CSVs in wide format
+# temp = list.files(pattern="*.csv")
+# myfiles = lapply(temp, read.csv)
+# 
+# #  ## make sure all column names are uppercase
+# myfiles <- lapply(myfiles, function (x){
+#   upper <- toupper(names(x))
+#   setnames(x, upper)
+# })
+# 
+# ## convert to individual dataframes
+# names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+# list2env(myfiles, globalenv())
+# 
+# # ## 12/-8 update for zambia - they had all ZAPPS variables 
+# variable_names <- read_excel("~/PRiSMAv2Data/PRISMA-Data-Queries-GW/R/PRiSMA-MNH-Data-Dictionary-Repository-V.2.3-MAR272023.xlsx")
+# variable_names <- variable_names %>% filter(Form == "MNH01") %>% pull(`Variable Name`)
+# 
+# mnh01_Zambia <- mnh01_Zambia %>%  select(all_of(variable_names))
+# 
+# 
+# # replace empty momid and pregid with NA
+# mnh01_Zambia <- mnh01_Zambia %>% 
+#   mutate(MOMID = ifelse(str_detect(MOMID, "Z"), MOMID, NA),
+#          PREGID = ifelse(str_detect(PREGID, "Z"), PREGID, NA))
+# 
+# mnh02_Zambia <- mnh02_Zambia %>% 
+#   mutate(MOMID = ifelse(str_detect(MOMID, "Z"), MOMID, NA),
+#          PREGID = ifelse(str_detect(PREGID, "Z"), PREGID, NA))
+# 
+# # rename MOMID variable in mnh28
+# mnh28_Zambia <- mnh28_Zambia %>% rename("MOMID" = "PTID")
+# 
+# #************************Ghana************************
+# site = "Ghana"
+# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+# 
+# ## import raw .CSVs in wide format 
+# temp = list.files(pattern="*.csv")
+# myfiles = lapply(temp, read.csv)
+# 
+# #  ## make sure all column names are uppercase 
+# myfiles <- lapply(myfiles, function (x){
+#   upper <- toupper(names(x))
+#   setnames(x, upper)
+# })
+# 
+# ## convert to individual dataframes 
+# names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+# list2env(myfiles, globalenv())
+# 
+# ## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
+# mnh02_ids <- mnh02_Ghana %>% select(MOMID,PREGID, SCRNID) 
+# 
+# mnh01_Ghana <- mnh01_Ghana %>% 
+#   select(-SCRNID) %>%
+#   left_join(mnh02_ids, by = c("MOMID", "PREGID")) 
+# 
+# rm(mnh02_ids)
+# #************************India-CMC************************
+# site = "India_CMC"
+# 
+# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+# 
+# ## import raw .CSVs in wide format 
+# temp = list.files(pattern="*.csv")
+# myfiles = lapply(temp, read.csv)
+# 
+# #  ## make sure all column names are uppercase 
+# myfiles <- lapply(myfiles, function (x){
+#   upper <- toupper(names(x))
+#   setnames(x, upper)
+# })
+# 
+# site = "India-CMC"
+# 
+# ## convert to individual dataframes 
+# names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+# list2env(myfiles, globalenv())
+# 
+# ## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
+# mnh02_ids <- `mnh02_India-CMC` %>% select(MOMID,PREGID, SCRNID)
+# `mnh01_India-CMC` <- `mnh01_India-CMC` %>% select(-MOMID, -PREGID) %>%
+#   left_join(mnh02_ids, by = c("SCRNID")) 
+# 
+# rm(mnh02_ids)
+# 
+# # replace empty momid and pregid with NA
+# `mnh01_India-CMC` <- `mnh01_India-CMC` %>% 
+#   mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+#          PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
+# 
+# `mnh02_India-CMC` <- `mnh02_India-CMC` %>% 
+#   mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+#          PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
+# 
+# 
+# #************************India-SAS************************
+# site = "India_SAS"
+# 
+# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+# 
+# ## import raw .CSVs in wide format 
+# temp = list.files(pattern="*.csv")
+# myfiles = lapply(temp, read.csv)
+# 
+# #  ## make sure all column names are uppercase 
+# myfiles <- lapply(myfiles, function (x){
+#   upper <- toupper(names(x))
+#   setnames(x, upper)
+# })
+# 
+# site = "India-SAS"
+# 
+# ## convert to individual dataframes 
+# names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
+# list2env(myfiles, globalenv())
+# 
+# ## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
+# mnh02_ids <- `mnh02_India-SAS` %>% select(MOMID,PREGID, SCRNID)
+# `mnh01_India-SAS` <- `mnh01_India-SAS` %>% select(-MOMID, -PREGID) %>%
+#   left_join(mnh02_ids, by = c("SCRNID")) 
+# 
+# rm(mnh02_ids)
+# 
+# # replace empty momid and pregid with NA
+# `mnh01_India-SAS` <- `mnh01_India-SAS` %>% 
+#   mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+#          PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
+# 
+# 
+# `mnh02_India-SAS` <- `mnh02_India-SAS` %>% 
+#   mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+#          PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
+# 
 #*************************************************
 #* Merge all data by form and site 
 #*************************************************
@@ -2592,11 +2636,11 @@ names(files_list) = str_replace(names(files_list),  "m", "mnh")
 
 # 3. set working directory
 # first need to make subfolder with upload date
-maindir <- paste0("~/Monitoring Report/data/stacked/", sep = "")
+maindir <- paste0("~/Monitoring Report/data/merged/", sep = "")
 subdir = UploadDate
 dir.create(file.path(maindir, subdir), showWarnings = FALSE)
 
-setwd(paste0("~/Monitoring Report/data/stacked/" ,UploadDate))
+setwd(paste0("~/Monitoring Report/data/merged/" ,UploadDate))
 
 # 4. export
 lapply(1:length(files_list), function(i) write.csv(files_list[[i]],
