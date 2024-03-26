@@ -4,6 +4,7 @@
 #* Input: .RData files for each form (generated from 1. data import code)
 #* Last updated: 26 March 2024
 
+
 #*Output:   
 ## MatData_Report: 
 # input: MatData_wide 
@@ -275,8 +276,6 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                                          M23_CLOSE_DSDECOD == 3 | M23_CLOSE_DSDECOD == 4 | 
                                          M23_CLOSE_DSDECOD == 5 | M23_CLOSE_DSDECOD == 6, 1, 0)) 
 
-
-
 # out <- MatData_Screen_Enroll %>% filter(SITE == "India-SAS") %>% select(SITE, SCRNID, MOMID, PREGID, 
 #                                                                         M00_EGA_LT25_IEORRES,M00_AGE_IEORRES,
 #                                                                         M00_CATCHMENT_IEORRES, M00_OTHR_IEORRES,
@@ -290,8 +289,6 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
 #   filter(PRESCR_ELIGIBLE==0 & M00_ASSNT_YN_DSDECOD ==1)
 #   ## people who have all eligibility criteria but have default value for consent
 #   # filter(PRESCR_ELIGIBLE==0 & PRESCR_PREGSIGN==1 & PRESCR_GA25==1 & PRESCR_AGE==1 & PRESCR_CATCHAREA==1 &PRESCR_OTHER==0)
-
-# m02_sas <- read_csv("~/mnh02.csv")
 
 ## export 
 save(MatData_Screen_Enroll, file= paste0(path_to_save, "MatData_Screen_Enroll",".RData",sep = ""))

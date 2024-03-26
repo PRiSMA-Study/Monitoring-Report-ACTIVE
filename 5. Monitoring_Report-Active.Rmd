@@ -1,5 +1,6 @@
 ---
 title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-03-26)"
+
 output:
   pdf_document:
     toc: no
@@ -30,7 +31,7 @@ library(gt)
 library(webshot2) 
 library(grid)
 library(gridExtra)
-
+  
 UploadDate = "2024-03-22" 
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
@@ -363,7 +364,6 @@ knitr::include_graphics("prisma_tab2.png")
 *Value:* Distribution by exclusion criteria among those who are ineligible in pre-screening are listed below. Each row should sum to 100%. 
 
 ```{r, echo=FALSE}
-
 ### STACKED BAR CHART
 total_bysite <- MatData_Screen_Enroll %>% 
   filter(PRESCREEN == 1 & PRESCREEN_DENOM == 1 & PRESCR_ELIGIBLE==0) %>% 
@@ -443,7 +443,6 @@ geom_text(aes(label = n_ineligible, x = SITE, y = n_pct+0.25),
   xlab("") +
   ylab("Percentage") +
   ggtitle("") 
-
 ```
 
 
@@ -659,7 +658,7 @@ ggplot(barchart_data_out %>% mutate(SITE = factor(SITE, levels = desired_order))
     xlab("") +
     ylab("Percentage") +
     ggtitle("") 
-  
+
 ```
 
 \newpage
