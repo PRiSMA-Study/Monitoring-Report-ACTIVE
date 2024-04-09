@@ -2,7 +2,7 @@
 #*Function: Read in raw data and merged all sites data by form 
 #*Input: Raw .csvs for each site 
 #*Output: .RData file for each form that is merged for all sites 
-#* Last updated: 26 March 2024
+#* Last updated: 06 April 2024
 
 
 ## STEPS ## 
@@ -149,7 +149,7 @@ names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
 # ## 12/-8 update for zambia - they had all ZAPPS variables
-variable_names <- read_excel("~/PRiSMAv2Data/PRISMA-Data-Queries-GW/R/PRiSMA-MNH-Data-Dictionary-Repository-V.2.3-MAR272023.xlsx")
+variable_names <- read_excel("~/PRiSMAv2Data/PRISMA-Data-Queries-GW/R/PRISMA-MNH-Data-Dictionary-Repository-V.2.4-NOV202023.xlsx")
 variable_names <- variable_names %>% filter(Form == "MNH01") %>% pull(`Variable Name`)
 
 mnh01_Zambia <- mnh01_Zambia %>%  select(all_of(variable_names))
