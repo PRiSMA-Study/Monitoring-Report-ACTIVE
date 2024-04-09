@@ -7,9 +7,9 @@ Data monitoring is conducted on a weekly basis to ensure the data collected and 
 and to have an on-time look at the accrual of maternal and neonatal outcomes of interest. 
 
 In the ultimate output report, the following contents are included:
-- Pre-screening numbers for PRiSMA MNH study for most recent one week and for all (cumulative)
-- Enrollment numbers for PRiSMA MNH Study for the most recent one week and for all (cumulative)
-- Study Status for PRiSMA Participants
+- Pre-screening numbers for PRISMA MNH study for most recent one week and for all (cumulative)
+- Enrollment numbers for PRISMA MNH Study for the most recent one week and for all (cumulative)
+- Study Status for PRISMA Participants
 - ANC study visit & procedure completion metrics
 - Birth characteristics
 - PNC study visit & procedure completion
@@ -21,7 +21,7 @@ In the ultimate output report, the following contents are included:
 - Cumulative Enrollment by Site and Week
 - Hemoglobin measures by gestational age for participants enrolled in ReMAPP
 - ANC hemoglobin values by trimester for participants enrolled in ReMAPP
-- Potential risk factors for anemia among women enrolled in PRiSMA MNH study
+- Potential risk factors for anemia among women enrolled in PRISMA MNH study
 
 ### Data Input and Output
 
