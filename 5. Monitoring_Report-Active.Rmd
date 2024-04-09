@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-02-27)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-04-09)"
 output:
   pdf_document:
     toc: no
@@ -29,7 +29,7 @@ library(webshot2)
 library(grid)
 library(gridExtra)
 
-UploadDate = "2024-02-23" 
+UploadDate = "2024-04-05" 
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
 
@@ -134,17 +134,17 @@ setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/tables/"))
 
 **Versions:**
 
-**Date issued:** 2024-02-27
+**Date issued:** 2024-04-09
 
-**Included data last updated in Synapse:** 2024-02-23
+**Included data last updated in Synapse:** 2024-04-05 (Zambia: 2024-03-08)
 
 #### **Last enrollment date: **
-  + Kenya: 2024-02-23
-  + Pakistan: 2024-02-16
-  + Ghana : 2024-01-25
-  + Zambia : 2024-02-07
-  + India CMC : 2024-02-09
-  + India SAS : 2024-02-16
+  + Kenya: 2024-04-04
+  + Pakistan: 2024-03-29
+  + Ghana : 2024-03-07
+  + Zambia : 2024-03-01
+  + India CMC : 2024-03-22
+  + India SAS : 2024-03-28
 
 ```{r, results='hide' }
 #check last day of screening and enrollment
@@ -1180,9 +1180,9 @@ knitr::include_graphics("prisma_tab4.png")
 \newpage
 
 ### Table 5: ANC and PNC visit completion for PRISMA
-*Value:* Among women successfully contacted, percent who had visit forms completed within the visit window (including late window, if specified).
+*Value:* Among women who are expected for a visit, is the visit complete. A visit is considered completed if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
 
-*Goal:* 100% completion for enrollment; 90% completion
+*Goal:* 100% completion for enrollment; 90% completion for all other visits
 
 *Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
 
@@ -2297,7 +2297,7 @@ knitr::include_graphics("prisma_tab6_2.png")
 \newpage
 
 ### Table 7: ANC form completion for PRISMA
-*Value:* Among women successfully contacted during the ANC period, percent with forms completed regardless of visit status. A form is considered completed when a form has been submitted for a participant.
+*Value:* Among women who have passed the late ANC window period, percent with forms completed regardless of visit status. A form is considered complete when a form has been submitted for a participant.
 
 *Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
 
@@ -3341,7 +3341,7 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
 \newpage
 
 ### Table 9: PNC protocol compliance for PRISMA maternal forms
-*Value:* Among women with PNC visits marked as complete, percent that have all expected visit forms completed. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
+*Value:* Among women successfully contacted during the PNC period, percent who had all expected visit forms completed. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
 
 *Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
 
@@ -3952,7 +3952,7 @@ knitr::include_graphics("prisma_tab9_2.png")
 \newpage
 
 ### Table 10: PNC visit maternal form completion for PRISMA
-*Value:* Among women successfully contacted during the PNC period, percent who have expected forms completed regardless of visits status. A form is considered completed when a form has been submitted for a participant. 
+*Value:* Among women who have passed the late PNC window period, percent with forms completed regardless of visit status. A form is considered complete when a form has been submitted for a participant.
 
 *Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
 
@@ -3992,13 +3992,13 @@ PNC0 <- Form_Completion_Pnc %>%
         ),
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_7) & FC_PNC0_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_7) & PNC0_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_7)& PNC0_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_7) & FC_PNC0_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_7) & PNC0_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_7) & PNC0_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>%
@@ -4016,13 +4016,13 @@ PNC0 <- Form_Completion_Pnc %>%
         ),
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_7) & FC_PNC0_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_7) & PNC0_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_7)& PNC0_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_7) & FC_PNC0_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_7) & PNC0_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_7) & PNC0_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
@@ -4043,13 +4043,13 @@ PNC1 <- Form_Completion_Pnc %>%
         ),
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_8) & FC_PNC1_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_8) & PNC1_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_8)& PNC1_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_8) & FC_PNC1_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_8) & PNC1_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_8) & PNC1_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
@@ -4068,13 +4068,13 @@ PNC1 <- Form_Completion_Pnc %>%
         ),
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_8) & FC_PNC1_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_8) & PNC1_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_8)& PNC1_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_8) & FC_PNC1_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_8) & PNC1_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_8) & PNC1_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"))
@@ -4096,13 +4096,13 @@ PNC4 <- Form_Completion_Pnc %>%
         ),
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_9) & FC_PNC4_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_9) & PNC4_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_9)& PNC4_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_9) & FC_PNC4_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_9) & PNC4_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_9) & PNC4_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
@@ -4121,13 +4121,13 @@ PNC4 <- Form_Completion_Pnc %>%
         ),
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_9) & FC_PNC4_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_9) & PNC4_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_9)& PNC4_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_9) & FC_PNC4_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_9) & PNC4_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_9) & PNC4_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
@@ -4149,37 +4149,37 @@ PNC6 <- Form_Completion_Pnc %>%
         ),
 
       "MNH05 Maternal Anthropometrics" = paste0(
-        format(sum(!is.na(M05_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M05_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M05_VISIT_COMPLETE_10)& PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_10)& PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH07 Maternal Specimen Collection" = paste0(
-        format(sum(!is.na(M07_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M07_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M07_VISIT_COMPLETE_10)& PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH08 Maternal Lab" = paste0(
-        format(sum(!is.na(M08_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M08_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M08_VISIT_COMPLETE_10)& PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH25 Maternal Depression" = paste0(
-        format(sum(!is.na(M25_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M25_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M25_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")) %>%
@@ -4196,36 +4196,36 @@ PNC6 <- Form_Completion_Pnc %>%
         ),
 
       "MNH05 Maternal Anthropometrics" = paste0(
-        format(sum(!is.na(M05_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M05_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M05_VISIT_COMPLETE_10)& PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_10)& PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH07 Maternal Specimen Collection" = paste0(
-        format(sum(!is.na(M07_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M07_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M07_VISIT_COMPLETE_10)& PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH08 Maternal Lab" = paste0(
-        format(sum(!is.na(M08_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M08_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M08_VISIT_COMPLETE_10)& PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
     "MNH25 Maternal Depression" = paste0(
-        format(sum(!is.na(M25_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M25_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M25_VISIT_COMPLETE_10) & PNC6_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"))
@@ -4246,31 +4246,31 @@ PNC26 <- Form_Completion_Pnc %>%
         ),
 
       "MNH05 Maternal Anthropometrics" = paste0(
-        format(sum(!is.na(M05_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M05_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M05_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH07 Maternal Specimen Collection" = paste0(
-        format(sum(!is.na(M07_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M07_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M07_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH08 Maternal Lab" = paste0(
-        format(sum(!is.na(M08_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M08_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M08_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
@@ -4290,31 +4290,31 @@ PNC26 <- Form_Completion_Pnc %>%
         ),
 
       "MNH05 Maternal Anthropometrics" = paste0(
-        format(sum(!is.na(M05_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M05_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M05_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH07 Maternal Specimen Collection" = paste0(
-        format(sum(!is.na(M07_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M07_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M07_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH08 Maternal Lab" = paste0(
-        format(sum(!is.na(M08_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M08_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M08_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
@@ -4335,20 +4335,20 @@ PNC52 <- Form_Completion_Pnc %>%
         ),
 
      "MNH05 Anthropometrics" = paste0(
-        format(sum(!is.na(M05_VISIT_COMPLETE_12) & FC_PNC52_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M05_VISIT_COMPLETE_12) & PNC52_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M05_VISIT_COMPLETE_12)& PNC52_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_12) & FC_PNC52_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_12) & PNC52_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_12)& PNC52_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_12) & FC_PNC52_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_12) & PNC52_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_12) & PNC52_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
@@ -4367,19 +4367,19 @@ PNC52 <- Form_Completion_Pnc %>%
         ),
 
     "MNH05 Anthropometrics" = paste0(
-        format(sum(!is.na(M05_VISIT_COMPLETE_12) & FC_PNC52_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M05_VISIT_COMPLETE_12) & PNC52_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M05_VISIT_COMPLETE_12)& PNC52_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH06 Maternal POC" = paste0(
-        format(sum(!is.na(M06_VISIT_COMPLETE_12) & FC_PNC52_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M06_VISIT_COMPLETE_12) & PNC52_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_12)& PNC52_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
-        format(sum(!is.na(M12_VISIT_COMPLETE_12) & FC_PNC52_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+        format(sum(!is.na(M12_VISIT_COMPLETE_12) & PNC52_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
         format(round(sum(!is.na(M12_VISIT_COMPLETE_12) & PNC52_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
@@ -4718,7 +4718,7 @@ knitr::include_graphics("prisma_table11.png")
 
 
 ### Figure 5a. Heat maps of form completion for ANC visits in PRISMA 
-*Value:* Percent of visit forms completed among women who were expected for an ANC visit, regardless of visit completion status.
+*Value:* Percent of successful visits during the ANC period.
 
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
 
@@ -5120,7 +5120,7 @@ out5 + theme(legend.position = "bottom")
 \newpage
 
 ### Figure 5b. Heat maps of form completion for PNC visits in PRISMA 
-*Value:* Percent of visit forms completed among women who were expected for an PNC visit, regardless of visit completion status.
+*Value:* Percent of successful visits during the PNC period.
 
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
 
@@ -5490,34 +5490,34 @@ out5  <- heat_map_data_pnc %>%
         plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
   coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
 
-# 
-# out6  <- heat_map_data_pnc %>%
-#   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-#   filter(VISIT == UNIQUE_VISITS[6]) %>%
-#   ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-#   geom_tile(color = "grey40", size = 0.2) +
-#   scale_fill_manual(values = custom_palette,
-#                     labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-#                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-#                     drop = FALSE) +
-#   labs(fill = str_wrap("Percent Complete", width = 8)) +
-#   xlab("Expected forms") +
-#   ylab("Study site") +
-#   ggtitle(paste0("Form completion at ",tolower(UNIQUE_VISITS[6]), " visit (target window: 52 to 64wks)"))  +
-#   guides(fill = guide_legend(reverse = TRUE)) +
-#   theme_minimal() +
-#   theme(legend.position = "bottom",
-#         axis.text.x = element_text(size = 8),
-#         axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-#         axis.text.y = element_text(size = 8, colour = "black"),
-#         legend.text = element_text(size = 8),
-#         axis.title.y = element_blank(),
-#         legend.margin = margin(grid::unit(0, "cm")),
-#         legend.key.width = grid::unit(0.5, "cm"),
-#         plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-#         plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-#         plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) +
-#   coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+
+out6  <- heat_map_data_pnc %>%
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  filter(VISIT == UNIQUE_VISITS[6]) %>%
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40", size = 0.2) +
+  scale_fill_manual(values = custom_palette,
+                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Expected forms") +
+  ylab("Study site") +
+  ggtitle(paste0("Form completion at ",tolower(UNIQUE_VISITS[6]), " visit (target window: 52 to 64wks)"))  +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8),
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black"),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        legend.margin = margin(grid::unit(0, "cm")),
+        legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
+        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) +
+  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
 
 ```
 
@@ -5550,11 +5550,11 @@ out5 + theme(legend.position = "bottom")
 
 ```
 
-<!-- \newpage -->
+\newpage
 
-<!-- # ```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'} -->
-<!-- # out6 + theme(legend.position = "bottom") -->
-<!-- # ``` -->
+```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
+out6 + theme(legend.position = "bottom")
+```
 
 \newpage
 
