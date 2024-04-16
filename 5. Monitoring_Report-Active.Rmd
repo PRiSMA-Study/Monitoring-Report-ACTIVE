@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-04-09)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-03-26)"
 output:
   pdf_document:
     toc: no
@@ -15,7 +15,7 @@ include-in-header:
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, out.width = "100%") 
 knitr::opts_chunk$set(out.width = "100%", fig.align = "center")
 
-## last updated: 26 March 2024
+## last updated: 16 April 2024
 
 library(tidyverse) 
 library(knitr) 
@@ -147,6 +147,7 @@ setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/tables/"))
   + Zambia : 2024-03-01
   + India CMC : 2024-03-22
   + India SAS : 2024-03-28
+
 
 ```{r, results='hide' }
 #check last day of screening and enrollment
@@ -1205,7 +1206,7 @@ knitr::include_graphics("prisma_tab4.png")
 \newpage
 
 ### Table 5: ANC and PNC visit completion for PRISMA
-*Value:* Among women who are expected for a visit, is the visit complete. A visit is considered completed if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
+*Value:* Are forms completed for each visit? A visit is considered complete if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNHXX ). If there is no late window for a visit, the on-time window is used.
 
 *Goal:* 100% completion for enrollment; 90% completion for all other visits
 
@@ -3368,7 +3369,7 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
 \newpage
 
 ### Table 9: PNC protocol compliance for PRISMA maternal forms
-*Value:* Among women successfully contacted during the PNC period, percent who had all expected visit forms completed. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
+*Value:* Among women with PNC visits marked as complete, percent that have all expected visit forms completed. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
 
 *Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
 

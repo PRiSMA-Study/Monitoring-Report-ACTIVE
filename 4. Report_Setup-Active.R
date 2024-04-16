@@ -2,7 +2,7 @@
 #### MONITORING REPORT SETUP ####
 #* Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #* Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 12 April 2024
+#* Last updated: 16 April 2024
 
 
 #*Output:   
@@ -101,11 +101,11 @@ InfData_Report <- InfData_Wide %>%
 save(InfData_Report, file= paste0(path_to_save, "InfData_Report",".RData",sep = ""))
 
 #**************************************************************************************
-#* PRiSMA Tables 1-4
-#* Table 1: Pre-screening and enrollment numbers for PRiSMA MNH Study for the most recent one week 
-#* Table 2: Cumulative pre-screening numbers for PRiSMA MNH Study 
-#* Table 3: Cumulative enrollment numbers for PRiSMA MNH Study 
-#* Table 4: Study Status for PRiSMA MNH Study 
+#* PRISMA Tables 1-4
+#* Table 1: Pre-screening and enrollment numbers for PRISMA MNH Study for the most recent one week 
+#* Table 2: Cumulative pre-screening numbers for PRISMA MNH Study 
+#* Table 3: Cumulative enrollment numbers for PRISMA MNH Study 
+#* Table 4: Study Status for PRISMA MNH Study 
 
 #* Pre-screening, screen and enrollment info
 #* Output = MatData_Screen_Enroll 
@@ -438,35 +438,35 @@ MatData_Ipc_Visits_Mat <- MatData_Screen_Enroll %>%
 save(MatData_Ipc_Visits_Mat, file= paste0(path_to_save, "MatData_Ipc_Visits_Mat",".RData",sep = ""))
 
 ## extract any momids that are missing ipc forms and have passed window 
-MISSING_IPC_MOMIDS <- MatData_Ipc_Visits_Mat %>% filter(GA42_MISSING_IPC==1) %>% pull(MOMID)
-MISSING_IPC_MOMIDS_EXTRACT <- MatData_Screen_Enroll %>%  select(SITE, MOMID, PREGID, EST_CONCEP_DATE,M23_CLOSE_DSDECOD, M23_CLOSE_DSSTDAT,EDD_US, contains("_VISIT_DATE_"), ) %>% 
-  mutate(IPC_LATE = (EDD_US - as.difftime(280, unit="days")) + as.difftime(300, unit="days")) %>% 
-  mutate(CLOSED_OUT =  ifelse(is.na(M23_CLOSE_DSDECOD), 0, 
-                              ifelse(M23_CLOSE_DSDECOD %in% c(2, 3, 4, 5, 6), 1, 0))) %>% 
-  select(-EDD_US, -M23_CLOSE_DSDECOD) %>% 
-  relocate(IPC_LATE, .after=4) %>%
-  relocate(CLOSED_OUT, .after = 5) %>% 
-  pivot_longer(cols = -c(1:7), 
-               values_to = "VISIT_DATE", 
-               names_to = "FORM") %>% 
-  filter(MOMID %in% MISSING_IPC_MOMIDS, CLOSED_OUT!=1) %>% 
-  group_by(SITE, MOMID, PREGID, EST_CONCEP_DATE,IPC_LATE,CLOSED_OUT, M23_CLOSE_DSSTDAT) %>% 
-  # generate variable with date last seen
-  summarise(DATE_LAST_SEEN = max(VISIT_DATE, na.rm= TRUE)) %>% 
-  ungroup() %>% 
-  # generate variable with age last seen
-  mutate(AGE_LAST_SEEN_DAYS = as.numeric(DATE_LAST_SEEN - EST_CONCEP_DATE)) %>% 
-  filter(!is.na(AGE_LAST_SEEN_DAYS)) %>% 
-  # generate variable for upload date
-  mutate(UPLOADDATE = ymd(UploadDate)) %>% 
-  # calculate the age of particpant TODAY (at date of upload)
-  mutate(AGE_AT_UPLOAD_DAYS = as.numeric(UPLOADDATE - EST_CONCEP_DATE)) %>% 
-## generate new weeks variable that includes 1 decimal point for gestational ages that represent the days 
-  mutate(AGE_LAST_SEEN_WKS_FLOOR = AGE_LAST_SEEN_DAYS %/% 7, 
-         AGE_LAST_SEEN_WKS = as.numeric(paste0(AGE_LAST_SEEN_WKS_FLOOR, ".", (AGE_LAST_SEEN_DAYS-(AGE_LAST_SEEN_WKS_FLOOR*7))))) %>% 
-  mutate(AGE_AT_UPLOAD_WKS_FLOOR = AGE_AT_UPLOAD_DAYS %/% 7, 
-         AGE_AT_UPLOAD_WKS = as.numeric(paste0(AGE_AT_UPLOAD_WKS_FLOOR, ".", (AGE_AT_UPLOAD_DAYS-(AGE_AT_UPLOAD_WKS_FLOOR*7))))) %>% 
-  select(SITE, MOMID, PREGID, DATE_LAST_SEEN,AGE_LAST_SEEN_WKS,  AGE_AT_UPLOAD_WKS, IPC_LATE, M23_CLOSE_DSSTDAT)
+# MISSING_IPC_MOMIDS <- MatData_Ipc_Visits_Mat %>% filter(GA42_MISSING_IPC==1) %>% pull(MOMID)
+# MISSING_IPC_MOMIDS_EXTRACT <- MatData_Screen_Enroll %>%  select(SITE, MOMID, PREGID, EST_CONCEP_DATE,M23_CLOSE_DSDECOD, M23_CLOSE_DSSTDAT,EDD_US, contains("_VISIT_DATE_"), ) %>% 
+#   mutate(IPC_LATE = (EDD_US - as.difftime(280, unit="days")) + as.difftime(300, unit="days")) %>% 
+#   mutate(CLOSED_OUT =  ifelse(is.na(M23_CLOSE_DSDECOD), 0, 
+#                               ifelse(M23_CLOSE_DSDECOD %in% c(2, 3, 4, 5, 6), 1, 0))) %>% 
+#   select(-EDD_US, -M23_CLOSE_DSDECOD) %>% 
+#   relocate(IPC_LATE, .after=4) %>%
+#   relocate(CLOSED_OUT, .after = 5) %>% 
+#   pivot_longer(cols = -c(1:7), 
+#                values_to = "VISIT_DATE", 
+#                names_to = "FORM") %>% 
+#   filter(MOMID %in% MISSING_IPC_MOMIDS, CLOSED_OUT!=1) %>% 
+#   group_by(SITE, MOMID, PREGID, EST_CONCEP_DATE,IPC_LATE,CLOSED_OUT, M23_CLOSE_DSSTDAT) %>% 
+#   # generate variable with date last seen
+#   summarise(DATE_LAST_SEEN = max(VISIT_DATE, na.rm= TRUE)) %>% 
+#   ungroup() %>% 
+#   # generate variable with age last seen
+#   mutate(AGE_LAST_SEEN_DAYS = as.numeric(DATE_LAST_SEEN - EST_CONCEP_DATE)) %>% 
+#   filter(!is.na(AGE_LAST_SEEN_DAYS)) %>% 
+#   # generate variable for upload date
+#   mutate(UPLOADDATE = ymd(UploadDate)) %>% 
+#   # calculate the age of particpant TODAY (at date of upload)
+#   mutate(AGE_AT_UPLOAD_DAYS = as.numeric(UPLOADDATE - EST_CONCEP_DATE)) %>% 
+# ## generate new weeks variable that includes 1 decimal point for gestational ages that represent the days 
+#   mutate(AGE_LAST_SEEN_WKS_FLOOR = AGE_LAST_SEEN_DAYS %/% 7, 
+#          AGE_LAST_SEEN_WKS = as.numeric(paste0(AGE_LAST_SEEN_WKS_FLOOR, ".", (AGE_LAST_SEEN_DAYS-(AGE_LAST_SEEN_WKS_FLOOR*7))))) %>% 
+#   mutate(AGE_AT_UPLOAD_WKS_FLOOR = AGE_AT_UPLOAD_DAYS %/% 7, 
+#          AGE_AT_UPLOAD_WKS = as.numeric(paste0(AGE_AT_UPLOAD_WKS_FLOOR, ".", (AGE_AT_UPLOAD_DAYS-(AGE_AT_UPLOAD_WKS_FLOOR*7))))) %>% 
+#   select(SITE, MOMID, PREGID, DATE_LAST_SEEN,AGE_LAST_SEEN_WKS,  AGE_AT_UPLOAD_WKS, IPC_LATE, M23_CLOSE_DSSTDAT)
 
 # # generate table of contents for excel sheet to send to sites 
 # tab_contents <- data.frame("varname" = names(MISSING_IPC_MOMIDS_EXTRACT),
@@ -1178,7 +1178,7 @@ MatData_Hb_Visit <- MatData_Anc_Visits %>%
 ## export 
 save(MatData_Hb_Visit, file= paste0(path_to_save, "MatData_Hb_Visit",".RData",sep = ""))
 #**************************************************************************************
-#* ReMAPP Figure 1: Hemoglobin measures by gestational age for participants enrolled in PRiSMA MNH 
+#* ReMAPP Figure 1: Hemoglobin measures by gestational age for participants enrolled in PRISMA MNH 
 #* Only looking at those who are enrolled 
 #* Output = MatData_HB_GA_Visit
 #* Input = MatData_Anc_Visits
@@ -1489,10 +1489,6 @@ df_criteria <- df_maternal %>%
                              ifelse(M06_HCV_POC_LBORRES_1 == 0, 1,
                                     ifelse(M06_HCV_POC_LBPERF_1 == 0, 55, 55)))
   ) 
-
-## QUESTION: 
-# do they need to have both mnh04 and mnh06 criteria? for example, is sas has no hiv by mnho4 but 77 for all mnh06 variables - 
-  ## the code right now is to have both form criteria met; is this necessary?
 
 save(df_criteria, file= paste0(path_to_save, "df_criteria",".RData",sep = ""))
 #**************************************************************************************
