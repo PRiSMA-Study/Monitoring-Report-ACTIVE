@@ -24,7 +24,7 @@
 # LINE 48 - set vector of all sites with data in that upload 
 #*****************************************************************************
 
-# rm(list = ls())
+rm(list = ls())
 library(tidyverse)
 library(readr)
 library(dplyr)
@@ -36,17 +36,18 @@ library(readxl)
 
 # UPDATE EACH RUN # 
 # set upload date 
-UploadDate = "2024-04-05"
+UploadDate = "2024-04-12"
 
 # UPDATE EACH RUN # 
 # create vector of all sites with data in the upload 
 site_vec <- c("Pakistan", "Kenya", "Ghana", "Zambia", "India-CMC", "India-SAS")
 
 # set path to save 
-path_to_save = paste0("~/Monitoring Report/data/merged/" ,UploadDate, "/")
+path_to_save = paste0("~/Monitoring Report/data/merged/", UploadDate, "/")
 
 ## import data dictionary -- this will be used to pull field types for each variable  
-data_dict <-read_excel("~/PRiSMAv2Data/PRISMA-Data-Queries-GW/R/PRiSMA-MNH-Data-Dictionary-Repository-V.2.3-MAR272023.xlsx")
+data_dict <-read_excel("~/PRiSMAv2Data/PRISMA-Data-Queries-GW/R/PRISMA-MNH-Data-Dictionary-Repository-V.2.4-NOV202023_queries.xlsx",
+                       sheet = "Data Dictionary")
 data_dict <- data_dict %>% 
   select(Form,`Variable Name`, `Field Type (Date, Time, Number, Text)`) %>% 
   rename("FieldType" = `Field Type (Date, Time, Number, Text)`)
@@ -65,7 +66,7 @@ dir.create(file.path(cleaned_dir, date_dir), showWarnings = FALSE)
 # set working directory to network drive
 site = "Pakistan"
 # setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
-setwd(paste("Z:/SynapseCSVs/",site,"/", "2024-02-02", sep = ""))
+setwd(paste0("~/import/2024-04-05_pak"))
 
 ## import raw .CSVs in wide format
 temp = list.files(pattern="*.csv")
@@ -87,12 +88,12 @@ mnh02_Pakistan <- mnh02_Pakistan %>%
          PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
 
 # rename MOMID variable in mnh28
-mnh28_Pakistan <- mnh28_Pakistan %>% rename("MOMID" = "VR.ID")
+# mnh28_Pakistan <- mnh28_Pakistan %>% rename("MOMID" = "VR.ID")
 
 #************************Kenya************************
 
 site = "Kenya"
-setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+setwd(paste0("~/import/", UploadDate, "_ke"))
 
 ## import raw .CSVs in wide format
 temp = list.files(pattern="*.csv")
@@ -132,7 +133,7 @@ mnh02_Kenya <- mnh02_Kenya %>%
 mnh28_Kenya <- mnh28_Kenya %>% rename("INFANTID" = "INFANTID_INF")
 #************************Zambia************************
 site = "Zambia"
-setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+setwd(paste0("~/import/2024-03-08_zam"))
 
 ## import raw .CSVs in wide format
 temp = list.files(pattern="*.csv")
@@ -169,7 +170,7 @@ mnh28_Zambia <- mnh28_Zambia %>% rename("MOMID" = "PTID")
 
 #************************Ghana************************
 site = "Ghana"
-setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+setwd(paste0("~/import/", UploadDate, "_gha"))
 
 ## import raw .CSVs in wide format
 temp = list.files(pattern="*.csv")
@@ -195,8 +196,7 @@ mnh01_Ghana <- mnh01_Ghana %>%
 rm(mnh02_ids)
 #************************India-CMC************************
 site = "India_CMC"
-
-setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+setwd(paste0("~/import/", UploadDate, "_cmc"))
 
 ## import raw .CSVs in wide format
 temp = list.files(pattern="*.csv")
@@ -233,8 +233,7 @@ rm(mnh02_ids)
 
 #************************India-SAS************************
 site = "India_SAS"
-
-setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+setwd(paste0("~/import/", UploadDate, "_sas"))
 
 ## import raw .CSVs in wide format
 temp = list.files(pattern="*.csv")
@@ -314,7 +313,8 @@ if (exists("m00") == TRUE) {
     m00_dd_date <- data_dict_m00 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m00_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -401,6 +401,7 @@ if (exists("m01") == TRUE) {
     date <- colnames(df) %in% m01_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
     df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -488,7 +489,8 @@ if (exists("m02") == TRUE) {
     m02_dd_date <- data_dict_m02 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m02_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -574,7 +576,8 @@ if (exists("m03") == TRUE) {
     m03_dd_date <- data_dict_m03 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m03_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -662,7 +665,8 @@ if (exists("m04") == TRUE) {
     date <- colnames(df) %in% m04_dd_date
     #date <- lapply(df, function(x) x %>% select(matches(str_c(paste("^",m04_dd_date,"$", sep = "")))))
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -743,7 +747,8 @@ if (exists("m05") == TRUE) {
     m05_dd_date <- data_dict_m05 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m05_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -823,7 +828,8 @@ if (exists("m06") == TRUE) {
     m06_dd_date <- data_dict_m06 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m06_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -904,7 +910,8 @@ if (exists("m07") == TRUE) {
     m07_dd_date <- data_dict_m07 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m07_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -989,7 +996,8 @@ if (exists("m08") == TRUE) {
     m08_dd_date <- data_dict_m08 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m08_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1074,7 +1082,8 @@ if (exists("m09") == TRUE) {
     m09_dd_date <- data_dict_m09 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m09_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1157,7 +1166,8 @@ if (exists("m10") == TRUE) {
     m10_dd_date <- data_dict_m10 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m10_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1238,7 +1248,8 @@ if (exists("m11") == TRUE) {
     m11_dd_date <- data_dict_m11 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m11_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1319,7 +1330,8 @@ if (exists("m12") == TRUE) {
     m12_dd_date <- data_dict_m12 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m12_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1407,7 +1419,8 @@ if (exists("m13") == TRUE) {
     m13_dd_date <- data_dict_m13 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m13_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1494,7 +1507,8 @@ if (exists("m14") == TRUE) {
     m14_dd_date <- data_dict_m14 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m14_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1580,7 +1594,8 @@ if (exists("m15") == TRUE) {
     m15_dd_date <- data_dict_m15 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m15_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1665,7 +1680,8 @@ if (exists("m16") == TRUE) {
     m16_dd_date <- data_dict_m16 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m16_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1745,7 +1761,8 @@ if (exists("m17") == TRUE) {
     m17_dd_date <- data_dict_m17 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m17_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1827,7 +1844,8 @@ if (exists("m18") == TRUE) {
     m18_dd_date <- data_dict_m18 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m18_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1908,7 +1926,8 @@ if (exists("m19") == TRUE) {
     m19_dd_date <- data_dict_m19 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m19_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -1990,7 +2009,8 @@ if (exists("m20") == TRUE) {
     m20_dd_date <- data_dict_m20 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m20_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -2076,7 +2096,8 @@ if (exists("m21") == TRUE) {
     m21_dd_date <- data_dict_m21 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m21_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -2158,7 +2179,8 @@ if (exists("m22") == TRUE) {
     m22_dd_date <- data_dict_m22 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m22_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -2241,7 +2263,8 @@ if (exists("m23") == TRUE) {
     m23_dd_date <- data_dict_m23 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m23_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -2321,7 +2344,8 @@ if (exists("m24") == TRUE) {
     m24_dd_date <- data_dict_m24 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
     date <- colnames(df) %in% m24_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })
@@ -2405,7 +2429,8 @@ if (exists("m25") == TRUE) {
     m25_dd_date <- data_dict_m25 %>% filter(FieldType == "Date")%>% distinct(`Variable Name`) %>% pull(`Variable Name`)
     date <- colnames(df) %in% m25_dd_date
     df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
+    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
     df[date] <- lapply(df[date], ymd)
     df
   })

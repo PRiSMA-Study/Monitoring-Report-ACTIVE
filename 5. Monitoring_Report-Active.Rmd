@@ -5,7 +5,7 @@ output:
     toc: no
     toc_depth: 4
     latex_engine: xelatex
-    keep_tex: true
+    keep_tex: false
     # output_dir: "D:/Users/stacie.loisate/Box/Monitoring-Report-Active/tables/"
 include-in-header:
 - \usepackage{ booktabs,longtable}
@@ -14,6 +14,8 @@ include-in-header:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, out.width = "100%") 
 knitr::opts_chunk$set(out.width = "100%", fig.align = "center")
+
+## last updated: 26 March 2024
 
 library(tidyverse) 
 library(knitr) 
@@ -361,7 +363,6 @@ knitr::include_graphics("prisma_tab2.png")
 *Value:* Distribution by exclusion criteria among those who are ineligible in pre-screening are listed below. Each row should sum to 100%. 
 
 ```{r, echo=FALSE}
-
 ### STACKED BAR CHART
 total_bysite <- MatData_Screen_Enroll %>% 
   filter(PRESCREEN == 1 & PRESCREEN_DENOM == 1 & PRESCR_ELIGIBLE==0) %>% 
@@ -441,7 +442,6 @@ geom_text(aes(label = n_ineligible, x = SITE, y = n_pct+0.25),
   xlab("") +
   ylab("Percentage") +
   ggtitle("") 
-
 ```
 
 
@@ -467,7 +467,7 @@ tb_enroll <- MatData_Screen_Enroll %>%
     ")"),
             "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
                              " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Gestational age >=20 weeks" = paste0(sum(GA20 == 0, na.rm=TRUE),
+            "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = paste0(sum(GA20 == 0, na.rm=TRUE),
                                 " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
                                    " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
@@ -496,7 +496,7 @@ tb_enroll <- MatData_Screen_Enroll %>%
     ")"),
             "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
                              " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Gestational age >=20 weeks" = paste0(sum(GA20 == 0, na.rm=TRUE),
+            "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = paste0(sum(GA20 == 0, na.rm=TRUE),
                                 " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
                                    " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
@@ -562,7 +562,7 @@ total_bysite <- MatData_Screen_Enroll %>%
   filter(SCREEN == 1 & SCREEN_DENOM == 1 & ENROLL==0) %>% 
   select(SITE, AGE, GA20, CATCHAREA, CATCHREMAIN, CONSENT) %>%
   rename( "Did not meet age requirement" = AGE,
-          "Gestational age >=20 weeks" = GA20,
+          "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = GA20,
           "Outside catchment area" = CATCHAREA,
           "Doesn't plan to remain in catchment area" = CATCHREMAIN,
           "Did not consent" = CONSENT
@@ -577,7 +577,7 @@ total_allsites <- MatData_Screen_Enroll %>%
   filter(SCREEN == 1 & SCREEN_DENOM == 1 & ENROLL==0) %>% 
   select(SITE, AGE, GA20, CATCHAREA, CATCHREMAIN, CONSENT) %>%
   rename( "Did not meet age requirement" = AGE,
-          "Gestational age >=20 weeks" = GA20,
+          "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = GA20,
           "Outside catchment area" = CATCHAREA,
           "Doesn't plan to remain in catchment area" = CATCHREMAIN,
           "Did not consent" = CONSENT
@@ -605,33 +605,58 @@ desired_order <- unique(factor(barchart_data_out$SITE,
                         levels=rev(c("Total", "Ghana", "India-CMC", "India-SAS", "Kenya", "Pakistan", "Zambia"))))
 
 desired_order2 <- unique(factor(barchart_data_out$name,
-                          levels = c( "Did not meet age requirement",
-                                  "Gestational age >=20 weeks",
-                                  "Outside catchment area",
-                                  "Doesn't plan to remain in catchment area",
-                                  "Did not consent")))
+                          levels = c("Did not meet age requirement",
+                                     "Outside catchment area",
+                                     "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)",
+                                     "Doesn't plan to remain in catchment area",
+                                     "Did not consent")))
+
+# desired_order2 <- unique(factor(barchart_data_out$name,
+#                           levels = c("Did not consent",
+#                                      "Did not meet age requirement",
+#                                      "Doesn't plan to remain in catchment area",
+#                                      
+#                                      "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)",
+#                                      "Outside catchment area"
+#                                      
+#                                      )))
 
 ggplot(barchart_data_out %>% mutate(SITE = factor(SITE, levels = desired_order)), 
        aes(fill = name, y = n_pct, x = SITE)) + 
-geom_bar(position="stack", stat="identity") +
-geom_text(aes(label = n_ineligible, x = SITE, y = n_pct+0.25), 
-            position = position_stack(vjust = 1), hjust = 0.12, color = "black", size = 3) +
-  coord_flip() +  
-  scale_fill_manual(values = c("#b40e20", "#e58600", "#e2d300", "#47acc8", "#01a08a","#0c775e"), #
-                     labels = c("Did not meet age requirement","Gestational age >=20 weeks",
-                                  "Outside catchment area", "Doesn't plan to remain in catchment area", "Did not consent"),
-                     breaks=  c("Did not meet age requirement","Gestational age >=20 weeks",
-                                  "Outside catchment area", "Doesn't plan to remain in catchment area", "Did not consent"),
-                     name = NULL,
-                     guide = guide_legend(nrow = 3)) +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 0, vjust = 1),
-        legend.position = "bottom",
-        legend.direction	= "horizontal",
-        panel.grid.minor = element_blank()) +
-  xlab("") +
-  ylab("Percentage") +
-  ggtitle("") 
+  geom_bar(position="stack", stat="identity") +
+  geom_text(aes(label = n_ineligible, x = SITE, y = n_pct+0.25), 
+              position = position_stack(vjust = 1), hjust = 0.12, color = "black", size = 3) +
+    coord_flip() +  
+    # scale_fill_manual(values = c("#b40e20","#e2d300", "#e58600",  "#47acc8", "#01a08a","#0c775e"), 
+    #                   labels = c("Did not meet age requirement","Outside catchment area",
+    #                               "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)",
+    #                               "Doesn't plan to remain in catchment area", "Did not consent"),
+    #                    breaks =  c("Did not meet age requirement","Outside catchment area",
+    #                               "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)",
+    #                               "Doesn't plan to remain in catchment area", "Did not consent"),
+    #                    name = NULL,
+    #                    guide = guide_legend(nrow = 3)) +
+      scale_fill_manual(values = c("#b40e20","#e2d300", "#e58600",  "#47acc8", "#01a08a","#0c775e"), #
+                       labels = str_wrap(c("Did not meet age requirement", 
+                                   "Outside catchment area",
+                                   "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)",
+                                   "Doesn't plan to remain in catchment area",
+                                   "Did not consent"), width = 40), # Adjust the width as needed
+                        breaks =  c("Did not meet age requirement", 
+                                   "Outside catchment area",
+                                   "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)",
+                                   "Doesn't plan to remain in catchment area",
+                                   "Did not consent"),
+                        name = NULL,
+                        guide = guide_legend(nrow = 3)) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 0, vjust = 1),
+          legend.position = "bottom",
+          legend.direction	= "horizontal",
+          panel.grid.minor = element_blank()) +
+    xlab("") +
+    ylab("Percentage") +
+    ggtitle("") 
 
 ```
 
@@ -1458,28 +1483,28 @@ VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>%
 table5 <- bind_rows(VISIT_COMPLETE_ANC,
           VISIT_COMPLETE_PNC) %>% 
     `rownames<-` (c(## anc (1-10)
-                 "Enrollment (None)", ## NONE - SKIP WINDOW
+                 "Enrollment (<20 wks)", ## NONE - SKIP WINDOW
                  "Denominator, n",
-                 "ANC-20 (23 to 25wks)",
+                 "ANC-20 (23 to 25 wks)",
                  "Denominator, n ",
-                 "ANC-28 (None)", ## NONE - SKIP WINDOW
+                 "ANC-28 (26 to 30 wks)", ## NONE - SKIP WINDOW
                  "Denominator, n  ",
-                 "ANC-32 (31 to 33wks)", ## use on time windows
+                 "ANC-32 (31 to 33 wks)", ## use on time windows
                  "Denominator, n   ",
-                 "ANC-36 (38wks to delivery)", ## use on time windows
+                 "ANC-36 (38 wks to delivery)", ## use on time windows
                  "Denominator, n    ",
                  ## pnc (11-22)
-                 "PNC-0 (None)", ## NONE - SKIP WINDOW
+                 "PNC-0 (3 to 5 days)", ## NONE - SKIP WINDOW
                  "Denominator, n     ",
-                 "PNC-1 (None)", ## NONE - SKIP WINDOW
+                 "PNC-1 (7 to 14 days)", ## NONE - SKIP WINDOW
                  "Denominator, n      ",
-                 "PNC-4 (None)", ## NONE - SKIP WINDOW
+                 "PNC-4 (28 to 35 days)", ## NONE - SKIP WINDOW
                  "Denominator, n       ",
-                 "PNC-6 (8 to 12wks)",
+                 "PNC-6 (8 to 12 wks)",
                  "Denominator, n        ",
-                 "PNC-26 (29 to 39wks)",
+                 "PNC-26 (29 to 39 wks)",
                  "Denominator, n^a^         ",
-                 "PNC-52 (55 to 64wks)",
+                 "PNC-52 (55 to 64 wks)",
                  "Denominator, n^a^          "
                  )
                 ) %>% 
@@ -1511,11 +1536,11 @@ prisma_tab5_1 <- tb_theme1(table5_anc) %>%
       style = list(
         cell_text(indent = px(0))
         ),
-      locations = cells_stub(rows = c('Enrollment (None)',
-                 "ANC-20 (23 to 25wks)",
-                 "ANC-28 (None)", ## NONE - SKIP WINDOW
-                 "ANC-32 (31 to 33wks)", ## use on time windows
-                 "ANC-36 (38wks to delivery)")) ## use on time windows
+      locations = cells_stub(rows = c('Enrollment (<20 wks)',
+                 "ANC-20 (23 to 25 wks)",
+                 "ANC-28 (26 to 30 wks)", ## NONE - SKIP WINDOW
+                 "ANC-32 (31 to 33 wks)", ## use on time windows
+                 "ANC-36 (38 wks to delivery)")) ## use on time windows
 ) %>% 
   tab_style(
       style = list(
@@ -1553,12 +1578,12 @@ prisma_tab5_2 <- tb_theme1(table5_pnc) %>%
         cell_text(indent = px(0))
         ),
       locations = cells_stub(rows = c(
-                 "PNC-0 (None)", ## NONE - SKIP WINDOW
-                 "PNC-1 (None)", ## NONE - SKIP WINDOW
-                 "PNC-4 (None)", ## NONE - SKIP WINDOW
-                 "PNC-6 (8 to 12wks)",
-                 "PNC-26 (29 to 39wks)",
-                 "PNC-52 (55 to 64wks)"))
+                 "PNC-0 (3 to 5 days)", ## NONE - SKIP WINDOW
+                 "PNC-1 (7 to 14 days)", ## NONE - SKIP WINDOW
+                 "PNC-4 (28 to 35 days)", ## NONE - SKIP WINDOW
+                 "PNC-6 (8 to 12 wks)",
+                 "PNC-26 (29 to 39 wks)",
+                 "PNC-52 (55 to 64 wks)"))
 ) %>% 
   tab_style(
       style = list(
@@ -3291,6 +3316,8 @@ figure2 <- MatData_Ipc_Visits_Mat %>%
   mutate(UPLOADDATE = ymd(UploadDate)) %>% 
   # calculate the age of particpant TODAY (at date of upload)
   mutate(AGE_AT_UPLOAD_DAYS = as.numeric(UPLOADDATE - EST_CONCEP_DATE))
+
+out <- figure2 %>% filter(AGE_AT_UPLOAD_DAYS > 336)
 
 # min(figure2$AGE_AT_UPLOAD_DAYS)
 # max(figure2$AGE_AT_UPLOAD_DAYS)
@@ -5847,20 +5874,20 @@ plot_criteria %>%
 * C3: Pre-pregnancy or early pregnancy body mass index (BMI) of >18.5 and <30 kg/m2 AND mid-upper arm circumference (MUAC) > 23cm 
 * C4: Height ≥153 cm 
 * C5: Singleton pregnancy 
-* C6: Not iron deficient (serum ferritin >15 mcg/L– adjusted for inflammation) 
-* C7: No subclinical inflammation (CRP>=5 mg/L and/or AGP>=1 g/L) 
-* C8: Systolic blood pressure <140 mmHg and diastolic blood pressure <90 mmHg 
-* C9: No previous reported low birth weight delivery
-* C10: No previous reported stillbirth
-* C11: No previous reported unplanned cesarean delivery
-* C12: No hemoglobinopathies: SS, SC, SE, EE, CC, SD-Punjab, Sβthal, Eβthal, Cβthal, CD-Punjab, ED-Punjab, D-D-Punjab, D-Punjabβthal, Thalassemia major, Thalassemia intermedia, glucose-6-phosphate dehydrogenase deficiency, or Alpha thalassemia
-* C13: No reported cigarette smoking, tobacco chewing, or betel nut use during pregnancy
-* C14: No reported alcohol consumption during pregnancy
-* C15: No known history or current chronic disease including cancer, kidney disease, and cardiac conditions
-* C16: No known history or current HIV
-* C17: No current malaria infection (per rapid diagnostic test)
-* C18: No current Hepatitis B virus infection (per rapid diagnostic test)
-* C19: No current Hepatitis C virus infection (per rapid diagnostic test)
+* C6: No previous reported low birth weight delivery
+* C7: No previous reported stillbirth
+* C8: No previous reported unplanned cesarean delivery
+* C9: No reported cigarette smoking, tobacco chewing, or betel nut use during pregnancy
+* C10: No reported alcohol consumption during pregnancy
+* C11: No known history or current chronic disease including cancer, kidney disease, and cardiac conditions
+* C12: No known history or current HIV
+* C13: Systolic blood pressure <140 mmHg and diastolic blood pressure <90 mmHg 
+* C14: No current malaria infection (per rapid diagnostic test)
+* C15: No current Hepatitis B virus infection (per rapid diagnostic test)
+* C16: No current Hepatitis C virus infection (per rapid diagnostic test)
+* C17: Not iron deficient (serum ferritin >15 mcg/L– adjusted for inflammation) 
+* C18: No subclinical inflammation (CRP>=5 mg/L and/or AGP>=1 g/L) 
+* C19: No hemoglobinopathies: SS, SC, SE, EE, CC, SD-Punjab, Sβthal, Eβthal, Cβthal, CD-Punjab, ED-Punjab, D-D-Punjab, D-Punjabβthal, Thalassemia major, Thalassemia intermedia, glucose-6-phosphate dehydrogenase deficiency, or Alpha thalassemia
 
 \newpage
 
