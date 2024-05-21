@@ -2,7 +2,7 @@
 #### MONITORING REPORT SETUP ####
 #* Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #* Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 16 April 2024
+#* Last updated: 21 May 2024
 
 
 #*Output:   
@@ -45,7 +45,7 @@ library(readxl)
 library(dplyr)
 
 
-UploadDate = "2024-04-12"
+UploadDate = "2024-05-17"
 
 load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "MatData_Wide_", UploadDate, ".RData"))
 load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "InfData_Wide_", UploadDate, ".RData"))
@@ -83,7 +83,8 @@ MatData_Report <- MatData_Wide %>%
          contains("M09_DELIV_DSSTDAT_INF"),
          contains("VISIT_DATE"),
          M00_KNOWN_DOBYN_SCORRES, DOB,
-         contains("_FETUS_CT_PERES_US")) 
+         contains("_FETUS_CT_PERES_US"),
+         M02_SCRN_RETURN) 
 
 ## export 
 save(MatData_Report, file= paste0(path_to_save, "MatData_Report",".RData",sep = ""))
@@ -110,6 +111,15 @@ save(InfData_Report, file= paste0(path_to_save, "InfData_Report",".RData",sep = 
 #* Pre-screening, screen and enrollment info
 #* Output = MatData_Screen_Enroll 
 #**************************************************************************************
+# table(MatData_Report$M02_SCRN_RETURN, MatData_Report$SITE, useNA = "ifany")
+# test <- MatData_Screen_Enroll %>% filter(SITE == "Pakistan") %>%
+#   # select(SITE, SCRNID, MOMID,M02_SCRN_RETURN, SCRN_RETURN,AGE, GA20, CATCHAREA, CATCHREMAIN, SCRN_CONSENT )
+#   # select(SITE, SCRNID, MOMID,M02_SCRN_RETURN, M02_AGE_IEORRES, M02_PC_IEORRES, M02_CATCHMENT_IEORRES, M02_CATCH_REMAIN_IEORRES, M02_CONSENT_IEORRES)
+#   # select(SITE, SCRNID, PRESCR_ELIGIBLE, M00_PREGNANT_IEORRES, M00_EGA_LT25_IEORRES, M00_AGE_IEORRES, 
+#   #        M00_CATCHMENT_IEORRES, M00_OTHR_IEORRES, CONSENT_PRESCREEN)
+# select(SITE, SCRNID, PRESCR_PREGSIGN, PRESCR_GA25, PRESCR_AGE, PRESCR_CATCHAREA,PRESCR_OTHER,  CONSENT_PRESCREEN)
+
+# table(test$PRESCR_AGE)
 
 #study start date and cut date
 MatData_Screen_Enroll <- MatData_Report %>% 
@@ -157,13 +167,13 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
     ## M02_CATCHMENT_IEORRES = live in catchment area?
     ## M02_CATCH_REMAIN_IEORRES = stay in catchment area?
     ELIGIBLE = case_when(M02_AGE_IEORRES == 1 & M02_PC_IEORRES == 1 & M02_CATCHMENT_IEORRES == 1 &
-                           M02_CATCH_REMAIN_IEORRES == 1  ~ 1,
+                           M02_CATCH_REMAIN_IEORRES == 1  & (M02_SCRN_RETURN != 0 | is.na(M02_SCRN_RETURN)) ~ 1,
                          M02_AGE_IEORRES == 0 | M02_PC_IEORRES == 0 | M02_CATCHMENT_IEORRES == 0 |
                            M02_CATCH_REMAIN_IEORRES == 0  ~ 0,
                          TRUE ~ 99),
     CONSENT = case_when(!is.na(M02_CONSENT_IEORRES) ~ M02_CONSENT_IEORRES,
                         TRUE ~ 99),
-    ENROLL = case_when(M02_CONSENT_IEORRES == 1 & !is.na(M02_FORMCOMPLDAT_MNH02) & ELIGIBLE == 1 ~ 1,
+    ENROLL = case_when(M02_CONSENT_IEORRES == 1 & !is.na(M02_FORMCOMPLDAT_MNH02) & ELIGIBLE == 1 ~ 1,## MAY7 UPDATES: (M02_SCRN_RETURN == 1 | is.na(M02_SCRN_RETURN) to account for particpants who returned for screening and/or sites not using the variable
                        ELIGIBLE == 0 | M02_CONSENT_IEORRES == 0 | M02_CONSENT_IEORRES == 77 ~ 0,
                        TRUE ~ 77)) %>%
   ## Assign denominators
@@ -172,7 +182,7 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
   mutate(SCREEN_DENOM = case_when(SCREEN == 1 ~ 1,
                                   TRUE ~ 0)) %>%     
   mutate(ENROLL_DENOM = case_when(ENROLL == 1 ~ 1,
-                                  TRUE ~ 0))      
+                                  TRUE ~ 0))  
 
 ## extract Reasons for exclusion (check if cases match within mnh00 and 02)
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
@@ -182,25 +192,25 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                              ifelse(M00_PREGNANT_IEORRES == 0, 0, 99)),
     
     ## if you answer 1 to PRESCR_PREGSIGN, you answer PRESCR_GA25
-    PRESCR_GA25 = ifelse(M00_EGA_LT25_IEORRES == 1, 1,
+    PRESCR_GA25 = ifelse(M00_EGA_LT25_IEORRES == 1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan"), 1,
                          ifelse(M00_EGA_LT25_IEORRES == 0 & M00_PREGNANT_IEORRES == 1, 0, 99)),
     ## if you answer 1 to PRESCR_PREGSIGN & PRESCR_GA25, you answer PRESCR_AGE
     PRESCR_AGE = ifelse(M00_AGE_IEORRES == 1, 1,
-                        ifelse(M00_AGE_IEORRES == 0  & M00_PREGNANT_IEORRES == 1 & 
-                                 M00_EGA_LT25_IEORRES == 1, 0, 99)),
+                      ifelse(M00_AGE_IEORRES == 0  & M00_PREGNANT_IEORRES == 1 & 
+                            (M00_EGA_LT25_IEORRES==1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")), 0, 99)),
     ## if you answer 1 to PRESCR_PREGSIGN & PRESCR_GA25 & PRESCR_AGE, you answer PRESCR_CATCHAREA
     PRESCR_CATCHAREA = ifelse(M00_CATCHMENT_IEORRES == 1, 1,
                               ifelse(M00_CATCHMENT_IEORRES == 0 & 
                                        M00_AGE_IEORRES == 1  & 
                                        M00_PREGNANT_IEORRES == 1 & 
-                                       M00_EGA_LT25_IEORRES == 1, 0, 99)),
+                                       (M00_EGA_LT25_IEORRES==1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")), 0, 99)),
     ## if you answer 1 to PRESCR_PREGSIGN & PRESCR_GA25 & PRESCR_AGE & PRESCR_CATCHAREA, you answer PRESCR_OTHER
     PRESCR_OTHER = ifelse(M00_OTHR_IEORRES == 0, 1,
                           ifelse(M00_OTHR_IEORRES == 1 & 
                                    M00_CATCHMENT_IEORRES == 1 & 
                                    M00_AGE_IEORRES == 1  & 
                                    M00_PREGNANT_IEORRES == 1 & 
-                                   M00_EGA_LT25_IEORRES == 1, 0, 99)), 
+                                   (M00_EGA_LT25_IEORRES==1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")), 0, 99)), 
     ## if you answer 1 to PRESCR_PREGSIGN & PRESCR_GA25 & PRESCR_AGE & PRESCR_CATCHAREA & PRESCR_OTHER, you answer CONSENT_PRESCREEN
     CONSENT_PRESCREEN = ifelse(M00_CON_YN_DSDECOD == 1 | M00_ASSNT_YN_DSDECOD == 1| 
                                  M00_CON_LAR_YN_DSDECOD == 1, 1, 
@@ -211,10 +221,10 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                                         M00_CATCHMENT_IEORRES == 1 & 
                                         M00_AGE_IEORRES == 1  & 
                                         M00_PREGNANT_IEORRES == 1 & 
-                                        M00_EGA_LT25_IEORRES == 1, 0, 99))) %>% 
+                                        (M00_EGA_LT25_IEORRES==1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")), 0, 99))) %>% 
   # eligible based on pre-screening
   mutate(PRESCR_ELIGIBLE = ifelse(M00_PREGNANT_IEORRES == 1 & 
-                                    M00_EGA_LT25_IEORRES == 1 & 
+                                   (M00_EGA_LT25_IEORRES == 1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")) & 
                                     M00_AGE_IEORRES == 1 &
                                     M00_CATCHMENT_IEORRES == 1 & 
                                     M00_OTHR_IEORRES == 0 & 
@@ -225,27 +235,33 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
   
   #reason for exclusion in screen/enroll
   mutate(
+    SCRN_RETURN = case_when(M02_SCRN_RETURN == 0 ~ 0,  ##  | M02_SCRN_RETURN ==77 need to decide what to do with 77 
+                            TRUE ~ 1), ## all other instances included NA for sites not using this variable will be considered "scrn_return = yes"
     AGE = ifelse(M02_AGE_IEORRES == 1, 1,
                  ifelse(M02_AGE_IEORRES == 0, 0, 99)),
     GA20 = ifelse(M02_PC_IEORRES == 1, 1,
                   ifelse(M02_PC_IEORRES == 0 & 
-                           M02_AGE_IEORRES == 1, 0, 99)),
+                           M02_AGE_IEORRES == 1 & 
+                           (M02_SCRN_RETURN != 0 | is.na(M02_SCRN_RETURN)) , 0, 99)),
     
     CATCHAREA = ifelse(M02_CATCHMENT_IEORRES == 1, 1,
                        ifelse(M02_CATCHMENT_IEORRES == 0 &
                                 M02_PC_IEORRES == 1 & 
-                                M02_AGE_IEORRES == 1, 0, 99)),
+                                M02_AGE_IEORRES == 1 & 
+                                (M02_SCRN_RETURN != 0 | is.na(M02_SCRN_RETURN)), 0, 99)),
     CATCHREMAIN = ifelse(M02_CATCH_REMAIN_IEORRES == 1, 1, 
                          ifelse(M02_CATCH_REMAIN_IEORRES == 0 & 
                                   M02_CATCHMENT_IEORRES == 1 & 
                                   M02_PC_IEORRES == 1 & 
-                                  M02_AGE_IEORRES == 1, 0, 99)), 
+                                  M02_AGE_IEORRES == 1 & 
+                                  (M02_SCRN_RETURN != 0 | is.na(M02_SCRN_RETURN)), 0, 99)), 
     SCRN_CONSENT = ifelse(M02_CONSENT_IEORRES == 1, 1, 
                           ifelse(M02_CONSENT_IEORRES == 0 & 
                                    M02_CATCH_REMAIN_IEORRES == 1 & 
                                    M02_CATCHMENT_IEORRES == 1 &
                                    M02_PC_IEORRES == 1 & 
-                                   M02_AGE_IEORRES == 1, 0, 99))) %>% 
+                                   M02_AGE_IEORRES == 1 & 
+                                   (M02_SCRN_RETURN != 0 | is.na(M02_SCRN_RETURN)), 0, 99))) %>% 
   ## generate variable with age at pregnancy end
   # first, pull all instances of miscarriage in MNH04 
   mutate(MISCARRIAGE = ifelse(M04_FETAL_LOSS_DSDECOD_1== 1 | M04_FETAL_LOSS_DSDECOD_2== 1 |  M04_FETAL_LOSS_DSDECOD_3== 1 |
@@ -267,7 +283,6 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
   # convert DOB to date class 
   mutate(DOB = as.Date(DOB, format = "%Y-%m-%d"))
 
-
 ## Has woman closed out? 
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
   mutate(M23_VISIT_COMPLETE = ifelse(M23_CLOSE_DSDECOD == 1 | M23_CLOSE_DSDECOD == 2 | M23_CLOSE_DSDECOD == 3 |
@@ -277,6 +292,8 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                                          M23_CLOSE_DSDECOD == 3 | M23_CLOSE_DSDECOD == 4 | 
                                          M23_CLOSE_DSDECOD == 5 | M23_CLOSE_DSDECOD == 6, 1, 0)) 
 
+
+table(MatData_Screen_Enroll$PRESCR_ELIGIBLE, MatData_Screen_Enroll$SITE)
 # out <- MatData_Screen_Enroll %>% filter(SITE == "India-SAS") %>% select(SITE, SCRNID, MOMID, PREGID, 
 #                                                                         M00_EGA_LT25_IEORRES,M00_AGE_IEORRES,
 #                                                                         M00_CATCHMENT_IEORRES, M00_OTHR_IEORRES,
@@ -378,7 +395,8 @@ MatData_Anc_Visits <- MatData_Screen_Enroll %>%
                                  ifelse(M23_CLOSEOUT_PERIOD == "ANC" & M23_AGE_VISIT_DAYS >= 217 & M23_AGE_VISIT_DAYS <= 237, 4, ## MIGHT BE UPDATING THE 237 NUMBER 
                                     ## Since all visit types are assigned based on the GA at the time of assessment, we don't need to worry about 4 vs 5. 
                                     ## if ANC32 is missed, it is conducted at ANC36 visit
-                                 ifelse(M23_CLOSEOUT_PERIOD == "ANC" & M23_AGE_VISIT_DAYS >= 238 & M23_AGE_VISIT_DAYS <= 322, 5, 88)))))) 
+                                 ifelse(M23_CLOSEOUT_PERIOD == "ANC" & M23_AGE_VISIT_DAYS >= 238 & M23_AGE_VISIT_DAYS <= 322, 5, 88)))))) %>% 
+  mutate(CLOSEOUT = case_when(!is.na(M23_AGE_VISIT_WKS) ~ 1, TRUE ~ 0))
 
 ## export 
 save(MatData_Anc_Visits, file= paste0(path_to_save, "MatData_Anc_Visits",".RData",sep = ""))
@@ -391,6 +409,21 @@ save(MatData_Anc_Visits, file= paste0(path_to_save, "MatData_Anc_Visits",".RData
 #                                                                     ANC28_ONTIME, ANC28_PASS,
 #                                                                     ANC32_ONTIME, ANC32_PASS,
 #                                                                     ANC36_ONTIME, ANC36_PASS)
+
+## generate 
+# window_subset <- MatData_Anc_Visits %>% select(SITE, MOMID,DOB,ENDPREG_DAYS, ENROLL_LATE, ENROLL_PASS_LATE,
+#                                       ANC20_LATE, ANC20_PASS_LATE, ANC28_LATE, ANC28_PASS_LATE,
+#                                       ANC32_LATE, ANC32_PASS_LATE, ANC36_LATE, ANC36_PASS_LATE,
+#                                       CLOSEOUT, M23_AGE_VISIT_DAYS, M23_AGE_VISIT_WKS)
+# 
+# library(openxlsx)
+# write.xlsx(window_subset,
+#            na="",
+#            file = paste0("Z:/Stacie_working_files/window_subset", ".xlsx"),
+#            row.names = FALSE)
+
+## export 
+save(MatData_Anc_Visits, file= paste0(path_to_save, "MatData_Anc_Visits",".RData",sep = ""))
 
 # if someone delievered at 213 days (30wks); NO anc28/ anc32/  anc36
 # if someone delievered at 54 days (7wks); NO ANC20 / anc28/ anc32/  anc36
@@ -415,17 +448,19 @@ MatData_Ipc_Visits_Mat <- MatData_Screen_Enroll %>%
   left_join(InfData_Report_Mat[c("SITE", "MOMID", "PREGID", "INFANTID", "M11_TYPE_VISIT_6", "M11_VISIT_COMPLETE_6")], 
             by = c("SITE", "MOMID", "PREGID")) %>% 
   ## CALCULATE LATE IPC WINDOWS
-  mutate(IPC_LATE = (EDD_US - as.difftime(280, unit="days")) + as.difftime(300, unit="days")) %>% 
+  mutate(IPC_LATE = EST_CONCEP_DATE + 300) %>% 
   ## using upload date
   mutate(IPC_PASS = ifelse(IPC_LATE<UploadDate, 1, 0)) %>%  
   ## CALCULATE INDICATOR VARIALBE FOR ANY VISIT TYPE = i
   mutate(ANY_TYPE_VISIT_COMPLETE_6 = ifelse((M09_TYPE_VISIT_6 == 6 & M09_VISIT_COMPLETE_6 == 1) | 
-                                              (M10_TYPE_VISIT_6 == 6 & M10_VISIT_COMPLETE_6 == 1) |
-                                              (M11_TYPE_VISIT_6 == 6 & M11_VISIT_COMPLETE_6 == 1), 1, 0)) %>% 
+                                              (M10_TYPE_VISIT_6 == 6 & M10_VISIT_COMPLETE_6 == 1), 1, 0)) %>% 
   ## GENERATE INDICATOR VARIABLE FOR PARTICPANTS WHO HAVE CLOSED OUT EITHER DUE TO LTFU (M23_CLOSE_DSDECOD==4), 
       # WITHDREW (M23_CLOSE_DSDECOD==5), OR INVESTIGATOR CLOSED (M23_CLOSE_DSDECOD==6)
+  # if a woman any closeout selected 
   mutate(CLOSED_OUT =  ifelse(is.na(M23_CLOSE_DSDECOD), 0, 
-                              ifelse(M23_CLOSE_DSDECOD == 4 | M23_CLOSE_DSDECOD == 5 | M23_CLOSE_DSDECOD == 6, 1, 0)))  %>% 
+                              ifelse(M23_CLOSE_DSDECOD %in% c(1, 2, 3, 4, 5, 6), 1, 0)))  %>% 
+  # mutate(CLOSED_OUT =  ifelse(is.na(M23_CLOSE_DSDECOD), 0, 
+  #                             ifelse(M23_CLOSE_DSDECOD == 4 | M23_CLOSE_DSDECOD == 5 | M23_CLOSE_DSDECOD == 6, 1, 0)))  %>% 
   ## CALCULATE INDICATOR VARIALBE FOR DENOMINATOR
   mutate(IPC_DENOM = ifelse((ANY_TYPE_VISIT_COMPLETE_6==1 | IPC_PASS==1) & 
                               ((M23_CLOSE_DSSTDAT > IPC_LATE) | is.na(M23_CLOSE_DSSTDAT)) &  # only include participants who have not yet closed out
@@ -433,6 +468,7 @@ MatData_Ipc_Visits_Mat <- MatData_Screen_Enroll %>%
   ## CALCULATE INDICATOR VARIALBE FOR MISSING ALL VISIT TYPE = 6
   mutate(GA42_MISSING_IPC = ifelse((IPC_DENOM ==1) & is.na(ANY_TYPE_VISIT_COMPLETE_6), 1, 0)) 
   
+table(MatData_Ipc_Visits_Mat$GA42_MISSING_IPC, MatData_Ipc_Visits_Mat$SITE)
 
 ## export 
 save(MatData_Ipc_Visits_Mat, file= paste0(path_to_save, "MatData_Ipc_Visits_Mat",".RData",sep = ""))
@@ -504,9 +540,17 @@ MatData_Ipc_Visits_Compliance_Mat <- MatData_Screen_Enroll %>%
 ## export 
 save(MatData_Ipc_Visits_Compliance_Mat, file= paste0(path_to_save, "MatData_Ipc_Visits_Compliance_Mat",".RData",sep = ""))
 
+
 # infant protocol compliance -- only infant for mnh11 - one row for each infant 
 MatData_Ipc_Visits_Compliance_Inf <- InfData_Report %>% 
   select(SITE, INFANTID, PREGID, M11_TYPE_VISIT_6, M11_VISIT_COMPLETE_6) %>% 
+  ## remove any duplicates
+  group_by(INFANTID) %>% 
+  mutate(dup = n(), 
+         remove = case_when(dup >1 & (is.na(M11_TYPE_VISIT_6) | is.na(PREGID)) ~ 1, TRUE ~ 0)) %>% 
+  filter(remove ==0) %>% 
+  select(-dup, -remove) %>% 
+  ungroup() %>% 
   full_join(MatData_Screen_Enroll[c("SITE", "MOMID", "PREGID", "ENROLL", "DOB", "EDD_US", "ENDPREG_DAYS","M09_TYPE_VISIT_6", 
                                     "M10_TYPE_VISIT_6", "M09_VISIT_COMPLETE_6", "M10_VISIT_COMPLETE_6", "M09_INFANTS_FAORRES_6")],
             by = c("SITE",  "PREGID"), multiple = "all") %>% 
@@ -695,6 +739,16 @@ Visit_Complete_Anc <- MatData_Anc_Visits %>%
                                         ((M23_CLOSE_DSSTDAT > ANC36_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0)
   )
 
+
+## testing: 
+# out <- Prot_Compliance_Anc %>% select(SITE, MOMID, PREGID, PC_ANC28_DENOM, ANY_TYPE_VISIT_COMPLETE_3, ANC28_PASS_LATE) %>% 
+#   full_join(Visit_Complete_Anc[c("SITE", "MOMID", "PREGID", "VC_ANC28_NUM_LATE", "ENDPREG_DAYS", "M23_CLOSE_DSSTDAT")], by = c("SITE", "MOMID", "PREGID")) %>% 
+#   select(SITE, MOMID, PREGID, VC_ANC28_NUM_LATE, PC_ANC28_DENOM, ANC28_PASS_LATE, ANY_TYPE_VISIT_COMPLETE_3, ENDPREG_DAYS, M23_CLOSE_DSSTDAT) %>% 
+#   mutate(discrep = case_when(VC_ANC28_NUM_LATE != PC_ANC28_DENOM ~ 1, TRUE ~ 0)) %>% 
+#   filter(discrep == 1) %>% 
+#   mutate(under_window_preg = case_when(ENDPREG_DAYS < 216 ~ 1, TRUE ~ 0))
+
+
 ## export 
 save(Visit_Complete_Anc, file= paste0(path_to_save, "Visit_Complete_Anc",".RData",sep = ""))
 
@@ -823,7 +877,7 @@ Prot_Compliance_Pnc <- MatData_Pnc_Visits %>%
 save(Prot_Compliance_Pnc, file= paste0(path_to_save, "Prot_Compliance_Pnc",".RData",sep = ""))
 
 
-## MNH25 protocol compliance 
+# ## MNH25 protocol compliance 
 MNH25_Pnc <- MatData_Pnc_Visits %>% select(SITE, MOMID, PREGID, DOB,M25_VISIT_COMPLETE_10, ANY_TYPE_VISIT_COMPLETE_10, PNC6_PASS_LATE ,PNC6_LATE)
 
 Prot_Compliance_MNH25 <- MatData_Anc_Visits %>% 
@@ -831,29 +885,31 @@ Prot_Compliance_MNH25 <- MatData_Anc_Visits %>%
          ANY_TYPE_VISIT_COMPLETE_1,ANY_TYPE_VISIT_COMPLETE_2, ANY_TYPE_VISIT_COMPLETE_4, ANY_TYPE_VISIT_COMPLETE_5,
          ENROLL_PASS_LATE, ANC20_PASS_LATE, ANC32_PASS_LATE, ANC36_PASS_LATE,
          ENROLL_LATE, ANC20_LATE, ANC32_LATE, ANC36_LATE,
-         M25_VISIT_COMPLETE_1, M25_VISIT_COMPLETE_2, M25_VISIT_COMPLETE_4, M25_VISIT_COMPLETE_5) %>% 
+         M25_VISIT_COMPLETE_1, M25_VISIT_COMPLETE_2, M25_VISIT_COMPLETE_4, M25_VISIT_COMPLETE_5) %>%
+  
   # NUMERATOR for protocol compliance 
-  mutate(M25_ANCLESS20_NUM =ifelse(((M25_VISIT_COMPLETE_1 == 1 & ANC20_LATE == 1) | 
-                                     (M25_VISIT_COMPLETE_2 == 1 & ANC20_LATE == 1)) & 
+  mutate(M25_ANCLESS20_NUM =ifelse(((M25_VISIT_COMPLETE_1 == 1 & ANC20_LATE < UploadDate) | 
+                                    (M25_VISIT_COMPLETE_2 == 1 & ANC20_LATE < UploadDate)) & 
                                      (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)) & 
-                                     ((M23_CLOSE_DSSTDAT > ANC32_LATE) | is.na(M23_CLOSE_DSSTDAT)),1,0),
-         M25_ANCOVER31_NUM =ifelse(((M25_VISIT_COMPLETE_4 == 1 & ANC36_LATE == 1)|
-                                     (M25_VISIT_COMPLETE_5 == 1 & ANC36_LATE == 1)) & 
+                                     ((M23_CLOSE_DSSTDAT > ANC20_LATE) | is.na(M23_CLOSE_DSSTDAT)),1, 0),
+         
+         M25_ANCOVER31_NUM =ifelse(((M25_VISIT_COMPLETE_4 == 1 | M25_VISIT_COMPLETE_5) & ANC32_PASS_LATE == 1) &
                                      (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)) & 
                                      ((M23_CLOSE_DSSTDAT > ANC32_LATE) | is.na(M23_CLOSE_DSSTDAT)),1,0)
   ) %>% 
   # DENOMINATOR for protocol compliance
-  mutate(PC_ANCLESS20_DENOM = ifelse(ANC20_PASS_LATE == 1 &
+  mutate(PC_ANCLESS20_DENOM = ifelse((ANC20_LATE < UploadDate) &
                                        (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)) & 
-                                       ((M23_CLOSE_DSSTDAT > ANC32_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0), 
-         PC_ANCOVER31_DENOM = ifelse(ANC36_PASS_LATE == 1 & 
+                                       ((M23_CLOSE_DSSTDAT > ANC20_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0), 
+         PC_ANCOVER31_DENOM = ifelse(ANC32_PASS_LATE == 1 & 
                                        (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS))  & 
                                        ((M23_CLOSE_DSSTDAT > ANC32_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0)) %>% 
   left_join(MNH25_Pnc, by = c("SITE", "MOMID", "PREGID")) %>% 
+  
   mutate(PC_PNC6_DENOM = ifelse(PNC6_PASS_LATE == 1 & 
-                                  ((M23_CLOSE_DSSTDAT > PNC6_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0)) 
+                                  ((M23_CLOSE_DSSTDAT > PNC6_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0))
 
-# Export
+
 save(Prot_Compliance_MNH25, file= paste0(path_to_save, "Prot_Compliance_MNH25",".RData",sep = ""))
 
 ## MNH26 protocol compliance 
@@ -866,28 +922,27 @@ Prot_Compliance_MNH26 <- MatData_Anc_Visits %>%
          ENROLL_LATE, ANC20_LATE, ANC32_LATE, ANC36_LATE,
          M26_VISIT_COMPLETE_1, M26_VISIT_COMPLETE_2, M26_VISIT_COMPLETE_4, M26_VISIT_COMPLETE_5) %>% 
   ## add remapp launch date for each site since these are remapp criteria 
-  mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT >= "2023-04-10") |
+  mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT >= "2023-04-14") |
                                   (SITE == "Pakistan" & M02_SCRN_OBSSTDAT >= "2022-09-22") |
                                   (SITE == "Ghana" & M02_SCRN_OBSSTDAT >= "2022-12-28") | 
                                   (SITE == "Zambia" & M02_SCRN_OBSSTDAT >= "2022-12-15") | 
-                                  (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-07-18") |
-                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-12-01"), 1, 0)) %>%
+                                  (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-06-20") |
+                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-08-15"), 1, 0)) %>%
   filter(REMAPP_LAUNCH ==1)  %>% 
   # NUMERATOR for protocl compliance 
-  mutate(M26_ANCLESS20_NUM =ifelse(((M26_VISIT_COMPLETE_1 == 1 & ANC20_PASS_LATE == 1) | 
-                                      (M26_VISIT_COMPLETE_2 == 1 & ANC20_PASS_LATE == 1)) & 
+  mutate(M26_ANCLESS20_NUM =ifelse(((M26_VISIT_COMPLETE_1 == 1 & ANC20_LATE < UploadDate) | 
+                                      (M26_VISIT_COMPLETE_2 == 1 & ANC20_LATE < UploadDate)) & 
                                      (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)) & 
-                                     ((M23_CLOSE_DSSTDAT > ANC32_LATE) | is.na(M23_CLOSE_DSSTDAT)),1,0),
-         M26_ANCOVER31_NUM =ifelse(((M26_VISIT_COMPLETE_4 == 1 & ANC36_PASS_LATE == 1)|
-                                      (M26_VISIT_COMPLETE_5 == 1 & ANC36_PASS_LATE == 1)) & 
+                                     ((M23_CLOSE_DSSTDAT > ANC20_LATE) | is.na(M23_CLOSE_DSSTDAT)),1, 0),
+         M26_ANCOVER31_NUM =ifelse(((M26_VISIT_COMPLETE_4 == 1 | M26_VISIT_COMPLETE_5) & ANC32_PASS_LATE == 1) &
                                      (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)) & 
                                      ((M23_CLOSE_DSSTDAT > ANC32_LATE) | is.na(M23_CLOSE_DSSTDAT)),1,0)
   ) %>% 
   # DENOMINATOR for protocol compliance
-  mutate(PC_ANCLESS20_DENOM = ifelse(ANC20_PASS_LATE == 1 &
+  mutate(PC_ANCLESS20_DENOM = ifelse((ANC20_LATE < UploadDate) &
                                        (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)) & 
-                                       ((M23_CLOSE_DSSTDAT > ANC32_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0), 
-         PC_ANCOVER31_DENOM = ifelse(ANC36_PASS_LATE == 1 & 
+                                       ((M23_CLOSE_DSSTDAT > ANC20_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0), 
+         PC_ANCOVER31_DENOM = ifelse(ANC32_PASS_LATE == 1 & 
                                        (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS))  & 
                                        ((M23_CLOSE_DSSTDAT > ANC32_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0)) %>% 
   left_join(MNH26_Pnc, by = c("SITE", "MOMID", "PREGID")) %>% 
@@ -996,9 +1051,6 @@ Form_Completion_Pnc <- MatData_Pnc_Visits %>%
          FC_PNC26_DENOM = ifelse(TYPE_VISIT_ANY_STATUS_11 == 1 & PNC26_PASS_LATE == 1, 1, 0),
          FC_PNC52_DENOM = ifelse(TYPE_VISIT_ANY_STATUS_12 == 1 & PNC52_PASS_LATE == 1, 1, 0)) 
 
-test <- Form_Completion_Pnc %>% filter(SITE == "Pakistan" & TYPE_VISIT_ANY_STATUS_12 ==1) %>% 
-  select(MOMID, PREGID, TYPE_VISIT_ANY_STATUS_12, FC_PNC52_DENOM, PNC52_ONTIME,PNC52_LATE, PNC52_ONTIME,PNC52_PASS, PNC52_PASS_LATE)
-
 ## export 
 save(Form_Completion_Pnc, file= paste0(path_to_save, "Form_Completion_Pnc",".RData",sep = ""))
 #**************************************************************************************
@@ -1013,60 +1065,22 @@ save(Form_Completion_Pnc, file= paste0(path_to_save, "Form_Completion_Pnc",".RDa
 Heat_Maps_Anc <- MatData_Anc_Visits %>% 
   select(SITE, MOMID, ENROLL, PREGID, US_GA_WKS_ENROLL, contains("TYPE_VISIT_"), contains("_VISIT_COMPLETE_"),
          contains("_LATE"),ENDPREG_DAYS, M23_CLOSE_DSSTDAT) %>% 
-  # indicator for any type visit = i with any visit status 
-  mutate(TYPE_VISIT_ANY_STATUS_1 = ifelse((M01_TYPE_VISIT_1 == 1 & !is.na(M01_VISIT_COMPLETE_1)) | 
-                                            (M03_TYPE_VISIT_1 == 1 & !is.na(M03_VISIT_COMPLETE_1)) |
-                                            (M04_TYPE_VISIT_1 == 1 & !is.na(M04_VISIT_COMPLETE_1)) |
-                                            (M05_TYPE_VISIT_1 == 1 & !is.na(M05_VISIT_COMPLETE_1)) |
-                                            (M06_TYPE_VISIT_1 == 1 & !is.na(M06_VISIT_COMPLETE_1)) |
-                                            (M07_TYPE_VISIT_1 == 1 & !is.na(M07_VISIT_COMPLETE_1)) |
-                                            (M08_TYPE_VISIT_1 == 1 & !is.na(M08_VISIT_COMPLETE_1)), 1, 0),
-         TYPE_VISIT_ANY_STATUS_2 = ifelse((M04_TYPE_VISIT_2 == 2 & !is.na(M04_VISIT_COMPLETE_2) & US_GA_WKS_ENROLL <= 17) |
-                                            (M05_TYPE_VISIT_2 == 2 & !is.na(M05_VISIT_COMPLETE_2) & US_GA_WKS_ENROLL <= 17) |
-                                            (M06_TYPE_VISIT_2 == 2 & !is.na(M06_VISIT_COMPLETE_2) & US_GA_WKS_ENROLL <= 17) |
-                                            (M07_TYPE_VISIT_2 == 2 & !is.na(M07_VISIT_COMPLETE_2) & US_GA_WKS_ENROLL <= 17) |
-                                            (M08_TYPE_VISIT_2 == 2 & !is.na(M08_VISIT_COMPLETE_2) & US_GA_WKS_ENROLL <= 17) | 
-                                            (M25_TYPE_VISIT_2 == 2 & !is.na(M25_VISIT_COMPLETE_2) & US_GA_WKS_ENROLL <= 17) | 
-                                            (M26_TYPE_VISIT_2 == 2 & !is.na(M26_VISIT_COMPLETE_2) & US_GA_WKS_ENROLL <= 17), 1, 0),
-         TYPE_VISIT_ANY_STATUS_3 = ifelse((M04_TYPE_VISIT_3 == 3 & !is.na(M04_VISIT_COMPLETE_3)) |
-                                            (M05_TYPE_VISIT_3 == 3 & !is.na(M05_VISIT_COMPLETE_3)) |
-                                            (M06_TYPE_VISIT_3 == 3 & !is.na(M06_VISIT_COMPLETE_3)) |
-                                            (M07_TYPE_VISIT_3 == 3 & !is.na(M07_VISIT_COMPLETE_3)) |
-                                            (M08_TYPE_VISIT_3 == 3 & !is.na(M08_VISIT_COMPLETE_3)), 1, 0),
-         TYPE_VISIT_ANY_STATUS_4 = ifelse((M01_TYPE_VISIT_4 == 4 & !is.na(M01_VISIT_COMPLETE_4)) | 
-                                            (M04_TYPE_VISIT_4 == 4 & !is.na(M04_VISIT_COMPLETE_4)) |
-                                            (M05_TYPE_VISIT_4 == 4 & !is.na(M05_VISIT_COMPLETE_4)) |
-                                            (M06_TYPE_VISIT_4 == 4 & !is.na(M06_VISIT_COMPLETE_4)) |
-                                            (M07_TYPE_VISIT_4 == 4 & !is.na(M07_VISIT_COMPLETE_4)) |
-                                            (M08_TYPE_VISIT_4 == 4 & !is.na(M08_VISIT_COMPLETE_4)) | 
-                                            (M25_TYPE_VISIT_4 == 4 & !is.na(M25_VISIT_COMPLETE_4)) | 
-                                            (M26_TYPE_VISIT_4 == 4 & !is.na(M26_VISIT_COMPLETE_4)), 1, 0),
-         TYPE_VISIT_ANY_STATUS_5 = ifelse((M04_TYPE_VISIT_5 == 5 & !is.na(M04_VISIT_COMPLETE_5)) |
-                                            (M05_TYPE_VISIT_5 == 5 & !is.na(M05_VISIT_COMPLETE_5)) |
-                                            (M06_TYPE_VISIT_5 == 5 & !is.na(M06_VISIT_COMPLETE_5)) |
-                                            (M07_TYPE_VISIT_5 == 5 & !is.na(M07_VISIT_COMPLETE_5)) |
-                                            (M08_TYPE_VISIT_5 == 5 & !is.na(M08_VISIT_COMPLETE_5)), 1, 0)) %>% 
   ## generate denominators - LATE
-    # has the late window passed AND has not delivered AND has not closed out OR has a form in this visit 
-  mutate(HM_ENROLL_DENOM_LATE = ifelse(ENROLL_PASS_LATE == 1 | TYPE_VISIT_ANY_STATUS_1 == 1, 1, 0), 
+    # has the late window passed AND has not delivered AND has not closed out
+  mutate(HM_ENROLL_DENOM_LATE = ifelse(ENROLL_PASS_LATE == 1, 1, 0), 
          HM_ANC20_DENOM_LATE = ifelse((ANC20_PASS_LATE == 1 & US_GA_WKS_ENROLL <= 17 &
                                         (ENDPREG_DAYS>160 | is.na(ENDPREG_DAYS)) & 
-                                        ((M23_CLOSE_DSSTDAT > ANC20_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
-                              TYPE_VISIT_ANY_STATUS_2 == 1, 1, 0),  ## closed out after window or has not yet closed out
+                                        ((M23_CLOSE_DSSTDAT > ANC20_LATE) | is.na(M23_CLOSE_DSSTDAT))), 1, 0),  ## closed out after window or has not yet closed out
          HM_ANC28_DENOM_LATE = ifelse((ANC28_PASS_LATE == 1  &
                                         (ENDPREG_DAYS>216 | is.na(ENDPREG_DAYS)) & 
-                                        ((M23_CLOSE_DSSTDAT > ANC28_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
-                                        TYPE_VISIT_ANY_STATUS_3 == 1, 1, 0), 
+                                        ((M23_CLOSE_DSSTDAT > ANC28_LATE) | is.na(M23_CLOSE_DSSTDAT))), 1, 0), 
          HM_ANC32_DENOM_LATE = ifelse((ANC32_PASS_LATE == 1  & 
                                         (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)) & 
-                                        ((M23_CLOSE_DSSTDAT > ANC32_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
-                                        TYPE_VISIT_ANY_STATUS_4 == 1, 1, 0), 
+                                        ((M23_CLOSE_DSSTDAT > ANC32_LATE) | is.na(M23_CLOSE_DSSTDAT))), 1, 0), 
          HM_ANC36_DENOM_LATE = ifelse((ANC36_PASS_LATE == 1  & 
                                         (ENDPREG_DAYS>272 | is.na(ENDPREG_DAYS))  & 
-                                        ((M23_CLOSE_DSSTDAT > ANC36_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
-                                        TYPE_VISIT_ANY_STATUS_5 == 1, 1, 0)
+                                        ((M23_CLOSE_DSSTDAT > ANC36_LATE) | is.na(M23_CLOSE_DSSTDAT))), 1, 0)
   ) 
-
 ## export 
 save(Heat_Maps_Anc, file= paste0(path_to_save, "Heat_Maps_Anc",".RData",sep = ""))
 
@@ -1078,53 +1092,22 @@ Heat_Maps_Pnc <- MatData_Pnc_Visits %>%
   select(SITE, MOMID, PREGID, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("TYPE_VISIT"),
          contains("VISIT_COMPLETE"),
          contains("_PASS"), contains("_ONTIME"), contains("_LATE"), M23_CLOSE_DSSTDAT, DOB, ENDPREG_DAYS) %>%
-  # indicator for any type visit = i with any visit status 
-  mutate(TYPE_VISIT_ANY_STATUS_7 = ifelse((M06_TYPE_VISIT_7 == 7 & !is.na(M06_VISIT_COMPLETE_7)) |
-                                            (M12_TYPE_VISIT_7 == 7 & !is.na(M12_VISIT_COMPLETE_7)), 1, 0),
-         
-         TYPE_VISIT_ANY_STATUS_8 = ifelse((M06_TYPE_VISIT_8 == 8 & !is.na(M06_VISIT_COMPLETE_8)) |
-                                            (M12_TYPE_VISIT_8 == 8 & !is.na(M12_VISIT_COMPLETE_8)), 1, 0),
-         
-         TYPE_VISIT_ANY_STATUS_9 = ifelse((M06_TYPE_VISIT_9 == 9 & !is.na(M06_VISIT_COMPLETE_9)) |
-                                            (M12_TYPE_VISIT_9 == 9 & !is.na(M12_VISIT_COMPLETE_9)), 1, 0),
-         
-         TYPE_VISIT_ANY_STATUS_10 = ifelse((M05_TYPE_VISIT_10 == 10 & !is.na(M05_VISIT_COMPLETE_10)) |
-                                             (M06_TYPE_VISIT_10 == 10 & !is.na(M06_VISIT_COMPLETE_10)) |
-                                             (M07_TYPE_VISIT_10 == 10 & !is.na(M07_VISIT_COMPLETE_10)) |
-                                             (M08_TYPE_VISIT_10 == 10 & !is.na(M08_VISIT_COMPLETE_10)) |
-                                             (M12_TYPE_VISIT_10 == 10 & !is.na(M12_VISIT_COMPLETE_10)), 1, 0),
-         ## might need to add some detail here of who we expect after the 42 day fu (only women who have had a live birth)
-         TYPE_VISIT_ANY_STATUS_11 = ifelse((M05_TYPE_VISIT_11 == 11 & !is.na(M05_VISIT_COMPLETE_11)) |
-                                             (M06_TYPE_VISIT_11 == 11 & !is.na(M06_VISIT_COMPLETE_11)) |
-                                             (M07_TYPE_VISIT_11 == 11 & !is.na(M07_VISIT_COMPLETE_11)) |
-                                             (M08_TYPE_VISIT_11 == 11 & !is.na(M08_VISIT_COMPLETE_11)) | 
-                                             (M12_TYPE_VISIT_11 == 11 & !is.na(M12_VISIT_COMPLETE_11)), 1, 0),
-         
-         TYPE_VISIT_ANY_STATUS_12 = ifelse((M05_TYPE_VISIT_12 == 12 & !is.na(M05_VISIT_COMPLETE_12)) |
-                                             (M06_TYPE_VISIT_12 == 12 & !is.na(M06_VISIT_COMPLETE_12)) |
-                                             (M12_TYPE_VISIT_12 == 12 & !is.na(M12_VISIT_COMPLETE_12)), 1, 0)) %>% 
   ## generate denominators - LATE
   # has the late window passed AND has not delivered AND has not closed out OR has a form in this visit 
   mutate(HM_PNC0_DENOM_LATE = ifelse((PNC0_PASS_LATE==1 &
-                                       ((M23_CLOSE_DSSTDAT > PNC0_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
-                                       TYPE_VISIT_ANY_STATUS_7 == 1, 1, 0),
+                                       ((M23_CLOSE_DSSTDAT > PNC0_LATE) | is.na(M23_CLOSE_DSSTDAT))), 1, 0),
          HM_PNC1_DENOM_LATE = ifelse((PNC1_PASS_LATE==1 &
-                                       ((M23_CLOSE_DSSTDAT > PNC1_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
-                                       TYPE_VISIT_ANY_STATUS_8 == 1, 1, 0),
+                                       ((M23_CLOSE_DSSTDAT > PNC1_LATE) | is.na(M23_CLOSE_DSSTDAT))), 1, 0),
          HM_PNC4_DENOM_LATE = ifelse((PNC4_PASS_LATE==1 &
-                                       ((M23_CLOSE_DSSTDAT > PNC4_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
-                                       TYPE_VISIT_ANY_STATUS_9 == 1, 1, 0),
+                                       ((M23_CLOSE_DSSTDAT > PNC4_LATE) | is.na(M23_CLOSE_DSSTDAT))), 1, 0),
          HM_PNC6_DENOM_LATE = ifelse((PNC6_PASS_LATE==1 & 
-                                       ((M23_CLOSE_DSSTDAT > PNC6_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
-                                       TYPE_VISIT_ANY_STATUS_10 == 1, 1, 0),
+                                       ((M23_CLOSE_DSSTDAT > PNC6_LATE) | is.na(M23_CLOSE_DSSTDAT))), 1, 0),
          
          HM_PNC26_DENOM_LATE = ifelse((PNC26_PASS_LATE==1 & ENDPREG_DAYS>139 & 
-                                        ((M23_CLOSE_DSSTDAT > PNC26_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
-                                        TYPE_VISIT_ANY_STATUS_11 == 1, 1, 0),
+                                        ((M23_CLOSE_DSSTDAT > PNC26_LATE) | is.na(M23_CLOSE_DSSTDAT))), 1, 0),
          
          HM_PNC52_DENOM_LATE = ifelse((PNC52_PASS_LATE==1 & ENDPREG_DAYS>139 & 
-                                        ((M23_CLOSE_DSSTDAT > PNC52_LATE) | is.na(M23_CLOSE_DSSTDAT))) | 
-                                        TYPE_VISIT_ANY_STATUS_12 == 1, 1, 0)
+                                        ((M23_CLOSE_DSSTDAT > PNC52_LATE) | is.na(M23_CLOSE_DSSTDAT))), 1, 0)
   )
 
 
@@ -1167,12 +1150,12 @@ MatData_Hb_Visit <- MatData_Anc_Visits %>%
          DenHBV4 = ifelse((M08_VISIT_COMPLETE_4 == 1 & M08_TYPE_VISIT_4 == 4) |  ANC32_OVERDUE == 1, 1, 0),
          DenHBV5 = ifelse((M08_VISIT_COMPLETE_5 == 1 & M08_TYPE_VISIT_5 == 5) |  ANC36_OVERDUE == 1, 1, 0),
          DenHBV10 = ifelse((M08_VISIT_COMPLETE_10 == 1 & M08_TYPE_VISIT_10 == 10) |  PNC6_OVERDUE == 1, 1, 0)) %>% 
-  mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT >= "2023-04-10") |
+  mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT >= "2023-04-14") |
                                   (SITE == "Pakistan" & M02_SCRN_OBSSTDAT >= "2022-09-22") |
                                   (SITE == "Ghana" & M02_SCRN_OBSSTDAT >= "2022-12-28") | 
                                   (SITE == "Zambia" & M02_SCRN_OBSSTDAT >= "2022-12-15") | 
-                                  (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-07-18") |
-                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-12-01"), 1, 0)) %>%
+                                  (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-06-20") |
+                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-08-15"), 1, 0)) %>%
   filter(ENROLL == 1 & REMAPP_LAUNCH ==1)
 
 ## export 
@@ -1193,12 +1176,12 @@ save(MatData_Hb_Visit, file= paste0(path_to_save, "MatData_Hb_Visit",".RData",se
 #* 
 #**************************************************************************************
 MatData_Anc_Remapp <- MatData_Anc_Visits %>% 
-  mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT >= "2023-04-10") |
+  mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT >= "2023-04-14") |
                                   (SITE == "Pakistan" & M02_SCRN_OBSSTDAT >= "2022-09-22") |
                                   (SITE == "Ghana" & M02_SCRN_OBSSTDAT >= "2022-12-28") | 
                                   (SITE == "Zambia" & M02_SCRN_OBSSTDAT >= "2022-12-15") | 
-                                  (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-07-18") | 
-                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-12-01"), 1, 0)) %>%
+                                  (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-06-20") |
+                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-08-15"), 1, 0)) %>%
   filter(ENROLL == 1 & REMAPP_LAUNCH ==1) 
 
 MatData_Hb_GA_Visit_1 <- MatData_Anc_Remapp %>% 
@@ -1262,9 +1245,9 @@ MatData_Hb_GA_Visit <- MatData_Hb_GA_Visit %>%
          "RESULT" = "value") %>% 
   mutate(GA_WKS = floor(GA/7), 
          TRIMESTER = case_when(
-           GA_WKS > 0 & GA_WKS <= 13 ~ 1, 
-           GA_WKS > 13 & GA_WKS<=26 ~ 2, 
-           GA_WKS >26 & GA_WKS<=40 ~ 3, 
+           GA_WKS > 0 & GA_WKS <14 ~ 1, 
+           GA_WKS >= 14 & GA_WKS <28 ~ 2, 
+           GA_WKS >=28 & GA_WKS<42 ~ 3, 
            TRUE ~ NA
          ))
 
@@ -1279,12 +1262,12 @@ save(MatData_Hb_GA_Visit, file= paste0(path_to_save, "MatData_Hb_GA_Visit",".RDa
 
 df_maternal <- MatData_Screen_Enroll %>%
   filter(M02_CONSENT_IEORRES == 1) %>% 
-  mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT >= "2023-04-10") | 
+  mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT >= "2023-04-14") |
                                   (SITE == "Pakistan" & M02_SCRN_OBSSTDAT >= "2022-09-22") |
                                   (SITE == "Ghana" & M02_SCRN_OBSSTDAT >= "2022-12-28") | 
-                                  (SITE == "Zambia" & M02_SCRN_OBSSTDAT >= "2022-12-15") |
-                                  (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-07-18") | 
-                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-12-01"), 1, 0)) %>% 
+                                  (SITE == "Zambia" & M02_SCRN_OBSSTDAT >= "2022-12-15") | 
+                                  (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-06-20") |
+                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-08-15"), 1, 0)) %>%
   filter(REMAPP_LAUNCH == 1)
 
 # save(df_maternal, file = "derived_data/df_maternal.rda")
