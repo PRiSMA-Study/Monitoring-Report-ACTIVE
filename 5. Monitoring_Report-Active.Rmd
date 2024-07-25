@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-07-05)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-07-25)"
 output:
   pdf_document:
     toc: no
@@ -34,7 +34,7 @@ library(webshot2)
 library(grid)
 library(gridExtra)
 
-UploadDate = "2024-06-14" 
+UploadDate = "2024-06-28" 
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
 
@@ -139,18 +139,18 @@ study to establish global hemoglobin thresholds for maternal anemia
 
 **Versions:**
 
-**Date issued:** 2024-07-05
+**Date issued:** 2024-07-25
 
 **Included data last updated in Synapse:** 2024-06-28
 
 **Last enrollment date:**
 
--   Kenya: 2024-06-14
--   Pakistan: 2024-06-14
+-   Kenya: 2024-06-28
+-   Pakistan: 2024-06-21
 -   Ghana: 2024-06-13
 -   Zambia: 2024-06-13
 -   India CMC: 2024-06-13
--   India SAS: 2024-06-14
+-   India SAS: 2024-06-28
 
 ```{r, results='hide' }
 #check last day of screening and enrollment
@@ -839,6 +839,7 @@ enroll_cum_KE <- MatData_Screen_Enroll %>%
     gap > 1 ~ expect_n*gap,
     is.na(gap) ~ expect_n
   )) %>% 
+  mutate(enroll_n = case_when(is.na(enroll_n) ~ 0, TRUE ~ enroll_n)) %>% 
   mutate(expect_cum=cumsum(expect_n),
          enroll_cum=cumsum(enroll_n))%>% 
   ungroup() 
@@ -900,6 +901,7 @@ enroll_cum_GA <- MatData_Screen_Enroll %>%
     gap > 1 ~ expect_n*gap,
     is.na(gap) ~ expect_n
   )) %>%
+  mutate(enroll_n = case_when(is.na(enroll_n) ~ 0, TRUE ~ enroll_n)) %>% 
   mutate(expect_cum=cumsum(expect_n),
          enroll_cum=cumsum(enroll_n)) %>%
   ungroup()
