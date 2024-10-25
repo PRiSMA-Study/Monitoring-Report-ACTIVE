@@ -2,7 +2,7 @@
 #*Function: Read in raw data and merged all sites data by form 
 #*Input: Raw .csvs for each site 
 #*Output: .RData file for each form that is merged for all sites 
-#* Last updated: 09 April 2024 (new date formatting)
+#* Last updated: 25 October 2024 (new date formatting)
 
 ## STEPS ## 
 #*1. Import data from each site 
@@ -21,6 +21,7 @@
 ## LINES TO UPDATE EACH RUN: 
 # LINE 44 - set upload date
 # LINE 48 - set vector of all sites with data in that upload 
+
 #*****************************************************************************
 ## UPDATE ALL DATE CODES
 # rm(list = ls())
@@ -35,7 +36,7 @@ library(readxl)
 
 # UPDATE EACH RUN # 
 # set upload date 
-UploadDate = "2024-05-17"
+UploadDate = "2024-10-18"
 
 # UPDATE EACH RUN # 
 # create vector of all sites with data in the upload 
@@ -45,8 +46,9 @@ site_vec <- c("Pakistan", "Kenya", "Ghana", "Zambia", "India-CMC", "India-SAS")
 path_to_save = paste0("~/Monitoring Report/data/merged/", UploadDate, "/")
 
 ## import data dictionary -- this will be used to pull field types for each variable  
-data_dict <-read_excel("~/PRiSMAv2Data/PRISMA-Data-Queries-GW/R/PRISMA-MNH-Data-Dictionary-Repository-V.2.4-NOV202023_queries.xlsx",
-                       sheet = "Data Dictionary")
+data_dict <- read_excel("~/PRiSMAv2Data/SL-PRISMA-Data-Queries-GW/R/PRISMA-MNH-Data-Dictionary-Repository-V.2.6-SEP092024_queries.xlsx",
+                        sheet = "Data Dictionary")
+
 data_dict <- data_dict %>% 
   select(Form,`Variable Name`, `Field Type (Date, Time, Number, Text)`) %>% 
   rename("FieldType" = `Field Type (Date, Time, Number, Text)`)
@@ -81,13 +83,22 @@ myfiles <- lapply(myfiles, function (x){
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
-# replace empty momid and pregid with NA
-mnh02_Pakistan <- mnh02_Pakistan %>%
+
+
+## Pakistan ids
+mnh02_ids <- mnh02_Pakistan  %>% select(SCRNID, MOMID, PREGID) %>% 
   mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
          PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
 
-# rename MOMID variable in mnh28
-# mnh28_Pakistan <- mnh28_Pakistan %>% rename("MOMID" = "VR.ID")
+
+mnh01_enroll <- mnh01_Pakistan %>% filter(TYPE_VISIT == 1)  %>% select(-MOMID, -PREGID) %>%  # pull site-specific data & merge mnh01 and mnh02 by scrnid to get momid/pregid in mnh01
+  left_join(mnh02_ids, by = c("SCRNID"))
+mnh01_all_visits <- mnh01_Pakistan %>% filter(TYPE_VISIT != 1) # extract site-specific from merged data 
+mnh01_Pakistan  <- bind_rows(mnh01_enroll, mnh01_all_visits) # rebind data 
+
+rm(mnh02_ids)
+rm(mnh01_enroll)
+rm(mnh01_all_visits)
 
 #************************Kenya************************
 
@@ -109,32 +120,27 @@ myfiles <- lapply(myfiles, function (x){
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
-## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
-mnh02_ids <- mnh02_Kenya %>% select(MOMID,PREGID, SCRNID) %>%
-  mutate(MOMID = ifelse(MOMID == "N/A",NA, MOMID),
-         PREGID = ifelse(is.na(MOMID), NA, PREGID))
+## Kenya ids
+mnh02_ids <- mnh02_Kenya  %>% select(SCRNID, MOMID, PREGID) %>% 
+  mutate(MOMID = ifelse(MOMID %in% c("N/A", "n/a"),NA, MOMID),
+         PREGID = ifelse(is.na(MOMID), NA, PREGID)) ## export mnh02 ids
 
-mnh01_Kenya <- mnh01_Kenya %>%
-  select(-MOMID, -PREGID) %>%
+mnh01_enroll <- mnh01_Kenya %>% filter(TYPE_VISIT == 1)  %>% select(-MOMID, -PREGID) %>%  # pull site-specific data & merge mnh01 and mnh02 by scrnid to get momid/pregid in mnh01
   left_join(mnh02_ids, by = c("SCRNID"))
+mnh01_all_visits <- mnh01_Kenya %>% filter(TYPE_VISIT != 1) # extract site-specific from merged data 
+mnh01_Kenya  <- bind_rows(mnh01_enroll, mnh01_all_visits) # rebind data 
+
+# view(mnh01_enroll[c("SCRNID", "MOMID", "PREGID")])
 
 rm(mnh02_ids)
+rm(mnh01_enroll)
+rm(mnh01_all_visits)
 
-# replace empty momid and pregid with NA
-mnh01_Kenya <- mnh01_Kenya %>%
-  mutate(MOMID = ifelse(str_detect(MOMID, "K"), MOMID, NA),
-         PREGID = ifelse(str_detect(PREGID, "K"), PREGID, NA))
 
-mnh02_Kenya <- mnh02_Kenya %>%
-  mutate(MOMID = ifelse(str_detect(MOMID, "K"), MOMID, NA),
-         PREGID = ifelse(str_detect(PREGID, "K"), PREGID, NA))
-
-# rename infantid variable in mnh28
-mnh28_Kenya <- mnh28_Kenya %>% rename("INFANTID" = "INFANTID_INF")
 #************************Zambia************************
 site = "Zambia"
-# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
-setwd(paste("~/","import","/","2024-03-08","_zam", sep = ""))
+# setwd(paste("~/","import","/",UploadDate,"_zam", sep = ""))
+setwd(paste("~/","import","/","2024-10-04","_zam", sep = ""))
 
 ## import raw .CSVs in wide format
 temp = list.files(pattern="*.csv")
@@ -150,28 +156,26 @@ myfiles <- lapply(myfiles, function (x){
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
-# ## 12/-8 update for zambia - they had all ZAPPS variables
-variable_names <- read_excel("~/PRiSMAv2Data/PRISMA-Data-Queries-GW/R/PRISMA-MNH-Data-Dictionary-Repository-V.2.4-NOV202023.xlsx")
-variable_names <- variable_names %>% filter(Form == "MNH01") %>% pull(`Variable Name`)
-
-mnh01_Zambia <- mnh01_Zambia %>%  select(all_of(variable_names))
-
-
-# replace empty momid and pregid with NA
-mnh01_Zambia <- mnh01_Zambia %>%
+## Zambia ids
+mnh02_ids <- mnh02_Zambia  %>% select(SCRNID, MOMID, PREGID) %>% 
   mutate(MOMID = ifelse(str_detect(MOMID, "Z"), MOMID, NA),
          PREGID = ifelse(str_detect(PREGID, "Z"), PREGID, NA))
 
-mnh02_Zambia <- mnh02_Zambia %>%
+mnh01_enroll <- mnh01_Zambia %>% filter(TYPE_VISIT == 1)  %>% select(-MOMID, -PREGID) %>%  # pull site-specific data & merge mnh01 and mnh02 by scrnid to get momid/pregid in mnh01
+  left_join(mnh02_ids, by = c("SCRNID"))
+mnh01_all_visits <- mnh01_Zambia %>% filter(TYPE_VISIT != 1) # extract site-specific from merged data 
+mnh01_Zambia  <- bind_rows(mnh01_enroll, mnh01_all_visits) %>% # rebind data 
   mutate(MOMID = ifelse(str_detect(MOMID, "Z"), MOMID, NA),
          PREGID = ifelse(str_detect(PREGID, "Z"), PREGID, NA))
 
-# rename MOMID variable in mnh28
-mnh28_Zambia <- mnh28_Zambia %>% rename("MOMID" = "PTID")
+
+
+rm(mnh02_ids)
+rm(mnh01_enroll)
+rm(mnh01_all_visits)
 
 #************************Ghana************************
 site = "Ghana"
-# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
 setwd(paste("~/","import","/",UploadDate,"_gha", sep = ""))
 
 ## import raw .CSVs in wide format
@@ -188,18 +192,21 @@ myfiles <- lapply(myfiles, function (x){
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
-## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
-mnh02_ids <- mnh02_Ghana %>% select(MOMID,PREGID, SCRNID)
+## Ghana ids
+mnh02_ids <- mnh02_Ghana  %>% select(SCRNID, MOMID, PREGID) ## export mnh02 ids
+mnh01_enroll <- mnh01_Ghana %>% filter(TYPE_VISIT == 1)  %>% select(-MOMID, -PREGID) %>%  # pull site-specific data & merge mnh01 and mnh02 by scrnid to get momid/pregid in mnh01
+  left_join(mnh02_ids, by = c("SCRNID"))
+mnh01_all_visits <- mnh01_Ghana %>% filter(TYPE_VISIT != 1) # extract site-specific from merged data 
+mnh01_Ghana <- bind_rows(mnh01_enroll, mnh01_all_visits) # rebind data 
 
-mnh01_Ghana <- mnh01_Ghana %>%
-  select(-SCRNID) %>%
-  left_join(mnh02_ids, by = c("MOMID", "PREGID"))
+# view(mnh01_enroll[c("SCRNID", "MOMID", "PREGID")])
 
 rm(mnh02_ids)
+rm(mnh01_enroll)
+rm(mnh01_all_visits)
+
 #************************India-CMC************************
 site = "India_CMC"
-
-# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
 setwd(paste("~/","import","/",UploadDate,"_cmc", sep = ""))
 
 ## import raw .CSVs in wide format
@@ -218,29 +225,26 @@ site = "India-CMC"
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
-## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
-mnh02_ids <- `mnh02_India-CMC` %>% select(MOMID,PREGID, SCRNID)
-`mnh01_India-CMC` <- `mnh01_India-CMC` %>% select(-MOMID, -PREGID) %>%
+## CMC ids
+mnh02_ids <- `mnh02_India-CMC`  %>% select(SCRNID, MOMID, PREGID) %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID)) ## export mnh02 ids
+mnh01_enroll <- `mnh01_India-CMC` %>% filter(TYPE_VISIT == 1)  %>% select(-MOMID, -PREGID) %>%  # pull site-specific data & merge mnh01 and mnh02 by scrnid to get momid/pregid in mnh01
   left_join(mnh02_ids, by = c("SCRNID"))
+mnh01_all_visits <- `mnh01_India-CMC` %>% filter(TYPE_VISIT != 1) # extract site-specific from merged data 
+`mnh01_India-CMC` <- bind_rows(mnh01_enroll, mnh01_all_visits) # rebind data 
+
+
+# view(mnh01_enroll[c("SCRNID", "MOMID", "PREGID")])
 
 rm(mnh02_ids)
-
-# replace empty momid and pregid with NA
-`mnh01_India-CMC` <- `mnh01_India-CMC` %>%
-  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
-         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
-
-`mnh02_India-CMC` <- `mnh02_India-CMC` %>%
-  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
-         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
-
+rm(mnh01_enroll)
+rm(mnh01_all_visits)
 
 #************************India-SAS************************
 site = "India_SAS"
-
-# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
 setwd(paste("~/","import","/",UploadDate,"_sas", sep = ""))
-
+# 
 ## import raw .CSVs in wide format
 temp = list.files(pattern="*.csv")
 myfiles = lapply(temp, read.csv)
@@ -257,22 +261,22 @@ site = "India-SAS"
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
-## pull mnh02 MOMID and PREGID and merge into MNH01 -- only SCRNID is reported for enrollment visits in mnh01
-mnh02_ids <- `mnh02_India-SAS` %>% select(MOMID,PREGID, SCRNID)
-`mnh01_India-SAS` <- `mnh01_India-SAS` %>% select(-MOMID, -PREGID) %>%
+# replace empty momid and pregid with NA
+## SAS ids
+mnh02_ids <- `mnh02_India-SAS`  %>% select(SCRNID, MOMID, PREGID)  %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID)) ## export mnh02 ids
+mnh01_enroll <- `mnh01_India-SAS` %>% filter(TYPE_VISIT == 1)  %>% select(-MOMID, -PREGID) %>%  # pull site-specific data & merge mnh01 and mnh02 by scrnid to get momid/pregid in mnh01
   left_join(mnh02_ids, by = c("SCRNID"))
+mnh01_all_visits <- `mnh01_India-SAS` %>% filter(TYPE_VISIT != 1) # extract site-specific from merged data 
+`mnh01_India-SAS` <- bind_rows(mnh01_enroll, mnh01_all_visits) # rebind data 
+
+
+# view(mnh01_enroll[c("SCRNID", "MOMID", "PREGID")])
 
 rm(mnh02_ids)
-
-# replace empty momid and pregid with NA
-`mnh01_India-SAS` <- `mnh01_India-SAS` %>%
-  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
-         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
-
-
-`mnh02_India-SAS` <- `mnh02_India-SAS` %>%
-  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
-         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
+rm(mnh01_enroll)
+rm(mnh01_all_visits)
 
 #*************************************************
 #* Merge all data by form and site 
@@ -289,6 +293,104 @@ data_frames_to_delete_2 <- objects[grep("m2", objects)]
 # # Remove identified data frames
 rm(list = data_frames_to_delete_1)
 rm(list = data_frames_to_delete_2)
+
+
+
+# List of data frames
+form_names <- ls(pattern = "^mnh\\d+$")
+forms_list <- mget(form_names)
+
+# List of columns to check for duplicates in each form
+duplicate_columns <- list(
+  mnh00 = c("SITE", "SCRNID", "SCRN_OBSSTDAT"),
+  mnh01 = c("SITE", "SCRNID", "MOMID", "PREGID", "TYPE_VISIT","US_OHOSTDAT"),
+  mnh02 = c("SITE", "SCRNID", "MOMID", "PREGID", "SCRN_OBSSTDAT"),
+  mnh03 = c("SITE", "MOMID", "PREGID", "SD_OBSSTDAT"),
+  mnh04 = c("SITE", "MOMID", "PREGID", "TYPE_VISIT", "ANC_OBSSTDAT"),
+  mnh05 = c("SITE", "MOMID", "PREGID", "TYPE_VISIT", "ANT_PEDAT"),
+  mnh06 = c("SITE", "MOMID", "PREGID", "TYPE_VISIT", "DIAG_VSDAT"),
+  mnh07 = c("SITE", "MOMID", "PREGID", "TYPE_VISIT", "MAT_SPEC_COLLECT_DAT"),
+  mnh08 = c("SITE", "MOMID", "PREGID", "TYPE_VISIT", "LBSTDAT"),
+  mnh09 = c("SITE", "MOMID", "PREGID", "MAT_LD_OHOSTDAT"),
+  mnh10 = c("SITE", "MOMID", "PREGID", "VISIT_OBSSTDAT"),
+  mnh11 = c("SITE", "MOMID", "PREGID","INFANTID",  "VISIT_OBSSTDAT"),
+  mnh12 = c("SITE", "MOMID", "PREGID", "TYPE_VISIT", "VISIT_OBSSTDAT"),
+  mnh13 = c("SITE", "MOMID", "PREGID","INFANTID",  "TYPE_VISIT", "VISIT_OBSSTDAT"),
+  mnh14 = c("SITE", "MOMID", "PREGID","INFANTID",  "TYPE_VISIT", "VISIT_OBSSTDAT"),
+  mnh15 = c("SITE", "MOMID", "PREGID","INFANTID",  "TYPE_VISIT", "OBSSTDAT"),
+  mnh16 = c("SITE", "MOMID", "PREGID", "M16_VISDAT"),
+  mnh17 = c("SITE", "MOMID", "PREGID", "M17_VISDAT"),
+  mnh18 = c("SITE", "MOMID", "PREGID", "M18_VISDAT"),
+  mnh19 = c("SITE", "MOMID", "PREGID", "M19_OBSSTDAT"),
+  mnh20 = c("SITE", "MOMID", "PREGID","INFANTID",  "M20_ADMIT_OHOSTDAT"),
+  mnh21 = c("SITE", "MOMID", "PREGID", "M21_AESTDAT"),
+  mnh22 = c("SITE", "MOMID", "PREGID", "M22_DVSTDAT"),
+  mnh23 = c("SITE", "MOMID", "PREGID", "M23_CLOSE_DSSTDAT"),
+  mnh24 = c("SITE", "MOMID", "PREGID","INFANTID",  "CLOSE_DSSTDAT"),
+  mnh25 = c("SITE", "MOMID", "PREGID", "M25_TYPE_VISIT", "M25_OBSSTDAT"),
+  mnh26 = c("SITE", "MOMID", "PREGID", "M26_TYPE_VISIT", "M26_FTGE_OBSTDAT")
+  # mnh27 = c("SITE", "MOMID", "PREGID", "M26_FTGE_OBSTDAT")
+  # add other columns for other forms here
+)
+
+# Initialize an empty list to store duplicates
+duplicates_list <- list()
+
+# Loop through each form
+for (form_name in names(forms_list)) {
+  form_data <- forms_list[[form_name]]
+  cols_to_check <- duplicate_columns[[form_name]]
+  # Extract date column (last one in cols_to_check)
+  date_col <- tail(cols_to_check, 1)
+  
+  # Extract all form-specific variables for both Numeric and Date field types 
+  data_dict_filtered <- data_dict %>% filter(Form == paste0(form_name)) %>% select(`Variable Name`, FieldType)
+  
+  # Determine which columns to convert to numeric
+  numeric_vars <- data_dict_filtered %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+  # Determine which columns to convert to date
+  date_vars <- data_dict_filtered %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+  
+  # Convert to numeric where applicable
+  form_data[numeric_vars] <- lapply(form_data[numeric_vars], function(x) as.numeric(as.character(x)))
+  
+  # Parse and correct dates where applicable
+  form_data[date_vars] <- lapply(form_data[date_vars], function(x) {
+    parsed_dates <- parse_date_time(x, orders = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
+    corrected_dates <- gsub("2007-07-07", "1907-07-07", parsed_dates, fixed=TRUE)
+    corrected_dates <- gsub("2005-05-05", "1905-05-05", corrected_dates, fixed=TRUE)
+    ymd(corrected_dates)
+  })
+  
+  # Update forms_list with the processed form
+  forms_list[[form_name]] <- form_data
+  
+  # Check for duplicates
+  if (any(duplicated(form_data[cols_to_check]))) {
+    # Extract duplicated ids
+    duplicates_ids <- which(duplicated(form_data[cols_to_check]) | 
+                              duplicated(form_data[cols_to_check], fromLast = TRUE))
+    duplicates_data <- form_data[duplicates_ids, ]
+    
+    # Store duplicates in the list
+    duplicates_list[[paste0("duplicates_", form_name)]] <- duplicates_data
+    
+    # Remove duplicates from the original data frame
+    forms_list[[form_name]] <- form_data %>%
+      group_by(across(all_of(cols_to_check))) %>%
+      # if a duplicate exists, take the first instance (sorting by date)
+      arrange(desc(date_col)) %>% 
+      slice(1) %>% 
+      mutate(n=n()) %>% 
+      ungroup() %>% 
+      select(-n) %>% 
+      ungroup()
+    
+    print(paste0("n= ", dim(duplicates_data)[1], " Duplicates in ", form_name, " exist"))
+  } else {
+    print(paste0("No duplicates in ", form_name))
+  }
+}
 
 
 #******M00
@@ -309,20 +411,40 @@ if (exists("m00") == TRUE) {
   data_dict_m00 <- data_dict %>% filter(Form == "MNH00") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m00, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m00_dd_numeric <- data_dict_m00 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m00_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m00_dd_date <- data_dict_m00 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m00_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m00_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
+  
   
   m00 = date
   
@@ -339,6 +461,7 @@ if (exists("m00") == TRUE) {
                         ungroup() %>% 
                         ## remove momid and pregid - only want scrnid in prescreening form
                         select(-MOMID, -PREGID) %>% 
+                        filter(!is.na(SCRNID)) %>% 
                         distinct() ## don't pull any duplicate rows -- will need to check to make sure this isn't pulling any duplicate IDs 
                       
   )
@@ -395,21 +518,40 @@ if (exists("m01") == TRUE) {
   data_dict_m01 <- data_dict %>% filter(Form == "MNH01") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m01, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m01_dd_numeric <- data_dict_m01 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m01_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m01_dd_date <- data_dict_m01 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m01_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) 
-    df[date] <- lapply(df[date], function(x) gsub("2005-05-05", ymd("1905-05-05"), x, fixed=TRUE))
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m01_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
+  
   
   m01 = date
   
@@ -484,20 +626,40 @@ if (exists("m02") == TRUE) {
   data_dict_m02 <- data_dict %>% filter(Form == "MNH02") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m02, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m02_dd_numeric <- data_dict_m02 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m02_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m02_dd_date <- data_dict_m02 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m02_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m02_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
+  
   
   m02 = date
   
@@ -570,20 +732,40 @@ if (exists("m03") == TRUE) {
   data_dict_m03 <- data_dict %>% filter(Form == "MNH03") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m03, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m03_dd_numeric <- data_dict_m03 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m03_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m03_dd_date <- data_dict_m03 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m03_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m03_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
+  
   
   m03 = date
   
@@ -654,25 +836,39 @@ if (exists("m04") == TRUE) {
   data_dict_m04 <- data_dict %>% filter(Form == "MNH04") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m04, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m04_dd_numeric <- data_dict_m04 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m04_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
-  
-  ## pakistan had weird dates for tetanus -- remove columns 
-  #numeric <- lapply(numeric, function(x) { x["TETANUS_CMSTDAT"] <- NULL; x })
-  
-  date <- lapply(numeric, function(df) {
-    m04_dd_date <- data_dict_m04 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m04_dd_date
-    #date <- lapply(df, function(x) x %>% select(matches(str_c(paste("^",m04_dd_date,"$", sep = "")))))
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
+  date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
+    m04_dd_date <- data_dict_m04 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m04_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
+  })
   
   m04 = date
   
@@ -739,20 +935,40 @@ if (exists("m05") == TRUE) {
   data_dict_m05 <- data_dict %>% filter(Form == "MNH05") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m05, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m05_dd_numeric <- data_dict_m05 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m05_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m05_dd_date <- data_dict_m05 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m05_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m05_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
+  
   
   m05 = date
   
@@ -819,20 +1035,40 @@ if (exists("m06") == TRUE) {
   data_dict_m06 <- data_dict %>% filter(Form == "MNH06") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m06, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m06_dd_numeric <- data_dict_m06 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m06_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m06_dd_date <- data_dict_m06 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m06_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m06_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
+  
   
   m06 = date
   
@@ -900,20 +1136,40 @@ if (exists("m07") == TRUE) {
   data_dict_m07 <- data_dict %>% filter(Form == "MNH07") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m07, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m07_dd_numeric <- data_dict_m07 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m07_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m07_dd_date <- data_dict_m07 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m07_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m07_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
+  
   
   m07 = date
   
@@ -985,20 +1241,40 @@ if (exists("m08") == TRUE) {
   data_dict_m08 <- data_dict %>% filter(Form == "MNH08") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m08, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m08_dd_numeric <- data_dict_m08 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m08_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m08_dd_date <- data_dict_m08 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m08_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m08_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
+  
   
   
   m08 = date
@@ -1070,19 +1346,38 @@ if (exists("m09") == TRUE) {
   data_dict_m09 <- data_dict %>% filter(Form == "MNH09") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m09, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m09_dd_numeric <- data_dict_m09 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m09_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m09_dd_date <- data_dict_m09 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m09_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m09_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
   
   
@@ -1153,20 +1448,41 @@ if (exists("m10") == TRUE) {
   data_dict_m10 <- data_dict %>% filter(Form == "MNH10") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m10, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m10_dd_numeric <- data_dict_m10 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m10_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m10_dd_date <- data_dict_m10 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m10_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m10_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
+  
+  
   
   m10 = date
   
@@ -1234,20 +1550,40 @@ if (exists("m11") == TRUE) {
   data_dict_m11 <- data_dict %>% filter(Form == "MNH11") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m11, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m11_dd_numeric <- data_dict_m11 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m11_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m11_dd_date <- data_dict_m11 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m11_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m11_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
+  
   
   
   m11 = date
@@ -1315,20 +1651,40 @@ if (exists("m12") == TRUE) {
   data_dict_m12 <- data_dict %>% filter(Form == "MNH12") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m12, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m12_dd_numeric <- data_dict_m12 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m12_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m12_dd_date <- data_dict_m12 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m12_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m12_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
+  
   
   
   m12 = date
@@ -1403,19 +1759,38 @@ if (exists("m13") == TRUE) {
   data_dict_m13 <- data_dict %>% filter(Form == "MNH13") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m13, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m13_dd_numeric <- data_dict_m13 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m13_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m13_dd_date <- data_dict_m13 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m13_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m13_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
   
   
@@ -1490,21 +1865,39 @@ if (exists("m14") == TRUE) {
   data_dict_m14 <- data_dict %>% filter(Form == "MNH14") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m14, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m14_dd_numeric <- data_dict_m14 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m14_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m14_dd_date <- data_dict_m14 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m14_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m14_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
-  
   
   m14 = date
   
@@ -1576,22 +1969,41 @@ if (exists("m15") == TRUE) {
   data_dict_m15 <- data_dict %>% filter(Form == "MNH15") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m15, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m15_dd_numeric <- data_dict_m15 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m15_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m15_dd_date <- data_dict_m15 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m15_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m15_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
   
-  
+
   m15 = date
   
   # remove duplicates and add prefix
@@ -1661,19 +2073,38 @@ if (exists("m16") == TRUE) {
   data_dict_m16 <- data_dict %>% filter(Form == "MNH16") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m16, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m16_dd_numeric <- data_dict_m16 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m16_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m16_dd_date <- data_dict_m16 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m16_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m16_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
   
   m16 = date
@@ -1741,19 +2172,38 @@ if (exists("m17") == TRUE) {
   data_dict_m17 <- data_dict %>% filter(Form == "MNH17") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m17, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m17_dd_numeric <- data_dict_m17 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m17_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m17_dd_date <- data_dict_m17 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m17_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m17_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
   
   m17 = date
@@ -1823,19 +2273,38 @@ if (exists("m18") == TRUE) {
   data_dict_m18 <- data_dict %>% filter(Form == "MNH18") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m18, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m18_dd_numeric <- data_dict_m18 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m18_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m18_dd_date <- data_dict_m18 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m18_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m18_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
   
   m18 = date
@@ -1904,20 +2373,39 @@ if (exists("m19") == TRUE) {
   data_dict_m19 <- data_dict %>% filter(Form == "MNH19") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m19, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m19_dd_numeric <- data_dict_m19 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m19_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
-  
-  date <- lapply(numeric, function(df) {
-    m19_dd_date <- data_dict_m19 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m19_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
+  date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
+    m19_dd_date <- data_dict_m19 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m19_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
+  })
   
   m19 = date
   
@@ -1985,19 +2473,38 @@ if (exists("m20") == TRUE) {
   data_dict_m20 <- data_dict %>% filter(Form == "MNH20") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m20, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m20_dd_numeric <- data_dict_m20 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m20_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m20_dd_date <- data_dict_m20 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m20_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m20_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
   
   
@@ -2071,21 +2578,40 @@ if (exists("m21") == TRUE) {
   data_dict_m21 <- data_dict %>% filter(Form == "MNH21") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m21, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m21_dd_numeric <- data_dict_m21 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m21_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
-  
-  date <- lapply(numeric, function(df) {
-    m21_dd_date <- data_dict_m21 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m21_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
+  date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
+    m21_dd_date <- data_dict_m21 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m21_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
+  })
+
   
   m21 = date
   
@@ -2153,22 +2679,40 @@ if (exists("m22") == TRUE) {
   data_dict_m22 <- data_dict %>% filter(Form == "MNH22") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m22, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m22_dd_numeric <- data_dict_m22 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m22_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m22_dd_date <- data_dict_m22 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m22_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m22_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
-  
-  
+
   m22 = date
   
   # remove duplicates and add prefix
@@ -2236,21 +2780,39 @@ if (exists("m23") == TRUE) {
   data_dict_m23 <- data_dict %>% filter(Form == "MNH23") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m23, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m23_dd_numeric <- data_dict_m23 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m23_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
-  
-  date <- lapply(numeric, function(df) {
-    m23_dd_date <- data_dict_m23 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m23_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
+  date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
+    m23_dd_date <- data_dict_m23 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m23_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
+  })
   
   m23 = date
   
@@ -2316,28 +2878,46 @@ if (exists("m24") == TRUE) {
   data_dict_m24 <- data_dict %>% filter(Form == "MNH24") %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m24, function(df) {
+    # Extract the numeric variable names from the data dictionary
     m24_dd_numeric <- data_dict_m24 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m24_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
   })
   
   date <- lapply(numeric, function(df) {
+    # Extract the date variable names from the data dictionary
     m24_dd_date <- data_dict_m24 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m24_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m24_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
-  
   
   m24 = date
   
   # remove duplicates and add prefix
   m24_rbind <- lapply(m24, function(x) x %>%
                         #add  "M##_"
-                        select(INFANTID, everything()) %>%
+                        select(MOMID, PREGID, INFANTID, everything()) %>%
                         rename_with( ~ paste0("M24_", .), -c(1:3)) %>%
                         # group_by(INFANTID) %>%
                         # arrange(desc(M24_CLOSE_DSSTDAT)) %>%
@@ -2400,19 +2980,38 @@ if (exists("m25") == TRUE) {
   data_dict_m25 <- data_dict %>% filter(Form %in% MNH25_forms) %>% select(`Variable Name`, FieldType)
   
   numeric <- lapply(m25, function(df) {
-    m25_dd_numeric <- data_dict_m25 %>% filter(FieldType == "Number") %>% distinct(`Variable Name`) %>% pull(`Variable Name`)
+    # Extract the numeric variable names from the data dictionary
+    m25_dd_numeric <- data_dict_m25 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
     num <- colnames(df) %in% m25_dd_numeric
-    df[num] <- lapply(df[num], as.numeric)
-    df
-  }) 
+    # Convert the identified numeric columns to numeric, replacing non-numeric entries with NA
+    df[num] <- lapply(df[num], function(col) {
+      # Suppress warnings about NAs introduced by coercion
+      suppressWarnings(as.numeric(col))
+    })
+    
+    return(df)
+  })
   
   date <- lapply(numeric, function(df) {
-    m25_dd_date <- data_dict_m25 %>% filter(FieldType == "Date")%>% distinct(`Variable Name`) %>% pull(`Variable Name`)
-    date <- colnames(df) %in% m25_dd_date
-    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-    df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-    df[date] <- lapply(df[date], ymd)
-    df
+    # Extract the date variable names from the data dictionary
+    m25_dd_date <- data_dict_m25 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    
+    # Identify the date columns in the data frame
+    date_cols <- colnames(df) %in% m25_dd_date
+    
+    # Convert the identified date columns, suppressing warnings
+    df[date_cols] <- lapply(df[date_cols], function(col) {
+      # Suppress warnings during date parsing
+      suppressWarnings({
+        parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        parsed_dates <- ymd(parsed_dates)
+        return(parsed_dates)
+      })
+    })
+    
+    return(df)
   })
   
   m25 = date
@@ -2468,7 +3067,7 @@ if (exists("m25") == TRUE) {
 for (x in site_vec) {
   if (exists(paste("mnh26_", x, sep = ""))==TRUE){
     
-    m26 <- mget(ls(pattern = "mnh26_.*"))
+    m26 <- mget(ls(pattern = "mnh26_*"))
     
   }
 }
@@ -2478,25 +3077,25 @@ if (exists("m26") == TRUE) {
   m26_names = as.vector(names(m26))
   
   # assign field types
-  #MNH26_forms = c("MNH26_Ghana", "MNH26_Kenya", "MNH26_Pakistan", "MNH26_India","MNH26_Zambia")
-  #data_dict_m26 <- data_dict %>% filter(Form %in% MNH26_forms) %>% select(`Variable Name`, FieldType)
+  MNH26_forms = c("MNH26_Ghana", "MNH26_Kenya", "MNH26_Pakistan", "MNH26_India","MNH26_Zambia")
+  data_dict_m26 <- data_dict %>% filter(Form %in% MNH26_forms) %>% select(`Variable Name`, FieldType)
   # 
-  # numeric <- lapply(m26, function(df) {
-  #   m26_dd_numeric <- data_dict_m26 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
-  #   num <- colnames(df) %in% m26_dd_numeric
-  #   df[num] <- lapply(df[num], as.numeric)
-  #   df
-  # }) 
+  numeric <- lapply(m26, function(df) {
+    m26_dd_numeric <- data_dict_m26 %>% filter(FieldType == "Number") %>% pull(`Variable Name`)
+    num <- colnames(df) %in% m26_dd_numeric
+    df[num] <- lapply(df[num], as.numeric)
+    df
+  })
   
-  # date <- lapply(numeric, function(df) {
-  #   m26_dd_date <- data_dict_m26 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
-  #   date <- colnames(df) %in% m26_dd_date
-  #   df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
-  # df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
-  # df[date] <- lapply(df[date], ymd)
-  #   df
-  # })
-  # 
+  date <- lapply(numeric, function(df) {
+    m26_dd_date <- data_dict_m26 %>% filter(FieldType == "Date") %>% pull(`Variable Name`)
+    date <- colnames(df) %in% m26_dd_date
+    df[date] <- lapply(df[date], parse_date_time, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y", "%d-%m-%y"))
+  df[date] <- lapply(df[date], function(x) gsub("2007-07-07", ymd("1907-07-07"), x, fixed=TRUE)) ## 09/05 updates for ke data
+  df[date] <- lapply(df[date], ymd)
+    df
+  })
+
   m26 = m26 ## to fix once all sites have harmonized m26
   
   # remove duplicates and add prefix  
@@ -2545,52 +3144,52 @@ if (exists("m26") == TRUE) {
 }
 
 #******M28
-# get list of all the MNH26 forms 
-for (x in site_vec) {
-  if (exists(paste("mnh28_", x, sep = ""))==TRUE){
-    
-    m28 <- mget(ls(pattern = "mnh28_.*"))
-    
-  }
-}
-if (exists("m28") == TRUE) {
-  # create a list of data frame names as string
-  m28_names = as.vector(names(m28))
-  
-  # remove duplicates and add prefix  
-  m28_rbind <- lapply(m28, function(x) x %>% 
-                        #add  "M##_"
-                        ## only pull subset of data 
-                        select(MOMID, PREGID,INFANTID, ID10104, ID10105,
-                               ID10109, ID10110, ID10114, ID10115, ID10116) %>% 
-                        select(MOMID, PREGID, INFANTID, everything()) %>% 
-                        rename_with( ~ paste0("M28_", .), -c(1:3)) %>% 
-                        distinct()
-  )
-  
-  # add in site variable 
-  for(i in names(m28_rbind)){
-    m28_rbind[[i]]$SITE <- paste(gsub("mnh28_","",i))
-  }
-  
-  # get all variable names
-  allNms <- unique(unlist(lapply(m28_rbind, names)))
-  
-  # merge all MNH26 forms together 
-  m28_merged <- do.call(rbind,c(lapply(m28_rbind,function(x) 
-    data.frame(c(x, sapply(setdiff(allNms, names(x)),
-                           function(y) NA)))), make.row.names=FALSE))
-  
-  # make site the first variable 
-  m28_merged <- m28_merged %>% relocate(SITE)
-  
-  ## get the variables that are missing from sites
-  m28_missing <- lapply(m28_rbind, function(x) setdiff(allNms, colnames(x)))
-  
-  ## export data 
-  save(m28_merged, file= paste0(path_to_save, "m28_merged",".RData",sep = ""))
-  
-}
+# # get list of all the MNH26 forms 
+# for (x in site_vec) {
+#   if (exists(paste("mnh28_", x, sep = ""))==TRUE){
+#     
+#     m28 <- mget(ls(pattern = "mnh28_.*"))
+#     
+#   }
+# }
+# if (exists("m28") == TRUE) {
+#   # create a list of data frame names as string
+#   m28_names = as.vector(names(m28))
+#   
+#   # remove duplicates and add prefix  
+#   m28_rbind <- lapply(m28, function(x) x %>% 
+#                         #add  "M##_"
+#                         ## only pull subset of data 
+#                         select(MOMID, PREGID,INFANTID, ID10104, ID10105,
+#                                ID10109, ID10110, ID10114, ID10115, ID10116) %>% 
+#                         select(MOMID, PREGID, INFANTID, everything()) %>% 
+#                         rename_with( ~ paste0("M28_", .), -c(1:3)) %>% 
+#                         distinct()
+#   )
+#   
+#   # add in site variable 
+#   for(i in names(m28_rbind)){
+#     m28_rbind[[i]]$SITE <- paste(gsub("mnh28_","",i))
+#   }
+#   
+#   # get all variable names
+#   allNms <- unique(unlist(lapply(m28_rbind, names)))
+#   
+#   # merge all MNH26 forms together 
+#   m28_merged <- do.call(rbind,c(lapply(m28_rbind,function(x) 
+#     data.frame(c(x, sapply(setdiff(allNms, names(x)),
+#                            function(y) NA)))), make.row.names=FALSE))
+#   
+#   # make site the first variable 
+#   m28_merged <- m28_merged %>% relocate(SITE)
+#   
+#   ## get the variables that are missing from sites
+#   m28_missing <- lapply(m28_rbind, function(x) setdiff(allNms, colnames(x)))
+#   
+#   ## export data 
+#   save(m28_merged, file= paste0(path_to_save, "m28_merged",".RData",sep = ""))
+#   
+# }
 
 
 
@@ -2601,7 +3200,6 @@ form_site <- mget(ls(pattern = "_names*"))
 varname_missing <- mget(ls(pattern = "._missing*"))
 
 varname_duplicates <- mget(ls(pattern = "_duplicates*"))
-
 
 # get list of all merged data 
 #mat_data_merged <- mget(ls(pattern = "._merged*")) 
@@ -2648,3 +3246,4 @@ setwd(paste0("~/Monitoring Report/data/merged/" ,UploadDate))
 lapply(1:length(files_list), function(i) write.csv(files_list[[i]],
                                                    file = paste0(names(files_list[i]), ".csv"),
                                                    row.names = FALSE))
+

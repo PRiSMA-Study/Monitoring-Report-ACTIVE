@@ -2,7 +2,7 @@
 #* INFANT WIDE DATASET by VISIT 
 #*Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #*Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 24 Feb 2024
+#* Last updated:18 October 2024
 
 #*Output:   
 #* 1. InfData_Wide.RData wide dataset by INFANTID and visit type (one row for each infant at each visit)
@@ -24,7 +24,7 @@ rm(list = ls())
 library(tidyverse)
 library(lubridate)
 library(readxl)
-UploadDate = "2024-05-17"
+UploadDate = "2024-10-18"
 
 #*****************************************************************************
 #* Import merged data 
@@ -102,7 +102,10 @@ m09_INF4 <- m09_wide %>% rename("INFANTID" = "M09_INFANTID_INF4") %>%
   rename_with(~str_remove(., '_INF4'))
 
 ## bind all infants together 
-m09_inf <- bind_rows(m09_INF1, m09_INF2, m09_INF3, m09_INF4) 
+m09_inf <- bind_rows(m09_INF1, m09_INF2, m09_INF3, m09_INF4)  %>%
+  # mutate(DELIVERY_DATETIME = ymd(parse_date_time(M09_DELIV_DSSTDAT_INF1, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))))
+ mutate(DELIVERY_DATETIME = as.POSIXct(DELIVERY_DATETIME, format= "%Y-%m-%d %H:%M"))  # assign time field type for time of birth
+
 ## put all forms into a list 
 all_out <- mget(ls(pattern = "_infantmerged*"))
 form_vec <- as.vector(paste((gsub("_infantmerged","", names(all_out)))))
@@ -144,7 +147,7 @@ for(i in names(inf_data)){
     # add in binary variable for PNC (Yes == 1, No == 0) 
     mutate(!!paste0(toupper(i),quo_name("_PNC_YN")) := 1) %>% 
     # add in binary variable if visit is complete 
-    mutate(!!paste0(toupper(i),quo_name("_VISIT_COMPLETE")) := ifelse(if_all(matches("(.+)_MAT_VISIT_MNH(.+)")) == 1 | if_all(matches("(.+)_MAT_VISIT_MNH(.+)")) == 2, 1, 0)) %>% 
+    mutate(!!paste0(toupper(i),quo_name("_VISIT_COMPLETE")) := ifelse(if_all(matches("(.+)_INF_VISIT_MNH(.+)")) == 1 | if_all(matches("(.+)_INF_VISIT_MNH(.+)")) == 2| if_all(matches("(.+)_INF_VISIT_MNH(.+)")) == 3, 1, 0)) %>% 
     ## add prefix in to all new variables 
     rename(!!paste0(toupper(i),quo_name("_VISIT_DATE")) := "VISIT_DATE") %>% 
     #relocate(TYPE_VISIT, .after = PREGID) %>%  ## move type_visit to the front of each dataset
@@ -210,6 +213,7 @@ visit_pnc_12 <- inf_data_out_wide %>%
   rename_with(~paste0(., "_", 12), .cols = -c("SITE", "MOMID", "PREGID", "INFANTID", "DELIVERY_DATETIME")) 
 
 infant_pnc_visit_out <- mget(ls(pattern = "visit_pnc_"))
+gc()
 # merge all forms together 
 InfData_Wide <- infant_pnc_visit_out %>% reduce(full_join, by =  c("SITE", "MOMID", "PREGID", "INFANTID", "DELIVERY_DATETIME")) %>% distinct()
 
@@ -328,6 +332,10 @@ non_sched_form_wide_all <- non_sched_form_out_all %>% reduce(full_join, by =  c(
 InfData_Wide <- left_join(InfData_Wide, non_sched_form_wide_all, by =c("SITE", "MOMID", "PREGID", "INFANTID")) %>% 
   relocate(any_of(c("SCRNID", "MOMID", "PREGID", "INFANTID")), .after = SITE) %>% 
   distinct()
+
+## Merge in birth outcome data 
+m09_inf_to_merge <- m09_inf %>% select(SITE, MOMID, PREGID, INFANTID, M09_DELIV_DSSTDAT, M09_BIRTH_DSTERM)
+InfData_Wide <- left_join(InfData_Wide, m09_inf_to_merge, by = c("SITE", "MOMID", "PREGID", "INFANTID")) 
 
 table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_7)
 table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_8)

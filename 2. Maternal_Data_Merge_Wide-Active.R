@@ -2,7 +2,7 @@
 #* MATERNAL WIDE DATASET BY VISIT 
 #*Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #*Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 24 Feb 2024
+#* Last updated: 25 October 2024
 
 #*Output:   
 #* 1. MatData_Wide.RData wide dataset by MOMID and visit type (one row for each woman at each visit)
@@ -32,7 +32,7 @@ library(lubridate)
 library(readxl)
 library(tidyverse)
 
-UploadDate = "2024-06-28"
+UploadDate = "2024-10-18"
 
 #*****************************************************************************
 #* Import merged data 
@@ -41,15 +41,15 @@ setwd(paste0("~/Monitoring Report/data/merged/", UploadDate, sep = ""))
 
 ## import all rda files 
 rdata_files = list.files(pattern="*.RData")
-walk(rdata_files, ~ load(.x, .GlobalEnv))
+walk(rdata_files, ~ suppressWarnings(load(.x, .GlobalEnv)))
 
 ## only pull the variables we need for monitoring report 
 MatNames_sheet <- read_excel("~/Monitoring Report/code/varNames_sheet.xlsx", sheet = "MaternalVars")
 #*****************************************************************************
 #* Assign expected visit type and rename "date" varnames 
 #*****************************************************************************
-#* Remove MNH08 variables from MNH07 (Zambia has additional variables)
-m07_merged <- m07_merged %>% select(-contains("MNH08"))
+m26_merged <- m26_merged %>% 
+  mutate(M26_FTGE_OBSTDAT = parse_date_time(M26_FTGE_OBSTDAT, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y")))
 
 ## Add date variable with consistent naming across forms 
 if (exists("m01_merged") == TRUE){ m01_merged <- m01_merged %>% mutate(VISIT_DATE = M01_US_OHOSTDAT) }
@@ -76,9 +76,9 @@ if (exists("m22_merged") == TRUE){ m22_merged <- m22_merged %>% mutate(VISIT_DAT
 #if (exists("m23_merged") == TRUE){ m23_merged <- m23_merged %>% mutate(VISIT_DATE = M23_CLOSE_DSSTDAT) }
 if (exists("m24_merged") == TRUE){ m24_merged <- m24_merged %>% mutate(VISIT_DATE = M24_CLOSE_DSSTDAT) }
 if (exists("m25_merged") == TRUE){ m25_merged <- m25_merged %>% mutate(VISIT_DATE = M25_OBSSTDAT) }
-if (exists("m25_merged") == TRUE){ m25_merged <- m25_merged %>% mutate(VISIT_DATE = dmy(VISIT_DATE)) }
+if (exists("m25_merged") == TRUE){ m25_merged <- m25_merged %>% mutate(VISIT_DATE = ymd(VISIT_DATE)) }
 if (exists("m26_merged") == TRUE){ m26_merged <- m26_merged %>% mutate(VISIT_DATE = M26_FTGE_OBSTDAT) }
-if (exists("m26_merged") == TRUE){ m26_merged <- m26_merged %>% mutate(VISIT_DATE = dmy(VISIT_DATE)) }
+if (exists("m26_merged") == TRUE){ m26_merged <- m26_merged %>% mutate(VISIT_DATE = ymd(VISIT_DATE)) }
 
 ## Hard code visit type for M00, M03, M16, M09, M10, M11, M17
 if (exists("m00_merged") == TRUE){ m00_merged$TYPE_VISIT = 1 }
@@ -90,20 +90,6 @@ if (exists("m11_merged") == TRUE){ m11_merged$M11_TYPE_VISIT = 6}
 if (exists("m16_merged") == TRUE){ m16_merged$M16_TYPE_VISIT = 5}
 if (exists("m17_merged") == TRUE){ m17_merged$M17_TYPE_VISIT = 6}
 if (exists("m18_merged") == TRUE){ m18_merged$M18_TYPE_VISIT = 12 }
-
-## Remove scrnid from MNH26 -- causes issues in merge 
-# if (exists("m26_merged") == TRUE){ m26_merged <- m26_merged %>% select(-M26_SCRNID) }
-
-mnh02_ids <- m02_merged %>% select(SITE, MOMID,PREGID, SCRNID) %>% filter(SITE =="Pakistan") %>% 
-  mutate(MOMID = ifelse(MOMID == "N/A",NA, MOMID),
-         PREGID = ifelse(is.na(MOMID), NA, PREGID))
-
-m01_pak <- m01_merged %>% filter(SITE == "Pakistan") %>% 
-  select(-MOMID, -PREGID) %>%
-  left_join(mnh02_ids, by = c("SITE",  "SCRNID"))
-
-m01_keep <- m01_merged %>% filter(SITE != "Pakistan") 
-m01_merged <- rbind(m01_pak, m01_keep)
 
 
 ## only want to look at maternal adverse events 
@@ -156,10 +142,31 @@ m01_enroll <- m01_merged %>% filter(M01_TYPE_VISIT == 1) %>% ## only want enroll
   # add 280 days to EST_CONCEP_DATE to generate EDD based on BOE 
   mutate(EDD_BOE = EST_CONCEP_DATE + 280) %>% 
   ## EDD based on ultrasound 
-  mutate(EDD_US =  EST_CONCEP_DATE + 280)
+  mutate(EDD_US =  EST_CONCEP_DATE + 280) %>% 
+  group_by(SCRNID) %>%
+  arrange(-desc(M01_US_OHOSTDAT)) %>%
+  slice(1) %>%
+  mutate(n=n()) %>%
+  ungroup() %>%
+  select(-n)
+  
 
 ## Only select ID variables from MNH02 to merge into MNH01 
-m02_wide <- m02_merged %>% select(SITE, SCRNID, MOMID, PREGID, M02_SCRN_OBSSTDAT) 
+m02_wide <- m02_merged %>% select(SITE, SCRNID, MOMID, PREGID, M02_SCRN_OBSSTDAT)  %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID)) %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "N/A"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "N/A"), NA, PREGID)) %>% 
+  mutate(MOMID = case_when(MOMID == "" ~ NA, TRUE ~ MOMID),
+         PREGID = case_when(PREGID == "" ~ NA, TRUE ~ PREGID),
+         ) %>% 
+  group_by(SCRNID) %>%
+  arrange(-desc(M02_SCRN_OBSSTDAT)) %>%
+  slice(1) %>%
+  mutate(n=n()) %>%
+  ungroup() %>%
+  select(-n)
+
 
 ## Merge enrollment form with US form to get GA at enrollment -- SUBSET OF DATA 
 enroll_bind <- full_join(m02_wide, m01_enroll, by = c("SITE", "SCRNID")) %>% distinct()
@@ -168,11 +175,38 @@ enroll_bind <- enroll_bind %>% relocate(c(MOMID,PREGID), .after = SCRNID) %>%
          US_GA_WKS_ENROLL, EDD_US,EDD_BOE, BOE_GA_DAYS_ENROLL, M02_SCRN_OBSSTDAT) %>% distinct()
 
 ## merge momid and pregid into mnh01 to merge in later 
-m02_ids <- m02_merged %>% select(SITE, SCRNID, MOMID, PREGID) ## export mnh02 ids
-m01_merged_enroll <- m01_merged %>% filter(M01_TYPE_VISIT == 1)  %>% select(-MOMID, -PREGID) %>%
+m02_ids <- m02_merged %>% 
+  group_by(SCRNID) %>%
+  arrange(-desc(M02_SCRN_OBSSTDAT)) %>%
+  slice(1) %>%
+  mutate(n=n()) %>%
+  ungroup() %>%
+  select(-n) %>% select(SITE, SCRNID, MOMID, PREGID) %>% ## export mnh02 ids
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID)) %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "N/A"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "N/A"), NA, PREGID)) %>% 
+  mutate(MOMID = case_when(MOMID == "" ~ NA, TRUE ~ MOMID),
+         PREGID = case_when(PREGID == "" ~ NA, TRUE ~ PREGID),
+  ) 
+  
+
+m01_merged_enroll <- m01_merged %>% filter(M01_TYPE_VISIT == 1)  %>% 
+  select(-MOMID, -PREGID) %>%
   left_join(m02_ids, by = c("SITE", "SCRNID"))
-mnh01_all_visits <- m01_merged %>% filter(M01_TYPE_VISIT != 1)
-m01_merged <- bind_rows(m01_merged_enroll, mnh01_all_visits) # rebind data
+
+# mnh01_all_visits <- m01_merged %>% filter(M01_TYPE_VISIT != 1)
+mnh01_all_visits_missing_id <- m01_merged %>% 
+  filter(M01_TYPE_VISIT != 1) %>% 
+  filter((is.na(MOMID) | is.na(PREGID)) & !is.na(SCRNID)) %>% 
+  select(-MOMID, -PREGID) %>% 
+  left_join(m02_ids, by = c("SITE", "SCRNID")) 
+
+mnh01_all_visits_nomissing_id <- m01_merged %>% 
+  filter(M01_TYPE_VISIT != 1) %>% 
+  filter(!is.na(MOMID) & !is.na(PREGID)) 
+
+m01_merged <- bind_rows(m01_merged_enroll, mnh01_all_visits_missing_id, mnh01_all_visits_nomissing_id) # rebind data
 
 ## generate sub datasets for MNH00, MNH01, MNH02, and MNH03 to bind in later 
 # (since these are filled out at only one visit, we want to merge them in separately )
@@ -191,7 +225,12 @@ m01_to_bind <- m01_merged %>%
   # rename visit date 
   rename("M01_VISIT_DATE" = VISIT_DATE,
          "TYPE_VISIT" = M01_TYPE_VISIT) %>% 
-  select(-EST_CONCEP_DATE, -BOE_GA_DAYS_ENROLL, -EDD_BOE)
+  select(-EST_CONCEP_DATE, -BOE_GA_DAYS_ENROLL, -EDD_BOE) %>% 
+  group_by(SITE, SCRNID, TYPE_VISIT) %>%
+  arrange(-desc(M01_VISIT_DATE)) %>%
+  slice(1) %>%
+  mutate(n=n()) %>%
+  ungroup() 
 
 m00_to_bind <- m00_merged %>% 
   mutate(TYPE_VISIT = 1)
@@ -200,7 +239,14 @@ m02_to_bind <- m02_merged %>%
   mutate(TYPE_VISIT = 1) %>% 
   # remove visit date as we will have already included it in the enrollment data subset above
   # leaving it in here will cause duplicates
-  select(-M02_SCRN_OBSSTDAT)
+  select(-M02_SCRN_OBSSTDAT) %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID)) %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "N/A"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "N/A"), NA, PREGID)) %>% 
+  mutate(MOMID = case_when(MOMID == "" ~ NA, TRUE ~ MOMID),
+         PREGID = case_when(PREGID == "" ~ NA, TRUE ~ PREGID),
+  )
 
 
 m03_to_bind <- m03_merged %>% 
@@ -239,29 +285,33 @@ for (i in names(anc_out)) {
     filter(TYPE_VISIT %in% anc_visits)
 }
 
+for (i in anc_visits) {
+  print(i)
+}
+
+
 ## extract anc variables 
 for (i in names(anc_out)) {
   # List of target variables
   target_vars <- c(
-    MatNames_sheet$varname,
+    as.character(MatNames_sheet$varname),
     "US_GA_WKS_ENROLL", "US_GA_DAYS_ENROLL", "M02_SCRN_OBSSTDAT", "EDD_US", "EDD_BOE",
     "BOE_GA_DAYS_ENROLL", "EST_CONCEP_DATE", "VISIT_DATE", "M00_KNOWN_DOBYN_SCORRES",
     "M02_SCRN_RETURN"
   )
-  
+
   # List of target patterns
   target_patterns <- c(
     "TYPE_VISIT", "_VISIT_COMPLETE", "M04_ANC_OBSSTDAT_", "M12_VISIT_OBSSTDAT_",
     "GESTAGE_AT_VISIT_DAYS", "GESTAGE_AT_VISIT_WKS", "GESTAGE_AT_BIRTH_",
     "_PNC_AT_VISIT_", "_GA_LMP_DAYS_SCORRES_", "M04_FETAL_LOSS_DSSTDAT",
-    "M09_DELIV_DSSTDAT_INF"
+    "M09_DELIV_DSSTDAT_INF", "RBC_G6PD_LBORRES", "RBC_THALA_LBORRES"
   )
   
   # Selecting columns that exist in the current data frame
-  anc_data[[i]] <- anc_data[[i]] %>% 
-    select(intersect(target_vars, names(.)), 
+  anc_data[[i]] <- anc_data[[i]] %>%
+    select(intersect(target_vars, names(.)),
            intersect(grep(paste(target_patterns, collapse = "|"), names(.), value = TRUE), names(.)))
-  
   }
 
 ## Organize Data: 
@@ -305,7 +355,10 @@ anc_data_wide <- anc_data_wide %>%
   full_join(m00_to_bind, by = c("SITE","SCRNID", "TYPE_VISIT")) %>%
   full_join(m02_to_bind, by = c("SITE","SCRNID","MOMID", "PREGID", "TYPE_VISIT")) %>%
   full_join(m03_to_bind, by = c("SITE","MOMID", "PREGID", "TYPE_VISIT")) %>%
-  distinct()
+  distinct() %>% 
+  group_by(SCRNID) %>%
+  fill(M00_SCRN_OBSSTDAT, .direction = "downup") %>%
+  ungroup() 
 
 
 ## THE FOLLOWING CODE WILL GENERATE A WIDE DATASET WITH ONE ROW FOR EACH MOM FOR EACH VISIT 
@@ -314,12 +367,10 @@ anc_data_wide_visit = anc_data_wide
 ## Move MNH00 data to the front the dataframe 
 m00_to_move <- grep("M00_", names(anc_data_wide_visit))
 anc_data_wide_visit<- anc_data_wide_visit %>% 
-  #filter(SCRNID != "n/a") %>% 
   relocate(TYPE_VISIT, .after = PREGID) %>% 
   relocate(any_of(m00_to_move), .after = TYPE_VISIT)
 
 ## Final maternal wide dataset by visit type == anc_data_wide_visit 
-
 
 ## IN ORDER TO MAKE THE DATA WIDE WITH ONE ROW FOR EACH WOMAN, WE NEED TO ADD A PREFIX TO ALL FORMS THAT ARE FILLED OUT AT MULTIPLE VISITS 
 ## The following code will do the following
@@ -327,6 +378,13 @@ anc_data_wide_visit<- anc_data_wide_visit %>%
 # 2. Add a suffix to the end of each variable to represent the visit type 
 ## Example: data from visit type = 1 would have variables named "HEIGHT_PERES_1" 
 ## Extract Visit 1 (ANC < 20)
+## extract screening ids with missign screening dates 
+
+scrnid_to_remove <- anc_data_wide %>% filter(is.na(M00_SCRN_OBSSTDAT)) %>%
+  select(SITE, MOMID, PREGID, SCRNID, M00_SCRN_OBSSTDAT, M01_US_OHOSTDAT, TYPE_VISIT) %>% 
+  filter(!is.na(SCRNID) & SCRNID != "") %>% 
+  distinct(SCRNID, .keep_all = TRUE)
+
 visit_anc_1 <- anc_data_wide_visit %>% 
   filter(TYPE_VISIT == 1, !is.na(SCRNID)) %>% 
   select(-TYPE_VISIT) %>% 
@@ -337,7 +395,8 @@ visit_anc_1 <- anc_data_wide_visit %>%
   rename_with(~paste0(., "_", 1), 
               .cols = -c("SITE", "SCRNID", "MOMID", "PREGID", contains("M02"), contains("M00"), 
                          "EST_CONCEP_DATE", "US_GA_DAYS_ENROLL", 
-                         "US_GA_WKS_ENROLL", "EDD_US", "EDD_BOE", "BOE_GA_DAYS_ENROLL")) 
+                         "US_GA_WKS_ENROLL", "EDD_US", "EDD_BOE", "BOE_GA_DAYS_ENROLL")) %>% 
+  filter(!SCRNID %in% as.vector(scrnid_to_remove$SCRNID)) 
 
 ## NOTE: Forms that only get filled out at enrollment (visit 1) (MNH00, MNH02, MNH03) will need to be removed from the other visit data as to not have duplicates
 m00_to_remove <- grep("M00_", names(anc_data_wide_visit))
@@ -355,8 +414,8 @@ visit_anc_2 <- anc_data_wide_visit %>%
          -any_of(baseline_to_remove), 
          -TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 2) %>% # US variable "TYPE_VISIT" exists, but does not have the "M01_" prefix -- add here 
-  rename_with(~paste0(., "_", 2), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) 
-
+  rename_with(~paste0(., "_", 2), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) %>% 
+  filter(!SCRNID %in% as.vector(scrnid_to_remove$SCRNID))
 
 ## Extract Visit 3 (ANC 28)
 visit_anc_3 <- anc_data_wide_visit %>% 
@@ -367,7 +426,8 @@ visit_anc_3 <- anc_data_wide_visit %>%
          -any_of(baseline_to_remove), 
          -TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 3) %>% # US variable "TYPE_VISIT" exists, but does not have the "M01_" prefix -- add here 
-  rename_with(~paste0(., "_", 3), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) 
+  rename_with(~paste0(., "_", 3), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) %>% 
+  filter(!SCRNID %in% as.vector(scrnid_to_remove$SCRNID))
 
 ## Extract Visit 4 (ANC 32)
 visit_anc_4 <- anc_data_wide_visit %>% 
@@ -378,8 +438,9 @@ visit_anc_4 <- anc_data_wide_visit %>%
          -any_of(baseline_to_remove),
          -TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 4) %>% # US variable "TYPE_VISIT" exists, but does not have the "M01_" prefix -- add here 
-  rename_with(~paste0(., "_", 4), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) 
-
+  rename_with(~paste0(., "_", 4), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) %>% 
+  filter(!SCRNID %in% as.vector(scrnid_to_remove$SCRNID)) 
+  
 
 ## Extract Visit 4 (ANC 36)
 visit_anc_5 <- anc_data_wide_visit %>% 
@@ -390,18 +451,25 @@ visit_anc_5 <- anc_data_wide_visit %>%
          -any_of(baseline_to_remove), 
          -TYPE_VISIT) %>% 
   mutate(M01_TYPE_VISIT = 5) %>% # US variable "TYPE_VISIT" exists, but does not have the "M01_" prefix -- add here 
-  rename_with(~paste0(., "_", 5), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) 
-
+  rename_with(~paste0(., "_", 5), .cols = -c("SITE", "SCRNID", "MOMID", "PREGID")) %>% 
+  filter(!SCRNID %in% as.vector(scrnid_to_remove$SCRNID))
 
 ## Compile all visit type datasets into a list 
 anc_visit_out <- mget(ls(pattern = "visit_anc_"))
+
+gc()
+
 
 # Merge all forms together 
 anc_data_wide <- anc_visit_out %>%
   reduce(full_join, by =  c("SITE","SCRNID", "MOMID", "PREGID")) %>% distinct()
 
-
 gc()
+
+## remove weird data points 
+anc_data_wide <- anc_data_wide %>% group_by(SITE, SCRNID) %>% mutate(n=n()) %>% filter(n==1) 
+
+# table(anc_data_wide$M01_VISIT_COMPLETE_5, anc_data_wide$SITE)
 #*****************************************************************************
 #* IPC 
 #*****************************************************************************
@@ -416,12 +484,11 @@ for (i in names(ipc_out)) {
     filter(TYPE_VISIT == 6)
 }
 
-
 ## extract ipc variables 
 for (i in names(ipc_out)) {
   # List of target variables
   target_vars <- c(
-    MatNames_sheet$varname,"VISIT_DATE"
+    as.character(MatNames_sheet$varname,"VISIT_DATE")
   )
   
   # List of target patterns
@@ -464,7 +531,6 @@ for(i in names(ipc_data)){
 ## THE FOLLOWING CODE WILL GENERATE A WIDE DATASET WITH ONE ROW FOR EACH MOM FOR EACH VISIT 
 # Merge all forms together 
 ipc_data_wide_visit <- ipc_data_out %>% reduce(full_join, by =  c("SITE","MOMID", "PREGID", "TYPE_VISIT")) %>% distinct()
-
 
 ## For each participant, extract the minimum delivery time and minimum delivery date 
 m09 <- m09_merged %>% select(SITE, MOMID, PREGID, M09_INFANTS_FAORRES, 
@@ -510,14 +576,9 @@ m09 <- m09_merged %>% select(SITE, MOMID, PREGID, M09_INFANTS_FAORRES,
          GESTAGE_AT_BIRTH_WKS = as.numeric(DOB-EST_CONCEP_DATE) %/% 7) %>% 
   select(SITE, MOMID, PREGID, DOB, GESTAGE_AT_BIRTH_DAYS, GESTAGE_AT_BIRTH_WKS)
 
-
 #####
 ipc_data_wide_visit <- ipc_data_wide_visit %>% left_join(m09, by = c("SITE", "MOMID", "PREGID"))
 
-# pre long m09 -- 1059
-# make long m09 -- 1059
-# join with ipc data wide -- 1097
-# merge with all -- 1059
 ## Final maternal wide dataset by visit type == ipc_data_wide_visit 
 
 ## IF WE WANT TO HAVE A WIDE DATASET WITH 1 ROW FOR EACH WOMAN, THEN WE NEED TO ADD A SUFFIX TO EACH OF THE VARIABLE NAMES 
@@ -531,36 +592,38 @@ ipc_data_wide_visit <- ipc_data_wide_visit %>% left_join(m09, by = c("SITE", "MO
 #     rename_with(~paste0(., "_", 6), .cols = -c("SITE", "MOMID", "PREGID","DOB", "GESTAGE_AT_BIRTH_DAYS", "GESTAGE_AT_BIRTH_WKS")) 
 # }
 
+gc()
 ipc_data_wide <- ipc_data_wide_visit %>% select(-TYPE_VISIT) %>% 
   rename_with(~paste0(., "_", 6), .cols = -c("SITE", "MOMID", "PREGID","DOB", "GESTAGE_AT_BIRTH_DAYS", "GESTAGE_AT_BIRTH_WKS")) 
 
 ## Final maternal wide dataset == anc_data_wide 
 # ipc_data_wide <- ipc_data_out_wide %>% reduce(full_join, by =  c("SITE","MOMID", "PREGID"))
 
-# test <- ipc_data_wide %>%
-#   relocate(any_of(c("MOMID", "PREGID")), .after = SITE)
-# out_IDS <- test[duplicated(test[,1:3]),]
-# dim(out_IDS)
-
 gc()
 #*****************************************************************************
 #* PNC 
 #*****************************************************************************
+mat_enroll <- read.csv(paste0("Z:/Outcome Data/",UploadDate, "/MAT_ENROLL.csv")) %>% select(SITE,SCRNID, MOMID, PREGID, ENROLL)
+
 ## Compile all PNC merged forms into list
 pnc_out <- list(m05_merged, m06_merged, m07_merged, m08_merged, m12_merged, m25_merged, m26_merged)
 names(pnc_out) <- c("m05", "m06", "m07", "m08", "m12", "m25", "m26")
 
+rm(list=ls()[! ls() %in% c("mat_enroll", "MatNames_sheet", "anc_data_wide","ipc_data_wide", "m23_merged", "UploadDate", "pnc_out", "m09")])
+
+gc()
+
 ## Merge m09 (subset of delivery form with gestage_at_birth variables) forms with each of the other forms 
 pnc_data <- list()
 for (i in names(pnc_out)) { 
-  pnc_data[[i]] <- left_join(pnc_out[[i]], m09, by = c("SITE", "MOMID", "PREGID")) %>% distinct()
+  pnc_data[[i]] <-suppressWarnings(left_join(pnc_out[[i]], m09, by = c("SITE", "MOMID", "PREGID"))) %>% distinct()
 }
 
 # Extract PNC visits in data 
 pnc_visits <- c(7,8,9,10,11,12)
 for (i in names(pnc_out)) {
   pnc_data[[i]] <- pnc_data[[i]] %>% mutate(TYPE_VISIT = if_all(matches("(.+)_TYPE_VISIT"))) %>% 
-    filter(TYPE_VISIT %in% pnc_visits)
+    filter(TYPE_VISIT %in% pnc_visits) 
 }
 
 
@@ -568,14 +631,15 @@ for (i in names(pnc_out)) {
 for (i in names(pnc_out)) {
   # List of target variables
   target_vars <- c(
-    MatNames_sheet$varname,"VISIT_DATE"
+    as.character(MatNames_sheet$varname),"VISIT_DATE"
   )
   
   # List of target patterns
   target_patterns <- c(
     "TYPE_VISIT", "_VISIT_COMPLETE", "M04_ANC_OBSSTDAT_", "M12_VISIT_OBSSTDAT_",
     "GESTAGE_AT_VISIT_DAYS", "GESTAGE_AT_VISIT_WKS", "GESTAGE_AT_BIRTH_",
-    "_PNC_AT_VISIT_", "_GA_LMP_DAYS_SCORRES_", "M04_FETAL_LOSS_DSSTDAT"
+    "_PNC_AT_VISIT_", "_GA_LMP_DAYS_SCORRES_", "M04_FETAL_LOSS_DSSTDAT", "RBC_G6PD_LBORRES",
+    "RBC_THALA_LBORRES", "M12_MAT_VISIT_MNH12"
   )
   
   # Selecting columns that exist in the current data frame
@@ -672,6 +736,7 @@ visit_pnc_12 <- pnc_data_wide_visit %>%
   mutate(M01_TYPE_VISIT = 12) %>% 
   rename_with(~paste0(., "_", 12), .cols = -c("SITE", "MOMID", "PREGID")) 
 
+
 ## Compile all visit type datasets into a list 
 pnc_visit_out <- mget(ls(pattern = "visit_pnc_"))
 
@@ -710,9 +775,6 @@ gc()
 rm(list=ls()[! ls() %in% c("anc_data_wide","ipc_data_wide", "pnc_data_wide", "m23_merged", "UploadDate")])
 
 # ### MERGE ALL TOGETHER - BY MOMID, PREGID, SCRNID  
-# anc_data_wide <- anc_data_wide %>% filter(SITE != "India-SAS")
-# ipc_data_wide <- ipc_data_wide %>% filter(SITE != "India-SAS")
-# pnc_data_wide <- pnc_data_wide %>% filter(SITE != "India-SAS")
 # 
 gc()
 
@@ -738,7 +800,7 @@ anc_data_wide <- anc_data_wide %>%
          contains("VISIT_DATE"),
          M00_KNOWN_DOBYN_SCORRES, 
          contains("M01_FETUS_CT_PERES_US"),
-         M02_SCRN_RETURN) 
+         M02_SCRN_RETURN, contains("RBC_G6PD_LBORRES"), contains("RBC_THALA_LBORRES"))
 
 ipc_data_wide <- ipc_data_wide %>% 
   select(matches(MatNames_sheet$varname), 
@@ -767,9 +829,14 @@ pnc_data_wide <- pnc_data_wide %>%
          contains("_PNC_AT_VISIT_"),
          contains("_GA_LMP_DAYS_SCORRES_"),
          contains("M04_FETAL_LOSS_DSSTDAT"),
-         contains("VISIT_DATE")) 
+         contains("VISIT_DATE"), contains("RBC_G6PD_LBORRES"), contains("RBC_THALA_LBORRES")) 
 
 gc()
+
+## test for duplicates 
+# test_anc <- anc_data_wide %>% group_by(SITE,SCRNID, MOMID, PREGID) %>% mutate(n=n()) %>% filter(n>1)
+# test_ipc <- ipc_data_wide %>% group_by(SITE, MOMID, PREGID) %>% mutate(n=n()) %>% filter(n>1)
+# test_pnc <- pnc_data_wide %>% group_by(SITE, MOMID, PREGID) %>% mutate(n=n()) %>% filter(n>1)
 
 ## merge data together
 out <- list(anc_data_wide, ipc_data_wide, pnc_data_wide)
@@ -777,6 +844,7 @@ MatData_Wide <- out %>% reduce(full_join, by = c("SITE", "MOMID", "PREGID"))  %>
   relocate(DOB, .after = PREGID) %>% distinct()
 
 gc()
+
 
 ## Merge in maternal closeout form (MNH23) -- only filled out once which is why we merge it at the end  
 MatData_Wide <- full_join(MatData_Wide, m23_merged, by =c("SITE", "MOMID", "PREGID")) %>% 
@@ -790,16 +858,37 @@ gc()
 #   relocate(any_of(c("SCRNID", "MOMID", "PREGID")), .after = SITE)
 # out_IDS <- test[duplicated(test[,1:4]),]
 # dim(out_IDS)
+backup <- MatData_Wide
+
+MatData_Wide <- MatData_Wide %>% 
+  # select(SITE, MOMID, PREGID, 
+  #        SCRNID,M00_SCRN_OBSSTDAT,M01_VISIT_COMPLETE_4,  M01_VISIT_COMPLETE_5) %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID)) %>% 
+  # mutate(MOMID = ifelse(str_detect(MOMID, "N/A"), NA, MOMID),
+  #        PREGID = ifelse(str_detect(PREGID, "N/A"), NA, PREGID)) %>% 
+  group_by(SCRNID) %>% 
+  mutate(n=n()) %>% 
+  mutate(KEEP = case_when((!is.na(MOMID) & !is.na(PREGID)) | n==1 ~ 1, TRUE ~0)) %>% 
+  filter(KEEP ==1) %>% 
+  ungroup() 
+
+
+gc()
+
+MatData_Wide <- MatData_Wide %>% 
+  ## Only keep instances where screenign ID is present (remove NA screening IDs) 
+  filter(!is.na(SCRNID))
 
 ## remove duplicate screening IDS: take the most recent screening incidence if there are duplicates
-MatData_Wide <- MatData_Wide %>% 
-  group_by(SCRNID) %>% 
-  arrange(-desc(M00_SCRN_OBSSTDAT)) %>% 
-  slice(1) %>% 
-  mutate(n=n()) %>% 
-  ungroup() %>% 
-  select(-n) 
-
+# test <- MatData_Wide %>% 
+#   group_by(SCRNID) %>% 
+#   arrange(-desc(M00_SCRN_OBSSTDAT)) %>% 
+#   slice(1) %>% 
+#   mutate(n=n()) %>% 
+#   ungroup() %>% 
+#   select(-n) 
+# 
 # out_IDS <- MatData_Wide[duplicated(MatData_Wide[,1:4]),]
 # out_duplicated_IDS_SCRNID <- out_IDS %>% distinct(SITE, SCRNID)
 # MatData_Wide <- MatData_Wide %>% filter(!(SCRNID %in% out_duplicated_IDS_SCRNID))
