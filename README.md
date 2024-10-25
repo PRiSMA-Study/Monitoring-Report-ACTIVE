@@ -41,12 +41,12 @@ Data output: will update based on monitoring report updates and uploaed data by 
    - output: `MatData_Wide.Rdata` & `MatData_Wide_Visit.Rdata`
    - notes: MatData_Wide is a wide dataset with one row for each woman. MatData_Wide_Visit is a wide data with one row for each woman at each visit.
    
-3. `Infant_Data_Merge_Wide.R` merges all infant forms and transforms them into wide format. 
+3. `3. Infant_Data_Merge_Wide.R` merges all infant forms and transforms them into wide format. 
    - input: `mnh00.csv-mnh26.csv` stored in directory `/cleaned_data/[folder named with upload date]`.
    - output: `InfData_Wide.Rdata` & `InfData_Wide_Visit.Rdata`
    - notes: InfData_Wide is a wide dataset with one row for each infant. InfData_Wide_Visit is a wide data with one row for each infant at each visit.
 
-4. `3. Report_Setup.R` generates all the variables needed for the monitoring report. 
+4. `4. Maternal_Report_Setup.R` generates all the variables needed for the monitoring report. 
    - input: `Maternal_Data_Merge_Wide`, `Infant_Data_Merge_Wide`
    - output:
      - `MatData_Report.RData`
@@ -67,7 +67,29 @@ Data output: will update based on monitoring report updates and uploaed data by 
          - Includes relevant constructed variables for ReMAPP tables looking at Hb test outcomes by gestational age. (ReMAPP Figure 2)
      - `healthyOutcome.RData`: 
          - Includes relevant constructed variables for ReMAPP healthy criteria.
+         
+5. `5. GSED_Processing-Active.R` generates all the variables needed for the monitoring report. 
+   - input: `Maternal_Data_Merge_Wide`, `Infant_Data_Merge_Wide`
+   - output:
+     - `MatData_Pnc_Visits.RData`:
+         - Includes all women who are enrolled who have entered the PNC period. Includes constructed variables relevant to PNC.
+     - `InfData_Wide.RData`: 
+         - InfData_Wide is a wide dataset with one row for each infant.
+     - `Mat_Enroll.csv`: 
+         - Dataset of all enrolled participants and gestational ages at enrollment.
+     - `Inf_Outcomes.csv`: 
+         - Includes all relevent infant outcomes and can be created using code linked [here](https://github.com/PRiSMA-Study/PRISMA-Public/blob/main/PRISMA-Infant-Constructed-Outcomes/Infant-Constructed-Variables.R).
 
-6. `Monitoring_Report.Rmd` is the final report in R markdown and is in .html output format.;
+6. `6. Maternal_Report_Setup.R` generates all the variables needed for the monitoring report. 
+   - input: `Maternal_Data_Merge_Wide`, `Infant_Data_Merge_Wide`
+   - output:
+     - `InfData_Wide.RData`: 
+         - InfData_Wide is a wide dataset with one row for each infant.
+     - `MatData_Wide.Rdata`: 
+         - MatData_Wide is a wide dataset with one row for each woman. 
+     - `Inf_Outcomes.csv`: 
+         - Includes all relevent infant outcomes and can be created using code linked [here](https://github.com/PRiSMA-Study/PRISMA-Public/blob/main/PRISMA-Infant-Constructed-Outcomes/Infant-Constructed-Variables.R).
+         
+7. `Monitoring_Report.Rmd` is the final report in R markdown and is in .html output format.;
 `varNames_sheet.xlsx` lists all the key variable names, only update the names here.
 
