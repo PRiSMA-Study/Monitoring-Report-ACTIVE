@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-10-22)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-11-19)"
 output:
   pdf_document:
     toc: no
@@ -34,7 +34,7 @@ library(webshot2)
 library(grid)
 library(gridExtra)
 
-UploadDate = "2024-10-18" 
+UploadDate = "2024-11-15" 
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
 
@@ -136,21 +136,20 @@ outcomes
 (ReMAPP) Study: A multisite, international, population-based cohort
 study to establish global hemoglobin thresholds for maternal anemia
 
-
 **Versions:**
 
-**Date issued:** 2024-10-22
+**Date issued:** 2024-11-19
 
-**Included data last updated in Synapse:** 2024-10-18 (Zambia: 2024-10-04)
+**Included data last updated in Synapse:** 2024-11-15
 
 **Last enrollment date:**
 
--   Kenya: 2024-10-18
--   Pakistan: 2024-10-11
--   Ghana: 2024-09-13
--   Zambia: 2024-09-25
--   India CMC: 2024-10-04
--   India SAS: 2024-10-10
+-   Kenya: 2024-11-14
+-   Pakistan: 2024-11-08
+-   Ghana: 2024-11-14
+-   Zambia: 2024-11-06
+-   India CMC: 2024-11-01
+-   India SAS: 2024-11-08
 
 ```{r, results='hide' }
 
@@ -188,15 +187,12 @@ rm(lastenroll)
 gc()
 ```
 
-```{=tex}
 \setcounter{tocdepth}{6}
 \tableofcontents
-```
 
 \newpage
 
 ## **1. PRISMA**
-
 
 ### Table 1: Most recent one week pre-screened and enrolled in PRISMA
 
@@ -260,8 +256,6 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
 # 
 ```
 
-
-
 ```{r}
 #generate table by input data.frame and customize as needed. 
 #example: tb_theme1(dataframe)
@@ -290,7 +284,9 @@ knitr::include_graphics("prisma_tab1.png")
 
 ### Table 2: Cumulative pre-screened for PRISMA
 
-*Value:* Distribution of total pre-screened since the launch of the harmonized PRISMA protocol. If ineligible based on pre-screening, distributions by exclusion reason are listed.
+*Value:* Distribution of total pre-screened since the launch of the
+harmonized PRISMA protocol. If ineligible based on pre-screening,
+distributions by exclusion reason are listed.
 
 ```{r}
 ## Cumulative Prescreening criteria 
@@ -380,7 +376,9 @@ knitr::include_graphics("prisma_tab2.png")
 
 ### Figure 1: Reasons for exclusion in pre-screening for PRISMA
 
-*Value:* Distribution by exclusion criteria among those who are ineligible in pre-screening are listed below. Each row should sum to 100%.
+*Value:* Distribution by exclusion criteria among those who are
+ineligible in pre-screening are listed below. Each row should sum to
+100%.
 
 ```{r, echo=FALSE}
 ### STACKED BAR CHART
@@ -475,12 +473,17 @@ geom_text(aes(label = n_ineligible, x = SITE, y = n_pct+0.25),
 
 ### Table 3: Cumulative enrolled in PRISMA
 
-*Value:* Distribution of cumulative enrollment and study progress distributions since the start of relaunch. If ineligible, distributions by exclusion criteria are listed below. Each column should sum to 100%.
+*Value:* Distribution of cumulative enrollment and study progress
+distributions since the start of relaunch. If ineligible, distributions
+by exclusion criteria are listed below. Each column should sum to 100%.
+
 ```{r, results = "hide"}
  gc()
 ```
 
 ```{r}
+
+
 tb_enroll <- MatData_Screen_Enroll %>%
   group_by(SITE) %>%
   summarise("Screened, n" = sum(SCREEN == 1, na.rm=TRUE),
@@ -591,7 +594,8 @@ knitr::include_graphics("prisma_tab3.png")
 
 ### Figure 2: Reasons for exclusion in screening for PRISMA
 
-*Value:* Distribution by exclusion criteria among those who are ineligible in screening are listed below. Each row should sum to 100%.
+*Value:* Distribution by exclusion criteria among those who are
+ineligible in screening are listed below. Each row should sum to 100%.
 
 ```{r, results = "hide"}
  gc()
@@ -710,15 +714,6 @@ enroll_cum <- MatData_Screen_Enroll %>%
   mutate(cum_n = cumsum(n)) %>% 
   ungroup() 
 
-
-# # New row with a new date
-# new_row <- data.frame(
-#   SITE = "ZZ",  # Adjust site name as needed
-#   START_DATE_MOM_WK = as.Date(UploadDate) + days(14),  # Adjust the new date
-#   n = 0,
-#   cum_n = 0
-# )
-
 # make sure date in date class
 enroll_cum$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum$START_DATE_MOM_WK))
 # confirm order of sites to coordinate with colors
@@ -728,7 +723,7 @@ enroll_cum$SITE <- factor(enroll_cum$SITE,
 ggplot() +
   geom_point(data = enroll_cum, aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE), shape = 15) +
   geom_line(data = enroll_cum, aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE)) +
-  scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+  scale_x_date(date_breaks = "3 months", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual(values = c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3","orange"), #
                      labels = c("Ghana", "India-CMC", "Kenya", "Pakistan", "Zambia","India-SAS")) + #
@@ -780,7 +775,11 @@ ggplot() +
 
 ### Figure 3b: Cumulative actual versus expected enrollment in PRISMA by site
 
-*Value:* Compare expected and actual enrollment for each site over time. Calculated by dividing the total target enrollment by 36 months to get the average enrollment per month over the course of three years (one year for India-SAS). We can further divide to get average enrollment per week.
+*Value:* Compare expected and actual enrollment for each site over time.
+Calculated by dividing the total target enrollment by 36 months to get
+the average enrollment per month over the course of three years (one
+year for India-SAS). We can further divide to get average enrollment per
+week.
 
 ```{r, echo=FALSE,out.width="49%",out.height="49%",fig.show='hold', fig.align='left'}
 
@@ -807,33 +806,21 @@ enroll_cum_PA <- MatData_Screen_Enroll %>%
   ungroup() 
 
 enroll_cum_PA$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_PA$START_DATE_MOM_WK))
-# max_y will help us plot the year annotations on the figures
-# max_y <- max(enroll_cum_PA$expect_cum) * 1.05
-# 
-# # midpoint will help us plot the year annotations on the figures
-# midpoint <- enroll_cum_PA %>% 
-#   mutate(year = year(START_DATE_MOM_WK)) %>% 
-#   group_by(year) %>%
-#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
-#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
-#                                    TRUE ~NA),
-#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
-#                                    TRUE ~NA))
 
+
+# with year on x-axis:
 enroll_cum_PA %>% 
   ggplot(aes(x = START_DATE_MOM_WK)) +
   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
-  geom_vline(xintercept = ymd("2024-01-01")) +
-  geom_vline(xintercept = ymd("2023-01-01")) +
-  scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+  scale_x_date(date_breaks = "2 months", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
-  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
@@ -841,9 +828,35 @@ enroll_cum_PA %>%
         strip.placement = "outside", 
         strip.background = element_rect(fill = NA, color = "grey"),
         panel.spacing = unit(0,"cm")) +
-  xlab("Month") +
+  xlab("Week") +
   ylab("Number of participants enrolled") +
   ggtitle("Pakistan") 
+
+# without year on x-axis:
+# enroll_cum_PA %>% 
+#   ggplot(aes(x = START_DATE_MOM_WK)) +
+#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
+#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
+#   geom_line(aes(y = expect_cum, color = "Expected")) +
+#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+#   geom_vline(xintercept = ymd("2024-01-01")) +
+#   geom_vline(xintercept = ymd("2023-01-01")) +
+#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+#                expand = c(0, 0)) +
+#   scale_color_manual("",
+#                      breaks=c("Expected","Enrolled"),
+#                      values = c("orange", "royalblue1")) +
+#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+#   theme_bw() +
+#   theme(axis.text.x = element_text(angle = 0),
+#         legend.position="bottom",
+#         panel.grid.minor = element_blank(),
+#         strip.placement = "outside", 
+#         strip.background = element_rect(fill = NA, color = "grey"),
+#         panel.spacing = unit(0,"cm")) +
+#   xlab("Month") +
+#   ylab("Number of participants enrolled") +
+#   ggtitle("Pakistan") 
 
 #****************
 # Kenya
@@ -869,33 +882,20 @@ enroll_cum_KE <- MatData_Screen_Enroll %>%
   ungroup() 
 
 enroll_cum_KE$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_KE$START_DATE_MOM_WK))
-# max_y will help us plot the year annotations on the figures
-# max_y <- max(enroll_cum_KE$expect_cum) * 1.05
-# 
-# # midpoint will help us plot the year annotations on the figures
-# midpoint <- enroll_cum_KE %>% 
-#   mutate(year = year(START_DATE_MOM_WK)) %>% 
-#   group_by(year) %>%
-#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
-#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
-#                                    TRUE ~NA),
-#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
-#                                    TRUE ~NA))
 
+# with year on x-axis:
 enroll_cum_KE %>% 
   ggplot(aes(x = START_DATE_MOM_WK)) +
   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
-  geom_vline(xintercept = ymd("2024-01-01")) +
-  geom_vline(xintercept = ymd("2023-01-01")) +
-  scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+  scale_x_date(date_breaks = "2 months", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
-  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
@@ -903,9 +903,35 @@ enroll_cum_KE %>%
         strip.placement = "outside", 
         strip.background = element_rect(fill = NA, color = "grey"),
         panel.spacing = unit(0,"cm")) +
-  xlab("Month") +
+  xlab("Week") +
   ylab("Number of participants enrolled") +
   ggtitle("Kenya") 
+
+# without year on x-axis:
+# enroll_cum_KE %>% 
+#   ggplot(aes(x = START_DATE_MOM_WK)) +
+#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
+#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
+#   geom_line(aes(y = expect_cum, color = "Expected")) +
+#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+#   geom_vline(xintercept = ymd("2024-01-01")) +
+#   geom_vline(xintercept = ymd("2023-01-01")) +
+#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+#                expand = c(0, 0)) +
+#   scale_color_manual("",
+#                      breaks=c("Expected","Enrolled"),
+#                      values = c("orange", "royalblue1")) +
+#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+#   theme_bw() +
+#   theme(axis.text.x = element_text(angle = 0),
+#         legend.position="bottom",
+#         panel.grid.minor = element_blank(),
+#         strip.placement = "outside", 
+#         strip.background = element_rect(fill = NA, color = "grey"),
+#         panel.spacing = unit(0,"cm")) +
+#   xlab("Month") +
+#   ylab("Number of participants enrolled") +
+#   ggtitle("Kenya") 
 
 #****************
 # Ghana
@@ -931,31 +957,20 @@ enroll_cum_GA <- MatData_Screen_Enroll %>%
   ungroup()
 
 enroll_cum_GA$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_GA$START_DATE_MOM_WK))
-# # max_y will help us plot the year annotations on the figures
-# max_y <- max(enroll_cum_GA$expect_cum) * 1.05
-# 
-# # midpoint will help us plot the year annotations on the figures
-# midpoint <- enroll_cum_GA %>% 
-#   mutate(year = year(START_DATE_MOM_WK)) %>% 
-#   group_by(year) %>%
-#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
-#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
-#                                    TRUE ~NA),
-#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
-#                                    TRUE ~NA))
+
+# with year on x-axis:
 enroll_cum_GA %>%
   ggplot(aes(x = START_DATE_MOM_WK)) +
   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
-  geom_line(aes(y = enroll_cum, color = "Enrolled")) +  
-  geom_vline(xintercept = ymd("2024-01-01")) +
-  scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+  geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+  scale_x_date(date_breaks = "2 months", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
-  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
@@ -963,9 +978,34 @@ enroll_cum_GA %>%
         strip.placement = "outside", 
         strip.background = element_rect(fill = NA, color = "grey"),
         panel.spacing = unit(0,"cm")) +
-  xlab("Month") +
+  xlab("Week") +
   ylab("Number of participants enrolled") +
   ggtitle("Ghana")
+
+# without year on x-axis:
+# enroll_cum_GA %>%
+#   ggplot(aes(x = START_DATE_MOM_WK)) +
+#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
+#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
+#   geom_line(aes(y = expect_cum, color = "Expected")) +
+#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +  
+#   geom_vline(xintercept = ymd("2024-01-01")) +
+#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+#                expand = c(0, 0)) +
+#   scale_color_manual("",
+#                      breaks=c("Expected","Enrolled"),
+#                      values = c("orange", "royalblue1")) +
+#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+#   theme_bw() +
+#   theme(axis.text.x = element_text(angle = 0),
+#         legend.position="bottom",
+#         panel.grid.minor = element_blank(),
+#         strip.placement = "outside", 
+#         strip.background = element_rect(fill = NA, color = "grey"),
+#         panel.spacing = unit(0,"cm")) +
+#   xlab("Month") +
+#   ylab("Number of participants enrolled") +
+#   ggtitle("Ghana")
 
 #****************
 # Zambia
@@ -991,33 +1031,20 @@ enroll_cum_ZA <- MatData_Screen_Enroll %>%
   ungroup() 
 
 enroll_cum_ZA$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_ZA$START_DATE_MOM_WK))
-# # max_y will help us plot the year annotations on the figures
-# max_y <- max(enroll_cum_ZA$expect_cum) * 1.05
-# 
-# # midpoint will help us plot the year annotations on the figures
-# midpoint <- enroll_cum_ZA %>% 
-#   mutate(year = year(START_DATE_MOM_WK)) %>% 
-#   group_by(year) %>%
-#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
-#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
-#                                    TRUE ~NA),
-#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
-                                   # TRUE ~NA))
 
+# with year on x-axis:
 enroll_cum_ZA %>% 
   ggplot(aes(x = START_DATE_MOM_WK)) +
   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
-  geom_vline(xintercept = ymd("2024-01-01")) +
-  geom_vline(xintercept = ymd("2023-01-01")) +
-  scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+  scale_x_date(date_breaks = "2 months", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
-  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
@@ -1025,9 +1052,35 @@ enroll_cum_ZA %>%
         strip.placement = "outside", 
         strip.background = element_rect(fill = NA, color = "grey"),
         panel.spacing = unit(0,"cm")) +
-  xlab("Month") +
+  xlab("Week") +
   ylab("Number of participants enrolled") +
   ggtitle("Zambia") 
+
+# without year on x-axis:
+# enroll_cum_ZA %>% 
+#   ggplot(aes(x = START_DATE_MOM_WK)) +
+#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
+#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
+#   geom_line(aes(y = expect_cum, color = "Expected")) +
+#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+#   geom_vline(xintercept = ymd("2024-01-01")) +
+#   geom_vline(xintercept = ymd("2023-01-01")) +
+#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+#                expand = c(0, 0)) +
+#   scale_color_manual("",
+#                      breaks=c("Expected","Enrolled"),
+#                      values = c("orange", "royalblue1")) +
+#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+#   theme_bw() +
+#   theme(axis.text.x = element_text(angle = 0),
+#         legend.position="bottom",
+#         panel.grid.minor = element_blank(),
+#         strip.placement = "outside", 
+#         strip.background = element_rect(fill = NA, color = "grey"),
+#         panel.spacing = unit(0,"cm")) +
+#   xlab("Month") +
+#   ylab("Number of participants enrolled") +
+#   ggtitle("Zambia") 
 
 #****************
 # India CMC
@@ -1052,32 +1105,20 @@ enroll_cum_CMC <- MatData_Screen_Enroll %>%
   ungroup() 
 
 enroll_cum_CMC$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_CMC$START_DATE_MOM_WK))
-# max_y will help us plot the year annotations on the figures
-# max_y <- max(enroll_cum_CMC$expect_cum) * 1.05
-# 
-# # midpoint will help us plot the year annotations on the figures
-# midpoint <- enroll_cum_CMC %>% 
-#   mutate(year = year(START_DATE_MOM_WK)) %>% 
-#   group_by(year) %>%
-#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
-#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
-#                                    TRUE ~NA),
-#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
-#                                    TRUE ~NA))
 
+# with year on x-axis:
 enroll_cum_CMC %>% 
   ggplot(aes(x = START_DATE_MOM_WK)) +
   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
-  geom_vline(xintercept = ymd("2024-01-01")) + 
   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
-  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
@@ -1085,9 +1126,34 @@ enroll_cum_CMC %>%
         strip.placement = "outside", 
         strip.background = element_rect(fill = NA, color = "grey"),
         panel.spacing = unit(0,"cm")) +
-  xlab("Month") +
+  xlab("Week") +
   ylab("Number of participants enrolled") +
-  ggtitle("India-CMC")  
+  ggtitle("India-CMC")
+
+# without year on x-axis:
+# enroll_cum_CMC %>% 
+#   ggplot(aes(x = START_DATE_MOM_WK)) +
+#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
+#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
+#   geom_line(aes(y = expect_cum, color = "Expected")) +
+#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+#   geom_vline(xintercept = ymd("2024-01-01")) + 
+#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
+#                expand = c(0, 0)) +
+#   scale_color_manual("",
+#                      breaks=c("Expected","Enrolled"),
+#                      values = c("orange", "royalblue1")) +
+#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
+#   theme_bw() +
+#   theme(axis.text.x = element_text(angle = 0),
+#         legend.position="bottom",
+#         panel.grid.minor = element_blank(),
+#         strip.placement = "outside", 
+#         strip.background = element_rect(fill = NA, color = "grey"),
+#         panel.spacing = unit(0,"cm")) +
+#   xlab("Month") +
+#   ylab("Number of participants enrolled") +
+#   ggtitle("India-CMC")  
 
 #****************
 # India SAS 
@@ -1113,42 +1179,54 @@ enroll_cum_SAS <- MatData_Screen_Enroll %>%
 
 enroll_cum_SAS$START_DATE_MOM_WK <- as.Date(as.POSIXct(enroll_cum_SAS$START_DATE_MOM_WK))
 
-# # max_y will help us plot the year annotations on the figures
-# max_y <- max(enroll_cum_SAS$expect_cum) * 1.05
-# 
-# # midpoint will help us plot the year annotations on the figures
-# midpoint <- enroll_cum_SAS %>% 
-#   mutate(year = year(START_DATE_MOM_WK)) %>% 
-#   group_by(year) %>%
-#   mutate(midpoint = min(START_DATE_MOM_WK) + as.numeric(difftime(max(START_DATE_MOM_WK), min(START_DATE_MOM_WK), units = "days"))/2,
-#          midpoint_2023 = case_when(midpoint <= ymd("2023-12-31") ~ as.Date(midpoint),
-#                                    TRUE ~NA),
-#          midpoint_2024 = case_when(midpoint >= ymd("2024-01-01") ~ as.Date(midpoint),
-#                                    TRUE ~NA))
-
-enroll_cum_SAS %>%
+# with year on x-axis:
+enroll_cum_SAS %>% 
   ggplot(aes(x = START_DATE_MOM_WK)) +
   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
   geom_line(aes(y = expect_cum, color = "Expected")) +
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
-  scale_x_date(date_breaks = "month", date_labels = ("%b"),
+  scale_x_date(date_breaks = "2 months", date_labels = ("%b"), 
                expand = c(0, 0)) +
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
-  # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free", switch= "x") +
-  geom_vline(xintercept = ymd("2024-01-01")) +
+  facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
   theme_bw() +
   theme(axis.text.x = element_text(angle = 0),
         legend.position="bottom",
         panel.grid.minor = element_blank(),
-        strip.placement = "outside",
+        strip.placement = "outside", 
         strip.background = element_rect(fill = NA, color = "grey"),
         panel.spacing = unit(0,"cm")) +
-  xlab("Month") +
+  xlab("Week") +
   ylab("Number of participants enrolled") +
-  ggtitle("India-SAS") 
+  ggtitle("India-SAS")
+
+# without year on x-axis:
+# enroll_cum_SAS %>%
+#   ggplot(aes(x = START_DATE_MOM_WK)) +
+#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
+#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
+#   geom_line(aes(y = expect_cum, color = "Expected")) +
+#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
+#   scale_x_date(date_breaks = "month", date_labels = ("%b"),
+#                expand = c(0, 0)) +
+#   scale_color_manual("",
+#                      breaks=c("Expected","Enrolled"),
+#                      values = c("orange", "royalblue1")) +
+#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free", switch= "x") +
+#   geom_vline(xintercept = ymd("2024-01-01")) +
+#   theme_bw() +
+#   theme(axis.text.x = element_text(angle = 0),
+#         legend.position="bottom",
+#         panel.grid.minor = element_blank(),
+#         strip.placement = "outside",
+#         strip.background = element_rect(fill = NA, color = "grey"),
+#         panel.spacing = unit(0,"cm")) +
+#   xlab("Month") +
+#   ylab("Number of participants enrolled") +
+#   ggtitle("India-SAS") 
   # geom_rect(aes(xmin = midpoint$midpoint_2023 - days(2), xmax = midpoint$midpoint_2023 + days(5), ymin = max_y - (max_y * 0.1) - 0.1, ymax = max_y), fill = "grey", color = NA, alpha = 0.5) +
   # annotate("text", x = midpoint$midpoint_2023, y = max_y-(max_y*.075), label = "2023", vjust = 0, hjust = 0) +
   # # annotate("text", x = midpoint$midpoint_2024-3, y = max_y-(max_y*.075), label = "2024", vjust = 0, hjust = 0) 
@@ -1163,7 +1241,8 @@ enroll_cum_SAS %>%
 
 ### Table 4: Overview of PRISMA participant study status
 
-*Value:* Distribution of current status among enrolled women. Each column should sum to 100%.
+*Value:* Distribution of current status among enrolled women. Each
+column should sum to 100%.
 
 ```{r, results = "hide"}
  gc()
@@ -1250,13 +1329,21 @@ knitr::include_graphics("prisma_tab4.png")
 
 ### Table 5: ANC and PNC visit completion for PRISMA
 
-*Value:* Are forms completed for each visit? A visit is considered complete if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNHXX ). If there is no late window for a visit, the on-time window is used.
+*Value:* Are forms completed for each visit? A visit is considered
+complete if the data reports the visit was conducted in person or by
+phone (variable name: MAT_VISIT_MNHXX ). If there is no late window for
+a visit, the on-time window is used.
 
-*Goal:* 100% completion for enrollment; 90% completion for all other visits
+*Goal:* 100% completion for enrollment; 90% completion for all other
+visits
 
-*Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
+*Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`)
+AND have a complete visit status (where variable name:
+`MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
 
-*Denominator:* Passed late window for visit type = i AND (has not delivered OR delivered with gestational age \> late visit window) AND (has not closed out OR closed out with closeout date \> visit window)
+*Denominator:* Passed late window for visit type = i AND (has not
+delivered OR delivered with gestational age \> late visit window) AND
+(has not closed out OR closed out with closeout date \> visit window)
 
 ```{r}
 #* Num: Any form with visit type = i AND visit status = 1 or 2 & Passed window for visit type = i
@@ -1670,13 +1757,21 @@ gc()
 
 ### Table 6: ANC protocol compliance for PRISMA
 
-*Value:* Among women successfully contacted during the ANC period, percent who had all expected visit forms completed. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
+*Value:* Among women successfully contacted during the ANC period,
+percent who had all expected visit forms completed. A visit is
+considered `complete` if the data reports the visit was conducted in
+person or by phone (variable name: `MAT_VISIT_MNHXX`).
 
-*Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
+*Goal:* 100% completion for all forms, except MNH08 where lab results
+are expected to lag.
 
-*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND
+have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1
+or 2) AND passed late window for visit type = i
 
-*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
+*Denominator:* Any form with visit type = i (variable name:
+`TYPE_VISIT`) AND have a complete visit status (where variable name:
+`MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
 
 ```{r}
 ga_tb <- MatData_Anc_Visits %>% 
@@ -2377,13 +2472,20 @@ knitr::include_graphics("prisma_tab6_2.png")
 
 ### Table 7: ANC form completion for PRISMA
 
-*Value:* Among women who have passed the late ANC window period, percent with forms completed regardless of visit status. A form is considered complete when a form has been submitted for a participant.
+*Value:* Among women who have passed the late ANC window period, percent
+with forms completed regardless of visit status. A form is considered
+complete when a form has been submitted for a participant.
 
-*Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
+*Goal:* 100% completion for all forms, except MNH08 where lab results
+are expected to lag.
 
-*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND
+have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late
+window for visit type = i
 
-*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i
+*Denominator:* Any form with visit type = i (variable name:
+`TYPE_VISIT`) AND have any visit status (variable name:
+`MAT_VISIT_MNHXX`) AND passed late window for visit type = i
 
 ```{r}
 
@@ -3139,7 +3241,10 @@ knitr::include_graphics("prisma_tab7_2.png")
 
 ### Table 8: IPC visit completion and PRISMA protocol compliance for IPC
 
-*Value:* Among women successfully contacted during the IPC period, percent who have expected visit forms completed. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
+*Value:* Among women successfully contacted during the IPC period,
+percent who have expected visit forms completed. A visit is considered
+`complete` if the data reports the visit was conducted in person or by
+phone (variable name: `MAT_VISIT_MNHXX`).
 
 ```{r}
 
@@ -3363,7 +3468,8 @@ knitr::include_graphics("prisma_tab8.png")
 
 ### Figure 4: Distribution of gestational ages of participants who passed the IPC window and do not yet have a pregnancy outcome reported
 
-*Value:* Gestational age of participants who have passed the target IPC window and do not have any IPC forms.
+*Value:* Gestational age of participants who have passed the target IPC
+window and do not have any IPC forms.
 
 ```{r, echo=FALSE}
 
@@ -3388,13 +3494,16 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
   theme(axis.text.x = element_text(vjust = 1, hjust=1),
         legend.position="bottom",
         legend.title = element_blank(),
-        panel.grid.minor = element_blank()) +
+        panel.grid.minor = element_blank(),
+        strip.text = element_text(size = 7) 
+        ) +
   scale_x_continuous(breaks = seq(294, 560, by = 14),
                      label = as.character(seq(42, 80, by = 2)),
                      limits = c(294,560)) +
   scale_y_continuous(labels = scales::number_format(scale = 1)) + # , accuracy = 1
   xlab("Estimated Gestational Age") +
   ylab("Number of participants")
+
 
 # pak_subset <-figure2 %>% filter(SITE == "Pakistan") %>% 
 #   mutate(AGE_AT_UPLOAD_WKS = AGE_AT_UPLOAD_DAYS %/% 7) 
@@ -3424,7 +3533,6 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
 # min(figure2$AGE_AT_UPLOAD_DAYS)
 ```
 
-
 ```{r, results = "hide"}
  gc()
 ```
@@ -3433,13 +3541,24 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
 
 ### Table 9: PNC protocol compliance for PRISMA maternal forms
 
-*Value:* Among women with PNC visits marked as complete, percent that have all expected visit forms completed. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
+*Value:* Among women with PNC visits marked as complete, percent that
+have all expected visit forms completed. A visit is considered
+`complete` if the data reports the visit was conducted in person or by
+phone (variable name: `MAT_VISIT_MNHXX`).
 
-*Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
+*Goal:* 100% completion for all forms, except MNH08 where lab results
+are expected to lag.
 
-*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: ``MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND
+have a complete visit status (variable name: \``MAT_VISIT_MNHXX`=1 or 2)
+AND passed late window for visit type = i
 
-*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i. *For PNC52 visits denominator is passed late window for visit type = i AND has not closed out OR closed out with reason for closeout=1-year followup completed).*
+*Denominator:* Any form with visit type = i (variable name:
+`TYPE_VISIT`) AND have a complete visit status (variable name:
+`MAT_VISIT_MNHXX`=1 or 2) AND passed late window for visit type = i.
+*For PNC52 visits denominator is passed late window for visit type = i
+AND has not closed out OR closed out with reason for closeout=1-year
+followup completed).*
 
 ```{r}
 
@@ -4050,13 +4169,23 @@ gc()
 
 ### Table 10: PNC visit maternal form completion for PRISMA
 
-*Value:* Among women who have passed the late PNC window period, percent with forms completed regardless of visit status. A form is considered complete when a form has been submitted for a participant.
+*Value:* Among women who have passed the late PNC window period, percent
+with forms completed regardless of visit status. A form is considered
+complete when a form has been submitted for a participant.
 
-*Goal:* 100% completion for all forms, except MNH08 where lab results are expected to lag.
+*Goal:* 100% completion for all forms, except MNH08 where lab results
+are expected to lag.
 
-*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND
+have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late
+window for visit type = i
 
-*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i. *For PNC52 visits denominator is passed late window for visit type = i AND has not closed out OR closed out with reason for closeout=1-year followup completed).*
+*Denominator:* Any form with visit type = i (variable name:
+`TYPE_VISIT`) AND have any visit status (variable name:
+`MAT_VISIT_MNHXX`) AND passed late window for visit type = i. *For PNC52
+visits denominator is passed late window for visit type = i AND has not
+closed out OR closed out with reason for closeout=1-year followup
+completed).*
 
 ```{r}
 # Participants are included in the numerator of this table if, for each form, they have visit type = i AND have any visit status AND passed window for visit type = 1. Participants are included Visit status is defined by MAT_VISIT_MNHxx variables in each form.*
@@ -4673,7 +4802,10 @@ knitr::include_graphics("prisma_tab10_2.png")
 
 ### Table 11: Protocol compliance for PRISMA depression assessment
 
-*Value:* Among women successfully contacted during the ANC or PNC period who have passed the expected visit window, percent that have MNH25 complete. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
+*Value:* Among women successfully contacted during the ANC or PNC period
+who have passed the expected visit window, percent that have MNH25
+complete. A visit is considered `complete` if the data reports the visit
+was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
 MNH25 can be completed either during individual visits (e.g., ANC20) or
 during combined visits after the gestational age window has passed
 (e.g., combined Enrollment and ANC20 visits). The denominators in this
@@ -4833,7 +4965,7 @@ knitr::include_graphics("prisma_table11.png")
 
 \newpage
 
-### Figures 5a-e. Heat maps of form completion for ANC visits in PRISMA
+### Figure 5. Heat map of form completion for maternal ANC visits in PRISMA
 
 *Value:* Percent of successful visits during the ANC period.
 
@@ -4909,6 +5041,10 @@ ANC20_PCT <- Heat_Maps_Anc %>%
       format(sum(HM_ANC20_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
     ),
     
+    "MNH01" = paste0(0),
+    "MNH02" = paste0(0),
+    "MNH03" = paste0(0),
+
     "MNH04" = paste0(
       format(round(sum(M04_VISIT_COMPLETE_2 == 1 & HM_ANC20_DENOM_LATE==1, na.rm = TRUE)/sum( HM_ANC20_DENOM_LATE==1, na.rm = TRUE)*100, 2),
              nsmall = 0, digits = 2)),
@@ -4938,7 +5074,9 @@ ANC20_PCT <- Heat_Maps_Anc %>%
   mutate(PCT_BIN = cut(COMPLETE_PCT, 
                        breaks = c(seq(0, 90, by = 10), Inf),
                        include.lowest = TRUE,
-                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100"))) #%>% 
+  # mutate(PCT_BIN = case_when(FORM %in% c("MNH01", "MNH02", "MNH03") ~ "Form not required", TRUE ~ PCT_BIN))
+
 
 ANC28_PCT <- Heat_Maps_Anc %>% 
   rowwise() %>% 
@@ -4948,6 +5086,10 @@ ANC28_PCT <- Heat_Maps_Anc %>%
       format(sum(HM_ANC28_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
     ),
     
+    "MNH01" = paste0(0),
+    "MNH02" = paste0(0),
+    "MNH03" = paste0(0),
+
     "MNH04" = paste0(
       format(round(sum(M04_VISIT_COMPLETE_3 == 1 & HM_ANC28_DENOM_LATE==1, na.rm = TRUE)/sum(HM_ANC28_DENOM_LATE==1, na.rm = TRUE)*100, 2), 
              nsmall = 0, digits = 2)),
@@ -4976,7 +5118,9 @@ ANC28_PCT <- Heat_Maps_Anc %>%
   mutate(PCT_BIN = cut(COMPLETE_PCT, 
                        breaks = c(seq(0, 90, by = 10), Inf),
                        include.lowest = TRUE,
-                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100"))) #%>% 
+  # mutate(PCT_BIN = case_when(FORM %in% c("MNH01", "MNH02", "MNH03") ~ "Form not required", TRUE ~ PCT_BIN))
+
 
 
 ANC32_PCT <- Heat_Maps_Anc %>% 
@@ -4992,6 +5136,10 @@ ANC32_PCT <- Heat_Maps_Anc %>%
       format(round(sum(M01_VISIT_COMPLETE_4 == 1 & HM_ANC32_DENOM_LATE==1, na.rm = TRUE)/sum(HM_ANC32_DENOM_LATE==1, na.rm = TRUE)*100, 2),
              nsmall = 0, digits = 2)),
     
+        
+    "MNH02" = paste0(0),
+    "MNH03" = paste0(0),
+
     "MNH04" = paste0(
       format(round(sum(M04_VISIT_COMPLETE_4 == 1 & HM_ANC32_DENOM_LATE==1, na.rm = TRUE)/sum(HM_ANC32_DENOM_LATE==1, na.rm = TRUE)*100, 2),
              nsmall = 0, digits = 2)),
@@ -5021,7 +5169,9 @@ ANC32_PCT <- Heat_Maps_Anc %>%
   mutate(PCT_BIN = cut(COMPLETE_PCT, 
                        breaks = c(seq(0, 90, by = 10), Inf),
                        include.lowest = TRUE,
-                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))# %>% 
+  # mutate(PCT_BIN = case_when(FORM %in% c("MNH02", "MNH03") ~ "Form not required", TRUE ~ PCT_BIN))
+
 
 
 ANC36_PCT <- Heat_Maps_Anc %>% 
@@ -5032,6 +5182,10 @@ ANC36_PCT <- Heat_Maps_Anc %>%
     "Denominator" = paste0(
       format(sum(HM_ANC36_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
     ),
+    
+    "MNH01" = paste0(0),
+    "MNH02" = paste0(0),
+    "MNH03" = paste0(0),
     
     "MNH04" = paste0(
       format(round(sum(M04_VISIT_COMPLETE_5 == 1 & HM_ANC36_DENOM_LATE==1, na.rm = TRUE)/sum(HM_ANC36_DENOM_LATE==1, na.rm = TRUE)*100, 2),
@@ -5061,206 +5215,74 @@ ANC36_PCT <- Heat_Maps_Anc %>%
   mutate(PCT_BIN = cut(COMPLETE_PCT, 
                        breaks = c(seq(0, 90, by = 10), Inf),
                        include.lowest = TRUE,
-                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100"))) # %>% 
+  # mutate(PCT_BIN = case_when(FORM %in% c("MNH01", "MNH02", "MNH03") ~ "Form not required", TRUE ~ PCT_BIN))
 
 heat_map_data_anc <- bind_rows(ENROLLMENT_PCT, ANC20_PCT, ANC28_PCT, ANC32_PCT, ANC36_PCT)
 
+
+heat_map_data_anc <- heat_map_data_anc %>% 
+  mutate(PCT_BIN = case_when(FORM %in% c("MNH01", "MNH02", "MNH03") & VISIT %in% c("ANC20", "ANC28", "ANC36")~ "Form not required", TRUE ~ PCT_BIN),
+         PCT_BIN = case_when(FORM %in% c("MNH02", "MNH03") & VISIT %in% c("ANC32")~ "Form not required", TRUE ~ PCT_BIN)
+         )
 ```
 
 ```{r}
-
 # Reorder the "Visit" variable with the desired order
-custom_palette <- colorRampPalette(c("darkred", "#B22222", "#FF0000", "#FF6347", "#F9A603",
-                                     "#FFA500", "#FFD700", "#FFFF00", "#7bd386", "darkgreen"))(10)
+custom_palette <- colorRampPalette(c("grey50", "darkred", "#B22222", "#FF0000", "#FF6347", "#F9A603",
+                                     "#FFA500", "#FFD700", "#FFFF00", "#7bd386", "darkgreen"))(11)
 
 UNIQUE_VISITS = as.vector(unique(heat_map_data_anc$VISIT))
 
-out1  <- heat_map_data_anc %>% 
-  filter(VISIT == UNIQUE_VISITS[1]) %>% 
+# set levels for percent bins
+heat_map_data_anc$PCT_BIN <- factor(heat_map_data_anc$PCT_BIN, levels = c("Form not required", "0-9", "10-19", "20-29", "30-39", "40-49",
+                               "50-59", "60-69", "70-79", "80-89", "90-100"))
+# set levels for visits
+heat_map_data_anc$VISIT <- factor(heat_map_data_anc$VISIT, levels = c("Enrollment", "ANC20", "ANC28", "ANC32", "ANC36"))
+
+out <- heat_map_data_anc %>% 
   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
   ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
+  geom_tile(color = "grey40")  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
+  facet_grid(rows = vars(VISIT)) +
   scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                    labels = c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
                                "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
   xlab("Expected forms") +
   ylab("Study site") + 
-  # ggtitle(paste0("Form completion at ",tolower(UNIQUE_VISITS[1]), " visit (target window: <20wks)"))  +
-  guides(fill = guide_legend(reverse = TRUE)) +
+  guides(fill = guide_legend(reverse = TRUE, nrow = 2)) +
   theme_minimal() +
   theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8),
+        axis.text.x = element_text(size = 8), # , angle = 90
         axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, colour = "black"),
+        axis.text.y = element_text(size = 8, colour = "black", hjust=1),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
+        # panel.spacing = unit(1, "lines"),  # More space between facets
+        # strip.text.y = element_text(size = 8, margin = margin(t = 11, b = 10)),  # Space for facet labels
+        # legend.margin = margin(grid::unit(0, "cm")),
+        # legend.key.width = grid::unit(0.5, "cm"),
         plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
-
-out2  <- heat_map_data_anc %>%
-    mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-  filter(VISIT == UNIQUE_VISITS[2]) %>% 
-  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
-  scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-                    drop = FALSE) +
-  labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Expected forms") +
-  ylab("Study site") + 
-  # ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[2]), " visit (target window: 18 to 25wks)"))  +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8),
-        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, colour = "black"),
-        legend.text = element_text(size = 8),
-        axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
-
-out3  <- heat_map_data_anc %>% 
-  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-  filter(VISIT == UNIQUE_VISITS[3]) %>% 
-  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
-  scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-                    drop = FALSE) +
-  labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Expected forms") +
-  ylab("Study site") +
-  # ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[3]), " visit (target window: 26 to 30wks)"))  +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8),
-        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, colour = "black"),
-        legend.text = element_text(size = 8),
-        axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
-
-out4  <- heat_map_data_anc %>% 
-  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-  filter(VISIT == UNIQUE_VISITS[4]) %>% 
-  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
-  scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-                    drop = FALSE) +
-  labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Expected forms") +
-  ylab("Study site") +
-  # ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[4]), " visit (target window: 31 to 33wks)"))  +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8),
-        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, colour = "black"),
-        legend.text = element_text(size = 8),
-        axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
-
-out5  <- heat_map_data_anc %>% 
-  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-  filter(VISIT == UNIQUE_VISITS[5]) %>% 
-  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
-  scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-                    drop = FALSE) +
-  labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Expected forms") +
-  ylab("Study site") +
-  # ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[5]), " visit (target window 34 to 38wks)"))  +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8),
-        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, colour = "black"),
-        legend.text = element_text(size = 8),
-        axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+        # plot.margin = margin(t = 5, r = 10, b = 10, l = 10),
+        # plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)
+        
+        ) + 
+  coord_fixed(ratio = 0.175, expand = TRUE)  # Adjust the ratio to make the tiles shorter 0.35
 
 
 ```
 
-#### Figure 5a. Form completion at enrollment visit (target window: \<20 wks)
-
-```{r}
-out1 + theme(legend.position = "bottom")
-```
-
-\newpage
-
-#### Figure 5b. Form completion at anc20 visit (target window: 19 to 25wks)
-
-```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
-out2 + theme(legend.position = "bottom")
-```
-
-\newpage
-
-#### Figure 5c. Form completion at anc28 visit (target window: 26 to 30wks)
-
-```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
-out3 + theme(legend.position = "bottom")
-```
-
-\newpage
-
-#### Figure 5d. Form completion at anc32 visit (target window: 31 to 33wks)
-
-```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
-out4 + theme(legend.position = "bottom")
+```{r,fig.height=7, fig.width=6, fig.pos="H"}
+out
 
 ```
 
 \newpage
 
-#### Figure 5e. Form completion at anc36 visit (target window: 34 to 38wks)
 
-```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
-out5 + theme(legend.position = "bottom")
-
-```
-
-\newpage
-
-### Figures 6a-f. Heat maps of form completion for PNC visits in PRISMA
+### Figure 6. Heat maps of form completion for maternal PNC visits in PRISMA
 
 *Value:* Percent of successful visits during the PNC period.
 
@@ -5269,10 +5291,11 @@ have a complete visit status (where variable name: `MAT_VISIT_MNHXX`=1
 or 2) AND passed late window for visit type = i
 
 *Denominator:* Passed late window for visit type = i AND (has not closed
-out OR closed out with closeout date \> visit window). *For PNC52 visits denominator is passed late window for visit type = i AND has not closed out OR closed out with reason for closeout=1-year followup completed).*
+out OR closed out with closeout date \> visit window). *For PNC52 visits
+denominator is passed late window for visit type = i AND has not closed
+out OR closed out with reason for closeout=1-year followup completed).*
 
 ```{r}
-
 
 ## PNC0
 PNC0_PCT <- Heat_Maps_Pnc %>%
@@ -5282,6 +5305,10 @@ PNC0_PCT <- Heat_Maps_Pnc %>%
       "Denominator" = paste0(
         format(sum(HM_PNC0_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
+
+      "MNH05" = paste0(0),
+      "MNH07" = paste0(0),
+      "MNH08" = paste0(0),
 
       "MNH06" = paste0(
         format(round(sum(M06_VISIT_COMPLETE_7 == 1 & HM_PNC0_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC0_DENOM_LATE==1, na.rm = TRUE)*100, 2),
@@ -5303,9 +5330,6 @@ PNC0_PCT <- Heat_Maps_Pnc %>%
                        labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
 
 
-
-
-
 ## PNC1
 PNC1_PCT <- Heat_Maps_Pnc %>%
     rowwise() %>%
@@ -5314,6 +5338,10 @@ PNC1_PCT <- Heat_Maps_Pnc %>%
       "Denominator" = paste0(
         format(sum(HM_PNC1_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
+
+      "MNH05" = paste0(0),
+      "MNH07" = paste0(0),
+      "MNH08" = paste0(0),
 
       "MNH06" = paste0(
         format(round(sum(M06_VISIT_COMPLETE_8 == 1 & HM_PNC1_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC1_DENOM_LATE==1, na.rm = TRUE)*100, 2),
@@ -5334,8 +5362,6 @@ PNC1_PCT <- Heat_Maps_Pnc %>%
                        include.lowest = TRUE,
                        labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
 
-
-
 ## PNC4
 PNC4_PCT <- Heat_Maps_Pnc %>%
     rowwise() %>%
@@ -5344,6 +5370,10 @@ PNC4_PCT <- Heat_Maps_Pnc %>%
       "Denominator" = paste0(
         format(sum(HM_PNC4_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
+
+      "MNH05" = paste0(0),
+      "MNH07" = paste0(0),
+      "MNH08" = paste0(0),
 
       "MNH06" = paste0(
         format(round(sum(M06_VISIT_COMPLETE_9 == 1 & HM_PNC4_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC4_DENOM_LATE==1, na.rm = TRUE)*100, 2),
@@ -5365,7 +5395,6 @@ PNC4_PCT <- Heat_Maps_Pnc %>%
                        labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
 
 
- 
 ## PNC6
 PNC6_PCT <- Heat_Maps_Pnc %>%
     rowwise() %>%
@@ -5417,6 +5446,9 @@ PNC26_PCT <- Heat_Maps_Pnc %>%
         format(sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
 
+      "MNH07" = paste0(0),
+      "MNH08" = paste0(0),
+
       "MNH05" = paste0(
         format(round(sum(M05_VISIT_COMPLETE_11 == 1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2)),
 
@@ -5448,8 +5480,6 @@ PNC26_PCT <- Heat_Maps_Pnc %>%
                        labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
 
 
-
-
 ## PNC52
 PNC52_PCT <- Heat_Maps_Pnc %>%
     rowwise() %>%
@@ -5458,6 +5488,9 @@ PNC52_PCT <- Heat_Maps_Pnc %>%
       "Denominator" = paste0(
         format(sum(HM_PNC52_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
+
+     "MNH07" = paste0(0),
+     "MNH08" = paste0(0),
 
      "MNH05" = paste0(
         format(round(sum(M05_VISIT_COMPLETE_12 == 1 & HM_PNC52_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC52_DENOM_LATE==1, na.rm = TRUE)*100, 2),
@@ -5486,255 +5519,328 @@ PNC52_PCT <- Heat_Maps_Pnc %>%
 
 heat_map_data_pnc <- bind_rows(PNC0_PCT, PNC1_PCT, PNC4_PCT, PNC6_PCT, PNC26_PCT, PNC52_PCT)
 
+
+heat_map_data_pnc <- heat_map_data_pnc %>% 
+  mutate(PCT_BIN = case_when(FORM %in% c("MNH05", "MNH07", "MNH08") & VISIT %in% c("PNC0", "PNC1", "PNC4")~ "Form not required", TRUE ~ PCT_BIN),
+         PCT_BIN = case_when(FORM %in% c("MNH07", "MNH08") & VISIT %in% c("PNC26", "PNC52")~ "Form not required", TRUE ~ PCT_BIN)
+         )
+
+```
+
+```{r}
+# Reorder the "Visit" variable with the desired order
+custom_palette <- colorRampPalette(c("grey50", "darkred", "#B22222", "#FF0000", "#FF6347", "#F9A603",
+                                     "#FFA500", "#FFD700", "#FFFF00", "#7bd386", "darkgreen"))(11)
+
+UNIQUE_VISITS = as.vector(unique(heat_map_data_pnc$VISIT))
+
+heat_map_data_pnc <- heat_map_data_pnc %>% filter(!is.na(PCT_BIN))
+# set levels for percent bins
+heat_map_data_pnc$PCT_BIN <- factor(heat_map_data_pnc$PCT_BIN, levels = c("Form not required", "0-9", "10-19", "20-29", "30-39", "40-49",
+                               "50-59", "60-69", "70-79", "80-89", "90-100"))
+# set levels for visits
+heat_map_data_pnc$VISIT <- factor(heat_map_data_pnc$VISIT, levels = c("PNC0", "PNC1", "PNC4", "PNC6", "PNC26", "PNC52"))
+
+out <- heat_map_data_pnc %>% 
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40")  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
+  facet_grid(rows = vars(VISIT)) +
+  scale_fill_manual(values = custom_palette,
+                    labels = str_wrap(c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                                        "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"), width = 10), 
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Expected forms") +
+  ylab("Study site") + 
+  guides(fill = guide_legend(reverse = TRUE, nrow = 2)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8), # , angle = 90
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black", hjust=1),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        # panel.spacing = unit(1, "lines"),  # More space between facets
+        # strip.text.y = element_text(size = 8, margin = margin(t = 11, b = 10)),  # Space for facet labels
+        # legend.margin = margin(grid::unit(0, "cm")),
+        # legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        # plot.margin = margin(t = 5, r = 10, b = 10, l = 10),
+        # plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)
+        
+        ) + 
+  coord_fixed(ratio = 0.175, expand = TRUE)  # Adjust the ratio to make the tiles shorter 0.35
+
+
+```
+
+```{r,fig.height=7, fig.width=6, fig.pos="H"}
+
+out
+
+```
+
+\newpage
+
+### Table 12: Infant PNC visit completion for PRISMA
+
+*Value:* Among liveborn infants with PNC visits, are forms completed for each visit? A visit is considered
+complete if the data reports the visit was conducted in person or by
+phone (variable name: INF_VISIT_MNHXX ). If there is no late window for
+a visit, the on-time window is used.
+
+*Goal:* 100% completion for enrollment; 90% completion for all other
+visits
+
+*Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`)
+AND have a complete visit status (where variable name:
+`MAT_VISIT_MNHXX`=1, 2, or 3) AND passed late window for visit type = i
+
+*Denominator:* Passed late window for visit type = i AND
+(has not closed out OR closed out with closeout date \> visit window) *For PNC52 visits denominator is passed late window for visit type = i
+AND has not closed out OR closed out with reason for closeout=1-year
+followup completed).*
+
+```{r}
+#* Num: Any form with visit type = i AND visit status = 1 or 2 & Passed window for visit type = i
+#* Denom: Passed window for visit type = i
+
+
+
+## PNC
+INF_VISIT_COMPLETE_PNC <- Inf_Visit_Complete_Pnc %>%
+  rowwise() %>%
+  group_by(SITE) %>%
+  summarise(
+    
+    "PNC = 0" = paste0(
+      format(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC0_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "Denominator,n" = paste0(
+      format(sum(VC_PNC0_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "PNC = 1" = paste0(
+      format(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC1_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "Denominator,n " = paste0(
+      format(sum(VC_PNC1_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "PNC = 4" = paste0(
+      format(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC4_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "Denominator,n  " = paste0(
+      format(sum(VC_PNC4_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "PNC = 6" = paste0(
+      format(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "Denominator,n   " = paste0(
+      format(sum(VC_PNC6_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "PNC = 26" = paste0(
+      format(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "Denominator,n    " = paste0(
+      format(sum(VC_PNC26_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "PNC = 52" = paste0(
+      format(sum(VC_PNC52_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_PNC52_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC52_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "Denominator,n     " = paste0(
+      format(sum(VC_PNC52_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+    )
+  ) %>%
+  t() %>% as.data.frame() %>%
+  `colnames<-`(c(.[1,])) %>%
+  slice(-1) %>%
+  add_column(
+    .before = 1,
+    "Total" = Inf_Visit_Complete_Pnc %>%
+      plyr::summarise(
+        
+        "PNC = 0" = paste0(
+          format(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_PNC0_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC0_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "Denominator,n" = paste0(
+          format(sum(VC_PNC0_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
+        "PNC = 1" = paste0(
+          format(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_PNC1_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC1_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "Denominator,n " = paste0(
+          format(sum(VC_PNC1_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
+        "PNC = 4" = paste0(
+          format(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_PNC4_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC4_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "Denominator,n  " = paste0(
+          format(sum(VC_PNC4_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
+        "PNC = 6" = paste0(
+          format(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_PNC6_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "Denominator,n   " = paste0(
+          format(sum(VC_PNC6_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
+        "PNC = 26" = paste0(
+          format(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_PNC26_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "Denominator,n    " = paste0(
+          format(sum(VC_PNC26_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
+        "PNC = 52" = paste0(
+          format(sum(VC_PNC52_NUM_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_PNC52_NUM_LATE == 1, na.rm = TRUE)/sum(VC_PNC52_DENOM_LATE==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "Denominator,n     " = paste0(
+          format(sum(VC_PNC52_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        )
+      ) %>%
+      t() %>%
+      as.data.frame() %>%
+      `colnames<-`(c(.[1,])) %>% unlist()
+  )
+
+
 ```
 
 ```{r}
 
-# Reorder the "Visit" variable with the desired order
-custom_palette <- colorRampPalette(c("darkred", "#B22222", "#FF0000", "#FF6347", "#F9A603",
-                                     "#FFA500", "#FFD700", "#FFFF00", "#7bd386", "darkgreen"))(10)
-
-UNIQUE_VISITS = as.vector(unique(heat_map_data_pnc$VISIT))
-
-out1  <- heat_map_data_pnc %>%
-  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-  filter(VISIT == UNIQUE_VISITS[1]) %>% 
-  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
-  scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-                    drop = FALSE) +
-  labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Expected forms") +
-  ylab("Study site") +
-  # ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[1]), " visit (target window: 3 to 5 days)"))  +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8),
-        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, colour = "black"),
-        legend.text = element_text(size = 8),
-        axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
-
-out2  <- heat_map_data_pnc %>% 
-  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-  filter(VISIT == UNIQUE_VISITS[2]) %>% 
-  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
-  scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-                    drop = FALSE) +
-  labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Expected forms") +
-  ylab("Study site") +
-  # ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[2]), " visit (target window: 7 to 14 days)"))  +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8),
-        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, colour = "black"),
-        legend.text = element_text(size = 8),
-        axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
-
-out3  <- heat_map_data_pnc %>% 
-  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-  filter(VISIT == UNIQUE_VISITS[3]) %>% 
-  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
-  scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-                    drop = FALSE) +
-  labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Expected forms") +
-  ylab("Study site") +
-  # ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[3]), " visit (target window: 28 to 35 days)"))  +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8),
-        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, colour = "black"),
-        legend.text = element_text(size = 8),
-        axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
-
-out4  <- heat_map_data_pnc %>% 
-  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-  filter(VISIT == UNIQUE_VISITS[4]) %>% 
-  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
-  scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-                    drop = FALSE) +
-  labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Expected forms") +
-  ylab("Study site") +
-  # ggtitle(paste0("Form completion at ", tolower(UNIQUE_VISITS[4]), " visit (target window: 6 to 12wks)"))  +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8),
-        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, colour = "black"),
-        legend.text = element_text(size = 8),
-        axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
-
-out5  <- heat_map_data_pnc %>% 
-  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-  filter(VISIT == UNIQUE_VISITS[5]) %>% 
-  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
-  scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-                    drop = FALSE) +
-  labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Expected forms") +
-  ylab("Study site") +
-  # ggtitle(paste0("Form completion at ",tolower(UNIQUE_VISITS[5]), " visit (target window: 26 to 39wks)"))  +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8),
-        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, colour = "black"),
-        legend.text = element_text(size = 8),
-        axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) + 
-  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+inf_visit_complete <- INF_VISIT_COMPLETE_PNC %>%
+    `rownames<-` (c("PNC-0 (3 to 5 days)", ## NONE - SKIP WINDOW
+                 "Denominator,n",
+                 "PNC-1 (7 to 14 days)", ## NONE - SKIP WINDOW
+                 "Denominator,n ",
+                 "PNC-4 (28 to 35 days)", ## NONE - SKIP WINDOW
+                 "Denominator,n  ",
+                 "PNC-6 (8 to 12 wks)",
+                 "Denominator,n   ",
+                 "PNC-26 (29 to 39 wks)",
+                 "Denominator,n    ",
+                 "PNC-52 (55 to 64 wks)",
+                 "Denominator,n     "
+                 ) )%>%
+    mutate_all(funs(str_replace(., "NaN", "0"))) %>%
+    mutate_all(funs(str_replace(., "NA", "0"))) %>%
+    mutate_at(vars(everything()), ~ifelse(is.na(.), "0 (0)", .))
 
 
-out6  <- heat_map_data_pnc %>%
-  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
-  filter(VISIT == UNIQUE_VISITS[6]) %>%
-  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", size = 0.2) +
-  scale_fill_manual(values = custom_palette,
-                    labels = c("0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-                    drop = FALSE) +
-  labs(fill = str_wrap("Percent Complete", width = 8)) +
-  xlab("Expected forms") +
-  ylab("Study site") +
-  # ggtitle(paste0("Form completion at ",tolower(UNIQUE_VISITS[6]), " visit (target window: 52 to 64wks)"))  +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme_minimal() +
-  theme(legend.position = "bottom",
-        axis.text.x = element_text(size = 8),
-        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-        axis.text.y = element_text(size = 8, colour = "black"),
-        legend.text = element_text(size = 8),
-        axis.title.y = element_blank(),
-        legend.margin = margin(grid::unit(0, "cm")),
-        legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        plot.margin = margin(t = 20, r = 10, b = 10, l = 10),
-        plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)) +
-  coord_fixed(ratio = 0.35)  # Adjust the ratio to make the tiles shorter
+
+inf_visit_complete_tab <- tb_theme1(inf_visit_complete) %>% 
+  tab_header(
+    title = md("**PRISMA Table 12**")
+  ) %>%
+  tab_row_group(
+    label = html("<span style='font-size: 18px'>PNC visits (late visit window)</span>"),
+    rows = 1:12
+  ) %>%
+    row_group_order(groups = c("<span style='font-size: 18px'>PNC visits (late visit window)</span>")) %>%
+  tab_style(
+      style = list(
+        cell_text(weight = "bold")
+        ),
+      locations = cells_row_groups()
+) %>%
+  tab_style(
+      style = list(
+        cell_text(indent = px(0))
+        ),
+      locations = cells_stub(rows = c(
+                 "PNC-0 (3 to 5 days)", ## NONE - SKIP WINDOW
+                 "PNC-1 (7 to 14 days)", ## NONE - SKIP WINDOW
+                 "PNC-4 (28 to 35 days)", ## NONE - SKIP WINDOW
+                 "PNC-6 (8 to 12 wks)",
+                 "PNC-26 (29 to 39 wks)",
+                 "PNC-52 (55 to 64 wks)"))
+) %>% 
+  tab_style(
+      style = list(
+        cell_text(indent = px(40))
+        ),
+      locations = cells_stub(rows = c(
+                 "Denominator,n",
+                 "Denominator,n ",
+                 "Denominator,n  ",
+                 "Denominator,n   ",
+                 "Denominator,n    ",
+                 "Denominator,n     "))
+)
 
 ```
 
-#### Figure 6a. Form completion at pnc0 visit (target window: 3 to 5 days)
-
-```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
-
-# # Extract and format the legend
-# legend_gtable <- g_legend(out1)
-# 
-# # Print just the legend horizontally
-# grid.newpage()
-# grid.arrange(legend_gtable)
-
-out1 + theme(legend.position = "bottom")
-```
-
-\newpage
-
-#### Figure 6b. Form completion at pnc1 visit (target window: 7 to 14 days)
-
-```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
-out2 + theme(legend.position = "bottom")
-```
-
-\newpage
-
-#### Figure 6c. Form completion at pnc4 visit (target window: 28 to 35 days)
-
-```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
-out3 + theme(legend.position = "bottom")
-```
-
-\newpage
-
-#### Figure 6d. Form completion at pnc6 visit (target window: 6 to 12wks)
-
-```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
-out4 + theme(legend.position = "bottom")
+```{r}
+inf_visit_complete_tab <- inf_visit_complete_tab %>% gtsave("inf_visit_complete_tab.png")
+knitr::include_graphics("inf_visit_complete_tab.png")
 
 ```
 
 \newpage
 
-#### Figure 6e. Form completion at pnc26 visit (target window: 26 to 39wks)
+### Table 13: Infant PNC protocol compliance for PRISMA
 
-```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
-out5 + theme(legend.position = "bottom")
-
-```
-
-\newpage
-
-#### Figure 6f. Form completion at pnc52 visit (target window: 52 to 64 wks)
-
-```{r, echo=FALSE,out.width="100%",out.height="49%",fig.show='hold', fig.align='center'}
-out6 + theme(legend.position = "bottom")
-```
-
-\newpage
-
-
-### Table 12: PNC protocol compliance for PRISMA infant forms
-
-*Value:* Among liveborn infants with PNC visits marked as complete, percent that have all expected visit forms completed. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`).
+*Value:* Among liveborn infants with PNC visits marked as complete,
+percent that have all expected visit forms completed. A visit is
+considered `complete` if the data reports the visit was conducted in
+person or by phone (variable name: `MAT_VISIT_MNHXX`).
 
 *Goal:* 100% completion for all forms.
 
-*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: ``MAT_VISIT_MNHXX`=1, 2, or 3) AND passed late window for visit type = i
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND
+have a complete visit status (variable name: \``MAT_VISIT_MNHXX`=1, 2,
+or 3) AND passed late window for visit type = i
 
-*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `MAT_VISIT_MNHXX`=1, 2, or 3) AND passed late window for visit type = i. *For PNC52 visits denominator is passed late window for visit type = i AND has not closed out OR closed out with reason for closeout=1-year followup completed).*
+*Denominator:* Any form with visit type = i (variable name:
+`TYPE_VISIT`) AND have a complete visit status (variable name:
+`MAT_VISIT_MNHXX`=1, 2, or 3) AND passed late window for visit type = i.
+*For PNC52 visits denominator is passed late window for visit type = i
+AND has not closed out OR closed out with reason for closeout=1-year
+followup completed).*
 
 ```{r}
 birthoutcome <- InfData_Pnc_Visits %>%
@@ -6198,14 +6304,14 @@ inf_prot_compliance_pnc <- bind_rows(birthoutcome,
   mutate_at(vars(everything()), ~ifelse(is.na(.), "0 (0)", .))
 
 
-table12_1 <- inf_prot_compliance_pnc[c(1:9),]
-table12_2 <- inf_prot_compliance_pnc[c(1,10:25),]
+table13_1 <- inf_prot_compliance_pnc[c(1:9),]
+table13_2 <- inf_prot_compliance_pnc[c(1,10:25),]
 
 
 ## PART 1
-prisma_tab12_1 <- tb_theme1(table12_1) %>% 
+prisma_tab13_1 <- tb_theme1(table13_1) %>% 
   tab_header(
-    title = md("**PRISMA Table 12** *(continued on next page)*")
+    title = md("**PRISMA Table 13** *(continued on next page)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-0 visit, n(%)<sup>a</sup> [Target window: 3 to 5 days]</span>"),
@@ -6244,9 +6350,9 @@ prisma_tab12_1 <- tb_theme1(table12_1) %>%
   )   
 
 ## PART 2
-prisma_tab12_2 <- tb_theme1(table12_2) %>% 
+prisma_tab13_2 <- tb_theme1(table13_2) %>% 
   tab_header(
-    title = md("**PRISMA Table 12** *(continued)*")
+    title = md("**PRISMA Table 13** *(continued)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-4 visit, n(%)<sup>c</sup> [Target window: 28 to 35 days]</span>"),
@@ -6305,29 +6411,37 @@ prisma_tab12_2 <- tb_theme1(table12_2) %>%
 ```
 
 ```{r}
-prisma_tab12_1 <- prisma_tab12_1 %>% gtsave("prisma_tab12_1.png")
-knitr::include_graphics("prisma_tab12_1.png")
+prisma_tab13_1 <- prisma_tab13_1 %>% gtsave("prisma_tab13_1.png")
+knitr::include_graphics("prisma_tab13_1.png")
 
 ```
 
 ```{r}
-prisma_tab12_2 <- prisma_tab12_2 %>% gtsave("prisma_tab12_2.png")
-knitr::include_graphics("prisma_tab12_2.png")
+prisma_tab13_2 <- prisma_tab13_2 %>% gtsave("prisma_tab13_2.png")
+knitr::include_graphics("prisma_tab13_2.png")
 
 ```
 
 \newpage
 
-### Table 13: PNC visit infant form completion for PRISMA
+### Table 14: Infant PNC form completion for PRISMA
 
-*Value:* Among liveborn infants who have passed the late PNC window period, percent with forms completed regardless of visit status. A form is considered complete when a form has been submitted for a participant.
+*Value:* Among liveborn infants who have passed the late PNC window
+period, percent with forms completed regardless of visit status. A form
+is considered complete when a form has been submitted for a participant.
 
 *Goal:* 100% completion for all forms.
 
-*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND
+have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late
+window for visit type = i
 
-*Denominator:* Any form with visit type = i (variable name: `TYPE_VISIT`) AND have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late window for visit type = i. *For PNC52 visits denominator is passed late window for visit type = i AND has not closed out OR closed out with reason for closeout=1-year followup completed).*
-
+*Denominator:* Any form with visit type = i (variable name:
+`TYPE_VISIT`) AND have any visit status (variable name:
+`MAT_VISIT_MNHXX`) AND passed late window for visit type = i. *For PNC52
+visits denominator is passed late window for visit type = i AND has not
+closed out OR closed out with reason for closeout=1-year followup
+completed).*
 
 ```{r}
 
@@ -6801,14 +6915,14 @@ inf_form_comp_pnc <- bind_rows(birthoutcome,
   mutate_at(vars(everything()), ~ifelse(is.na(.), "0 (0)", .))
 
 
-table13_1 <- inf_form_comp_pnc[c(1:9),]
-table13_2 <- inf_form_comp_pnc[c(1,10:25),]
+table14_1 <- inf_form_comp_pnc[c(1:9),]
+table14_2 <- inf_form_comp_pnc[c(1,10:25),]
 
 
 ## PART 1
-prisma_tab13_1 <- tb_theme1(table13_1) %>% 
+prisma_tab14_1 <- tb_theme1(table14_1) %>% 
   tab_header(
-    title = md("**PRISMA Table 13** *(continued on next page)*")
+    title = md("**PRISMA Table 14** *(continued on next page)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-0 visit, n(%)<sup>a</sup> [Target window: 3 to 5 days]</span>"),
@@ -6849,9 +6963,9 @@ prisma_tab13_1 <- tb_theme1(table13_1) %>%
 
 
 ## PART 2
-prisma_tab13_2 <- tb_theme1(table13_2) %>% 
+prisma_tab14_2 <- tb_theme1(table14_2) %>% 
   tab_header(
-    title = md("**PRISMA Table 13** *(continued)*")
+    title = md("**PRISMA Table 14** *(continued)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-4 visit, n(%)<sup>c</sup> [Target window: 28 to 35 days]</span>"),
@@ -6909,20 +7023,298 @@ prisma_tab13_2 <- tb_theme1(table13_2) %>%
 ```
 
 ```{r}
-prisma_tab13_1 <- prisma_tab13_1 %>% gtsave("prisma_tab13_1.png")
-knitr::include_graphics("prisma_tab13_1.png")
+prisma_tab14_1 <- prisma_tab14_1 %>% gtsave("prisma_tab14_1.png")
+knitr::include_graphics("prisma_tab14_1.png")
 
 ```
 
 ```{r}
-prisma_tab13_2 <- prisma_tab13_2 %>% gtsave("prisma_tab13_2.png")
-knitr::include_graphics("prisma_tab13_2.png")
+prisma_tab14_2 <- prisma_tab14_2 %>% gtsave("prisma_tab14_2.png")
+knitr::include_graphics("prisma_tab14_2.png")
 
 ```
 
 \newpage
 
-### Table 14. Summary of PRISMA infant outcomes.
+### Figure 7. Heat maps of form completion for infant PNC visits in PRISMA
+
+*Value:* Percent of successful visits during the PNC period.
+
+*Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND
+have a complete visit status (where variable name: `INF_VISIT_MNHXX`=1, 2, or 3) AND passed late window for visit type = i
+
+*Denominator:* Passed late window for visit type = i AND (has not closed
+out OR closed out with closeout date \> visit window). *For PNC52 visits
+denominator is passed late window for visit type = i AND has not closed
+out OR closed out with reason for closeout=1-year followup completed).*
+
+```{r}
+
+## PNC0
+PNC0_PCT <- Inf_Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC0_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+      
+      "MNH13" = paste0(
+        format(round(sum(M13_VISIT_COMPLETE_7 == 1 & HM_PNC0_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC0_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH14" = paste0(
+        format(round(sum(M14_VISIT_COMPLETE_7==1 & HM_PNC0_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC0_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+      
+      "MNH15" = paste0(
+        format(round(sum(M15_VISIT_COMPLETE_7==1 & HM_PNC0_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC0_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+      ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC0") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+## PNC1
+PNC1_PCT <- Inf_Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC1_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "MNH13" = paste0(
+        format(round(sum(M13_VISIT_COMPLETE_8 == 1 & HM_PNC1_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC1_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH14" = paste0(
+        format(round(sum(M14_VISIT_COMPLETE_8==1 & HM_PNC1_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC1_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+      
+      "MNH15" = paste0(
+        format(round(sum(M15_VISIT_COMPLETE_8==1 & HM_PNC1_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC1_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+      ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC1") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+## PNC4
+PNC4_PCT <- Inf_Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC4_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "MNH13" = paste0(
+        format(round(sum(M13_VISIT_COMPLETE_9 == 1 & HM_PNC4_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC4_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH14" = paste0(
+        format(round(sum(M14_VISIT_COMPLETE_9==1 & HM_PNC4_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC4_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+      
+      "MNH15" = paste0(
+        format(round(sum(M15_VISIT_COMPLETE_9==1 & HM_PNC4_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC4_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+      ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC4") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+## PNC6
+PNC6_PCT <- Inf_Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC6_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "MNH13" = paste0(
+        format(round(sum(M13_VISIT_COMPLETE_10 == 1 & HM_PNC6_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH14" = paste0(
+        format(round(sum(M14_VISIT_COMPLETE_10==1 & HM_PNC6_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+      
+      "MNH15" = paste0(
+        format(round(sum(M15_VISIT_COMPLETE_10==1 & HM_PNC6_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC6_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+      ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC6") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+
+## PNC26
+PNC26_PCT <- Inf_Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "MNH13" = paste0(
+        format(round(sum(M13_VISIT_COMPLETE_11 == 1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH14" = paste0(
+        format(round(sum(M14_VISIT_COMPLETE_11==1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+      
+      "MNH15" = paste0(
+        format(round(sum(M15_VISIT_COMPLETE_11==1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+      ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC26") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+## PNC52
+PNC52_PCT <- Inf_Heat_Maps_Pnc %>%
+    rowwise() %>%
+    group_by(SITE) %>%
+    summarise(
+      "Denominator" = paste0(
+        format(sum(HM_PNC52_DENOM_LATE==1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+      "MNH13" = paste0(
+        format(round(sum(M13_VISIT_COMPLETE_12 == 1 & HM_PNC52_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC52_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+
+      "MNH14" = paste0(
+        format(round(sum(M14_VISIT_COMPLETE_12==1 & HM_PNC52_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC52_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2)),
+      
+      "MNH15" = paste0(
+        format(round(sum(M15_VISIT_COMPLETE_12==1 & HM_PNC52_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC52_DENOM_LATE==1, na.rm = TRUE)*100, 2),
+               nsmall = 0, digits = 2))
+     ) %>% 
+  pivot_longer(cols = -SITE,
+               names_to = "FORM", 
+               values_to = "COMPLETE_PCT") %>% 
+  filter(FORM != "Denominator") %>% 
+  mutate(VISIT = "PNC52") %>% 
+  mutate(COMPLETE_PCT = as.numeric(COMPLETE_PCT)) %>% 
+  mutate(PCT_BIN = cut(COMPLETE_PCT, 
+                       breaks = c(seq(0, 90, by = 10), Inf),
+                       include.lowest = TRUE,
+                       labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))
+
+
+inf_heat_map_data_pnc <- bind_rows(PNC0_PCT, PNC1_PCT, PNC4_PCT, PNC6_PCT, PNC26_PCT, PNC52_PCT)
+
+
+# heat_map_data_pnc <- heat_map_data_pnc %>% 
+#   mutate(PCT_BIN = case_when(FORM %in% c("MNH05", "MNH07", "MNH08") & VISIT %in% c("PNC0", "PNC1", "PNC4")~ "Form not required", TRUE ~ PCT_BIN),
+#          PCT_BIN = case_when(FORM %in% c("MNH07", "MNH08") & VISIT %in% c("PNC26", "PNC52")~ "Form not required", TRUE ~ PCT_BIN)
+#          )
+
+```
+
+```{r}
+# Reorder the "Visit" variable with the desired order
+custom_palette <- colorRampPalette(c("grey50", "darkred", "#B22222", "#FF0000", "#FF6347", "#F9A603",
+                                     "#FFA500", "#FFD700", "#FFFF00", "#7bd386", "darkgreen"))(11)
+
+UNIQUE_VISITS = as.vector(unique(inf_heat_map_data_pnc$VISIT))
+
+inf_heat_map_data_pnc <- inf_heat_map_data_pnc %>% filter(!is.na(PCT_BIN))
+# set levels for percent bins
+inf_heat_map_data_pnc$PCT_BIN <- factor(inf_heat_map_data_pnc$PCT_BIN, levels = c("Form not required", "0-9", "10-19", "20-29", "30-39", "40-49",
+                               "50-59", "60-69", "70-79", "80-89", "90-100"))
+# set levels for visits
+inf_heat_map_data_pnc$VISIT <- factor(inf_heat_map_data_pnc$VISIT, levels = c("PNC0", "PNC1", "PNC4", "PNC6", "PNC26", "PNC52"))
+
+out <- inf_heat_map_data_pnc %>% 
+  mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
+  ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
+  geom_tile(color = "grey40")  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
+  facet_grid(rows = vars(VISIT)) +
+  scale_fill_manual(values = custom_palette,
+                    labels = str_wrap(c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                                        "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"), width = 10), 
+                    drop = FALSE) +
+  labs(fill = str_wrap("Percent Complete", width = 8)) +
+  xlab("Expected forms") +
+  ylab("Study site") + 
+  guides(fill = guide_legend(reverse = TRUE, nrow = 2)) +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(size = 8), # , angle = 90
+        axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+        axis.text.y = element_text(size = 8, colour = "black", hjust=1),
+        legend.text = element_text(size = 8),
+        axis.title.y = element_blank(),
+        # panel.spacing = unit(1, "lines"),  # More space between facets
+        # strip.text.y = element_text(size = 8, margin = margin(t = 11, b = 10)),  # Space for facet labels
+        # legend.margin = margin(grid::unit(0, "cm")),
+        # legend.key.width = grid::unit(0.5, "cm"),
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+        # plot.margin = margin(t = 5, r = 10, b = 10, l = 10),
+        # plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)
+        
+        ) + 
+  coord_fixed(ratio = 0.175, expand = TRUE)  # Adjust the ratio to make the tiles shorter 0.35
+
+
+```
+
+```{r,fig.height=7, fig.width=6, fig.pos="H"}
+
+out
+
+```
+
+\newpage
+
+### Table 15. Summary of PRISMA infant outcomes.
 
 **Denominator:** All livebirths unless otherwise specified. All missing
 is excluded.
@@ -6937,7 +7329,7 @@ is excluded.
 
 infantoutcomes_output <- tb_theme1(infantoutcomes_summary) %>% 
   tab_header(
-    title = md("**PRISMA Table 14**")
+    title = md("**PRISMA Table 15**")
   )  %>% 
 
 tab_footnote(
@@ -6971,14 +7363,20 @@ knitr::include_graphics("infantoutcomes_output.png")
 
 \newpage
 
+### Table 16. GSED and FCI in PRISMA/ReMAPP Cohort
 
-### Table 15. GSED and FCI in PRISMA/ReMAPP Cohort
+*Value:* Are forms completed for each visit? A visit is considered
+complete if the data reports the visit was conducted in person or by
+phone (variable name: MAT_VISIT_MNHXX ).
 
-*Value:* Are forms completed for each visit? A visit is considered complete if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNHXX ). 
+*Numerator:* Livebirth with visit type = i (variable name: `TYPE_VISIT`)
+AND have complete visit status (where variable name: `MAT_VISIT_MNHXX`=1
+or 2) AND passed late window
 
-*Numerator:* Livebirth with visit type = i (variable name: `TYPE_VISIT`) AND have complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window 
-
-*Denominator:* Livebirth passed late window AND (has not closed out OR closed out with closeout date \> visit window). *For PNC52 visits denominator is passed late window for visit type = i AND has not closed out OR closed out with reason for closeout=1-year followup completed).*
+*Denominator:* Livebirth passed late window AND (has not closed out OR
+closed out with closeout date \> visit window). *For PNC52 visits
+denominator is passed late window for visit type = i AND has not closed
+out OR closed out with reason for closeout=1-year followup completed).*
 
 ```{r}
 
@@ -7149,7 +7547,7 @@ gsed_sf_tab_data <- gsed_sf %>%
 
 gsed_sf_tab <- tb_theme1(gsed_sf_tab_data) %>%
   tab_header(
-    title = md("Table 15. GSED and FCI in PRISMA/ReMAPP Cohort")
+    title = md("Table 16. GSED and FCI in PRISMA/ReMAPP Cohort")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED & FCI optional) <sup>a</sup></span>"),
@@ -7184,8 +7582,6 @@ gsed_sf_tab <- gsed_sf_tab %>% gtsave("gsed_sf_tab.png", expand = 10)
 knitr::include_graphics("gsed_sf_tab.png")
 ```
 
-
-
 <!-- ### Table 13. GSED short form sample distribution  -->
 
 <!-- *Value:* Are forms completed for each visit? A visit is considered complete if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNHXX ). If there is no late window for a visit, the on-time window is used. -->
@@ -7198,215 +7594,345 @@ knitr::include_graphics("gsed_sf_tab.png")
 
 <!-- ```{r} -->
 
-
 <!-- gsed_sf <- gsed_sf_data %>%  -->
+
 <!--   ## If India-SAS doesn't have data, add empty row here  -->
+
 <!--   mutate(existing_sas = ifelse(SITE == "India-SAS", 1, 0)) %>% -->
+
 <!--   ## Add empty rows for missing SITE values if the specific site doesn't exist -->
+
 <!--   complete(SITE = ifelse(existing_sas == 0, "India-SAS", SITE), fill = list(SITE = NA)) %>% -->
+
 <!--   ## If India-CMC doesn't have data, add empty row here  -->
+
 <!--   mutate(existing_cmc = ifelse(SITE == "India-CMC", 1, 0)) %>% -->
+
 <!--   ## Add empty rows for missing SITE values if the specific site doesn't exist -->
+
 <!--   complete(SITE = ifelse(existing_cmc == 0, "India-CMC", SITE), fill = list(SITE = NA)) %>% -->
+
 <!--   rowwise() %>%  -->
+
 <!--   group_by(SITE) %>%  -->
+
 <!--   summarise( -->
 
 <!--     ## 3 MONTHS  -->
+
 <!--     "Denominator (3MO)" = paste0( -->
+
 <!--       format(sum(VC_GSED_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+
 <!--     ), -->
 
 <!--     "GSED SF (3MO)" = paste0( -->
+
 <!--       format(sum(VC_GSED_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--       " (", -->
+
 <!--       format(round(sum(VC_GSED_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--       ")"), -->
 
 <!--     "FCI (3MO)" = paste0( -->
+
 <!--       format(sum(VC_FCI_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--       " (", -->
+
 <!--       format(round(sum(VC_FCI_3MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--       ")"), -->
 
-
 <!--     ## 6 MONTHS  -->
+
 <!--     "Denominator (6MO)" = paste0( -->
+
 <!--       format(sum(VC_GSED_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+
 <!--     ), -->
 
 <!--     "GSED SF (6MO)" = paste0( -->
+
 <!--       format(sum(VC_GSED_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--       " (", -->
+
 <!--       format(round(sum(VC_GSED_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--       ")"), -->
 
 <!--     "FCI (6MO)" = paste0( -->
+
 <!--       format(sum(VC_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--       " (", -->
+
 <!--       format(round(sum(VC_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--       ")"), -->
 
 <!--     ## 12 MONTHS  -->
+
 <!--     "Denominator (12MO)" = paste0( -->
+
 <!--       format(sum(VC_GSED_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+
 <!--     ), -->
 
 <!--     "GSED SF (12MO)" = paste0( -->
+
 <!--       format(sum(VC_GSED_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--       " (", -->
+
 <!--       format(round(sum(VC_GSED_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--       ")"), -->
 
 <!--     "FCI (12MO)" = paste0( -->
+
 <!--       format(sum(VC_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--       " (", -->
+
 <!--       format(round(sum(VC_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--       ")") -->
 
-
 <!--   ) %>% -->
+
 <!--   mutate(`Denominator (3MO)` = case_when(SITE %in% c("India-CMC", "India-SAS", "Kenya","Pakistan", "Zambia") ~ "not assessing", TRUE ~ `Denominator (3MO)`), -->
+
 <!--          `GSED SF (3MO)` = case_when(SITE %in% c("India-CMC", "India-SAS", "Kenya","Pakistan", "Zambia") ~ "not assessing", TRUE ~ `GSED SF (3MO)`), -->
+
 <!--          `FCI (3MO)` = case_when(SITE %in% c("India-CMC", "India-SAS", "Kenya","Pakistan", "Zambia") ~ "not assessing", TRUE ~ `FCI (3MO)`), -->
+
 <!--          `Denominator (6MO)` = case_when(SITE %in% c("Pakistan") ~ "not assessing", TRUE ~ `Denominator (6MO)`), -->
+
 <!--          `GSED SF (6MO)` = case_when(SITE %in% c("Pakistan") ~ "not assessing", TRUE ~ `GSED SF (6MO)`), -->
+
 <!--          `FCI (6MO)` = case_when(SITE %in% c("India-CMC","Pakistan") ~ "not assessing", TRUE ~ `FCI (6MO)`), -->
+
 <!--          `FCI (12MO)` = case_when(SITE %in% c("India-CMC","Pakistan") ~ "not assessing", TRUE ~ `FCI (12MO)`) -->
+
 <!--          ) %>% -->
 
 <!--   t() %>% as.data.frame() %>%  -->
+
 <!--   `colnames<-`(c(.[1,])) %>%  -->
+
 <!--   slice(-1) %>%  -->
+
 <!--   add_column( -->
+
 <!--     .before = 1, -->
+
 <!--     "Total" = gsed_sf_data %>%  -->
+
 <!--       plyr::summarise( -->
 
 <!--         ## 3 MONTHS  -->
+
 <!--         "Denominator (3MO)" = paste0( -->
+
 <!--           format(sum(VC_GSED_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+
 <!--         ), -->
 
 <!--         "GSED SF (3MO)" = paste0( -->
+
 <!--           format(sum(VC_GSED_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--           " (", -->
+
 <!--           format(round(sum(VC_GSED_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--           ")"), -->
 
 <!--         "FCI (3MO)" = paste0( -->
+
 <!--           format(sum(VC_FCI_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--           " (", -->
+
 <!--           format(round(sum(VC_FCI_3MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--           ")"), -->
 
-
 <!--         ## 6 MONTHS  -->
+
 <!--         "Denominator (6MO)" = paste0( -->
+
 <!--           format(sum(VC_GSED_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+
 <!--         ), -->
 
 <!--         "GSED SF (6MO)" = paste0( -->
+
 <!--           format(sum(VC_GSED_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--           " (", -->
+
 <!--           format(round(sum(VC_GSED_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--           ")"), -->
 
 <!--         "FCI (6MO)" = paste0( -->
+
 <!--           format(sum(VC_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--           " (", -->
+
 <!--           format(round(sum(VC_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--           ")"), -->
 
 <!--         ## 12 MONTHS  -->
+
 <!--         "Denominator (12MO)" = paste0( -->
+
 <!--           format(sum(VC_GSED_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
+
 <!--         ), -->
 
 <!--         "GSED SF (12MO)" = paste0( -->
+
 <!--           format(sum(VC_GSED_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--           " (", -->
+
 <!--           format(round(sum(VC_GSED_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--           ")"), -->
 
 <!--         "FCI (12MO)" = paste0( -->
+
 <!--           format(sum(VC_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
+
 <!--           " (", -->
+
 <!--           format(round(sum(VC_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
+
 <!--           ")") -->
 
 <!--     ) %>% -->
+
 <!--       t() %>%  -->
+
 <!--       as.data.frame() %>%  -->
+
 <!--       `colnames<-`(c(.[1,])) %>% unlist()  -->
+
 <!--   )  -->
-
-
-
 
 <!-- ``` -->
 
 <!-- ```{r} -->
 
 <!-- gsed_sf_tab_data <- gsed_sf %>%  -->
+
 <!--   `rownames<-` (c( -->
+
 <!--     "Denominator, n",  -->
+
 <!--     "GSED SF", -->
+
 <!--     "FCI", -->
+
 <!--     "Denominator, n ",  -->
+
 <!--     "GSED SF ", -->
+
 <!--     "FCI ",     -->
+
 <!--     "Denominator, n  ",  -->
+
 <!--     "GSED SF  ", -->
+
 <!--     "FCI  " -->
+
 <!--   ) -->
+
 <!--   ) %>%  -->
+
 <!--   mutate_at(vars(everything()), ~ifelse(. == "0 (NaN)", "0 (0)", .)) -->
 
 <!-- gsed_sf_tab <- tb_theme1(gsed_sf_tab_data) %>% -->
+
 <!--   tab_header( -->
+
 <!--     title = md("Table 13. GSED and FCI in PRISMA/ReMAPP Cohort") -->
+
 <!--   ) %>% -->
+
 <!--   tab_row_group( -->
+
 <!--     label = html("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED & FCI optional) <sup>a</sup></span>"), -->
+
 <!--     rows = 1:3 -->
+
 <!--   ) %>% -->
+
 <!--   tab_row_group( -->
+
 <!--     label = html("<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>"), -->
+
 <!--     rows = 4:6 -->
+
 <!--   ) %>% -->
+
 <!--   tab_row_group( -->
+
 <!--     label = html("<span style='font-size: 18px'>12 month visit (Late window: 52 to <64 weeks) (GSED required; FCI optional) <sup>c</sup></span>"), -->
+
 <!--     rows = 7:9 -->
+
 <!--   ) %>% -->
 
 <!--   row_group_order(groups = c("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED & FCI optional) <sup>a</sup></span>", -->
+
 <!--                              "<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>", -->
+
 <!--                              "<span style='font-size: 18px'>12 month visit (Late window: 52 to <64 weeks) (GSED required; FCI optional) <sup>c</sup></span>"))  %>% -->
+
 <!--   tab_footnote( -->
+
 <!--     footnote = md("<span style='font-size: 18px'><sup>a</sup> denominator is n passed late window with >=26 weeks gestation AND (has not closed out OR closed out with closeout date >=26wks).</span>") -->
+
 <!--   ) %>%  -->
+
 <!--   tab_footnote( -->
+
 <!--     footnote = md("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=52 weeks gestation AND (has not closed out OR closed out with closeout date >=52wks).</span>") -->
+
 <!--   ) %>%  -->
+
 <!-- tab_footnote( -->
+
 <!--   footnote = md("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=64 weeks gestation OR closed out with closeout  -->
+
 <!--   reason reported as: *1-year postpartum follow-up period has ended*.</span>") -->
+
 <!--   )  -->
 
 <!-- ``` -->
 
 <!-- ```{r, out.width = '100%'} -->
-<!-- gsed_sf_tab <- gsed_sf_tab %>% gtsave("gsed_sf_tab.png", expand = 10) -->
-<!-- knitr::include_graphics("gsed_sf_tab.png") -->
-<!-- ``` -->
 
+<!-- gsed_sf_tab <- gsed_sf_tab %>% gtsave("gsed_sf_tab.png", expand = 10) -->
+
+<!-- knitr::include_graphics("gsed_sf_tab.png") -->
+
+<!-- ``` -->
 
 \newpage
 
 ## **2. ReMAPP Study Monitoring Report**
 
-### Table 16: Protocol compliance for ReMAPP fatigue assessment
+### Table 17: Protocol compliance for ReMAPP fatigue assessment
 
 *Value:* Percent of fatigue assessments (MNH26) completed among women
 expected for visits in the ANC and PNC periods, regardless of visit
@@ -7528,7 +8054,7 @@ remapp_table1 <- prot_compliance_fatigue %>%
 ## table 8
 remapp_table1 <- tb_theme1(remapp_table1) %>% 
   tab_header(
-    title = md("**Table 16**")
+    title = md("**Table 17**")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>Fatigue assessments (MNH26)</span>"),
@@ -7576,7 +8102,7 @@ knitr::include_graphics("remapp_table1.png")
 
 \newpage
 
-### Table 17: Participant eligibility for the ReMAPP healthy cohort
+### Table 18: Participant eligibility for the ReMAPP healthy cohort
 
 *Value:* This table will be updated as lab measurements are updated and
 reported. Those who are unknown may move into eligible or ineligible
@@ -7629,7 +8155,7 @@ remapp_table2 <- remapp_table2 %>%
 ## ReMAPP table 2
 remapp_table2 <- tb_theme1(remapp_table2) %>% 
   tab_header(
-    title = md("**Table 17**")
+    title = md("**Table 18**")
   ) %>%
 tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>a</sup> a participant is considered pending if default values 55 or -5 are reported for any of the criteria.</span>")
@@ -7644,7 +8170,7 @@ knitr::include_graphics("remapp_table2.png")
 
 \newpage
 
-### Figure 7: Eligibility status and missingness by ReMAPP healthy cohort criteria
+### Figure 8: Eligibility status and missingness by ReMAPP healthy cohort criteria
 
 *Value:* Illustrates the distribution of each healthy cohort criteria
 (C1-C19) among women enrolled in PRISMA since ReMAPP launch. Missing
@@ -7711,7 +8237,7 @@ plot_criteria %>%
 
 \newpage
 
-### Table 18: Protocol compliance for ReMAPP hemoglobin measurements by CBC
+### Table 19: Protocol compliance for ReMAPP hemoglobin measurements by CBC
 
 *Value:* Protocol compliance for CBC hemoglobin measurements at required
 ReMAPP study visits, regardless of visit completion status.
@@ -7792,7 +8318,7 @@ remapp_table3 <- remapp_table3 %>%
 ## ReMAPP Table 3
 remapp_table3 <- tb_theme1(remapp_table3) %>% 
   tab_header(
-    title = md("**Table 18**")
+    title = md("**Table 19**")
   ) %>%
 tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n enrolled during ReMAPP study period.</span>")
@@ -7818,8 +8344,6 @@ knitr::include_graphics("remapp_table3.png")
 ```
 
 \newpage
-
-### Figure 8: Plot of PRISMA hemoglobin measurements using any method by gestational age
 
 ```{r}
 ## x axis in days
@@ -7847,255 +8371,257 @@ ggplot(data = MatData_Hb_GA_Visit,
 
 ```
 
+\newpage
 
-<!-- \newpage -->
+### Table 20. ReMIND Assessment Completion
 
-<!-- ### NOT YET INCLUDING: Table 17. ReMIND Assessment Completion -->
+*Value:* Are forms completed for each visit? A visit is considered
+complete if the data reports the visit was conducted in person or by
+phone (variable name: MAT_VISIT_MNHXX ). If there is no late window for
+a visit, the on-time window is used.
 
-<!-- *Value:* Are forms completed for each visit? A visit is considered complete if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNHXX ). If there is no late window for a visit, the on-time window is used. -->
+*Numerator:* Aim 3 enrolled livebirth with visit date within visit
+window AND have complete visit status (where variable name:
+`MAT_VISIT_MNHXX`=1 or 2) AND passed late window
 
-<!-- *Numerator:* Aim 3 enrolled livebirth with visit date within visit window AND have complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window  -->
+*Denominator:* Aim 3 enrolled livebirth passed late window AND (has not
+closed out OR closed out with closeout date \> visit window). *For PNC52
+visits denominator is passed late window for visit type = i AND has not
+closed out OR closed out with reason for closeout=1-year followup
+completed).*
 
-<!-- *Denominator:* Aim 3 enrolled livebirth passed late window AND (has not closed out OR closed out with closeout date \> visit window). *For PNC52 visits denominator is passed late window for visit type = i AND has not closed out OR closed out with reason for closeout=1-year followup completed).* -->
+```{r}
 
-<!-- ```{r} -->
-
-<!-- gsed_aim3_tab <- gsed_aim3_data %>% -->
-<!--   ## If India-SAS doesn't have data, add empty row here -->
-<!--   mutate(existing_sas = ifelse(SITE == "India-SAS", 1, 0)) %>% -->
-<!--   ## Add empty rows for missing SITE values if the specific site doesn't exist -->
-<!--   complete(SITE = ifelse(existing_sas == 0, "India-SAS", SITE), fill = list(SITE = NA)) %>% -->
-<!--   ## If India-CMC doesn't have data, add empty row here -->
-<!--   mutate(existing_cmc = ifelse(SITE == "India-CMC", 1, 0)) %>% -->
-<!--   ## Add empty rows for missing SITE values if the specific site doesn't exist -->
-<!--   complete(SITE = ifelse(existing_cmc == 0, "India-CMC", SITE), fill = list(SITE = NA)) %>% -->
-<!--   rowwise() %>% -->
-<!--   group_by(SITE) %>% -->
-<!--   summarise( -->
-
-<!--     ## 3 MONTHS -->
-<!--     "Denominator (3MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--     ), -->
-
-<!--     "GSED SF (3MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     "GSED LF (3MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_LF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_LF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     "FCI (3MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_FCI_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_FCI_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-
-<!--     ## 6 MONTHS -->
-<!--     "Denominator (6MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--     ), -->
-
-<!--     "GSED SF (6MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     "GSED LF (6MO)" = paste0( -->
-<!--      format(sum(VC_AIM3_LF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--     format(round(sum(VC_AIM3_LF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
-
-<!--     "FCI (6MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     ## 12 MONTHS -->
-<!--     "Denominator (12MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--     ), -->
-
-<!--     "GSED SF (12MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     "GSED LF (12MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_LF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_LF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     "FCI (12MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")") -->
-
-
-<!--   ) %>% -->
-<!--   # mutate(`Denominator (3MO)` = case_when(SITE %in% c("India-CMC", "India-SAS", "Kenya","Pakistan", "Zambia") ~ "not assessing", TRUE ~ `Denominator (3MO)`), -->
-<!--   #        `GSED SF (3MO)` = case_when(SITE %in% c("India-CMC", "India-SAS", "Kenya","Pakistan", "Zambia") ~ "not assessing", TRUE ~ `GSED SF (3MO)`), -->
-<!--   #        `FCI (3MO)` = case_when(SITE %in% c("India-CMC", "India-SAS", "Kenya","Pakistan", "Zambia") ~ "not assessing", TRUE ~ `FCI (3MO)`), -->
-<!--   #        `Denominator (6MO)` = case_when(SITE %in% c("Pakistan") ~ "not assessing", TRUE ~ `Denominator (6MO)`), -->
-<!--   #        `GSED SF (6MO)` = case_when(SITE %in% c("Pakistan") ~ "not assessing", TRUE ~ `GSED SF (6MO)`), -->
-<!--   #        `FCI (6MO)` = case_when(SITE %in% c("India-CMC","Pakistan") ~ "not assessing", TRUE ~ `FCI (6MO)`), -->
-<!--   #        `FCI (12MO)` = case_when(SITE %in% c("India-CMC","Pakistan") ~ "not assessing", TRUE ~ `FCI (12MO)`) -->
-<!--   # ) %>% -->
-
-<!--   t() %>% as.data.frame() %>% -->
-<!--   `colnames<-`(c(.[1,])) %>% -->
-<!--   slice(-1) %>% -->
-<!--   add_column( -->
-<!--     .before = 1, -->
-<!--     "Total" = gsed_aim3_data %>% -->
-<!--       plyr::summarise( -->
-
-<!--         ## 3 MONTHS -->
-<!--         "Denominator (3MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--         ), -->
-
-<!--         "GSED SF (3MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
-
-<!--         "GSED LF (3MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_LF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_LF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
-
-<!--         "FCI (3MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
-
-
-<!--         ## 6 MONTHS -->
-<!--         "Denominator (6MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--         ), -->
-
-<!--         "GSED SF (6MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
-
-<!--         "GSED LF (6MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_LF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_LF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
-
-<!--         "FCI (6MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
-
-<!--         ## 12 MONTHS -->
-<!--         "Denominator (12MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--         ), -->
-
-<!--         "GSED SF (12MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
-
-<!--         "GSED LF (12MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_LF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_LF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
-
-<!--         "FCI (12MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")") -->
-
-<!--       ) %>% -->
-<!--       t() %>% -->
-<!--       as.data.frame() %>% -->
-<!--       `colnames<-`(c(.[1,])) %>% unlist() -->
-<!--   ) -->
-
-
-
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- gsed_aim3_tab_data <- gsed_aim3_tab %>%  -->
-<!--   `rownames<-` (c( -->
-<!--     "Denominator, n",  -->
-<!--     "GSED SF", -->
-<!--     "GSED LF", -->
-<!--     "FCI", -->
-<!--     "Denominator, n ",  -->
-<!--     "GSED SF ", -->
-<!--     "GSED LF ", -->
-<!--     "FCI ", -->
-<!--     "Denominator, n  ",  -->
-<!--     "GSED SF  ", -->
-<!--     "GSED LF  ", -->
-<!--     "FCI  "  -->
-<!--   ) -->
-<!--   ) %>%  -->
-<!--   mutate_at(vars(everything()), ~ifelse(. == "0 (NaN)", "0 (0)", .)) -->
-
-<!-- gsed_aim3_tab <- tb_theme1(gsed_aim3_tab_data) %>% -->
-<!--   tab_header( -->
-<!--     title = md("Table 17. ReMIND Assessment Completion") -->
-<!--   ) %>% -->
-<!--   tab_row_group( -->
-<!--     label = html("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED required; FCI optional) <sup>a</sup></span>"), -->
-<!--     rows = 1:4 -->
-<!--   ) %>% -->
-<!--   tab_row_group( -->
-<!--     label = html("<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>"), -->
-<!--     rows = 5:8 -->
-<!--   ) %>% -->
-<!-- tab_row_group( -->
-<!--     label = html("<span style='font-size: 18px'>12 month visit (Late window: 52 to <61 weeks) (GSED required; FCI optional) <sup>c</sup></span>"), -->
-<!--     rows = 9:12 -->
-<!--   ) %>% -->
-<!--   row_group_order(groups = c("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED required; FCI optional) <sup>a</sup></span>", -->
-<!--                              "<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>", -->
-<!--                              "<span style='font-size: 18px'>12 month visit (Late window: 52 to <61 weeks) (GSED required; FCI optional) <sup>c</sup></span>" -->
-<!--                              ))  %>% -->
-<!-- tab_footnote( -->
-<!--   footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n passed late window with >=26 weeks gestation AND (has not closed out OR closed out with closeout date >=26wks).</span>") -->
-<!-- ) %>%  -->
-<!--   tab_footnote( -->
-<!--   footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=52 weeks gestation AND (has not closed out OR closed out with closeout date >=52wks).</span>") -->
-<!-- ) %>%  -->
-<!--   tab_footnote( -->
-<!--     footnote = md("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=61 weeks gestation OR closed out with closeout  -->
-<!--   reason reported as: *1-year postpartum follow-up period has ended*.</span>") -->
-<!--   )  -->
+## REMIND TABLE 
+gsed_aim3_tab <- gsed_aim3_data %>%
+  ## If India-SAS doesn't have data, add empty row here
+  mutate(existing_sas = ifelse(SITE == "India-SAS", 1, 0)) %>%
+  ## Add empty rows for missing SITE values if the specific site doesn't exist
+  complete(SITE = ifelse(existing_sas == 0, "India-SAS", SITE), fill = list(SITE = NA)) %>%
+  ## If India-CMC doesn't have data, add empty row here
+  mutate(existing_cmc = ifelse(SITE == "India-CMC", 1, 0)) %>%
+  ## Add empty rows for missing SITE values if the specific site doesn't exist
+  complete(SITE = ifelse(existing_cmc == 0, "India-CMC", SITE), fill = list(SITE = NA)) %>%
+  rowwise() %>%
+  group_by(SITE) %>%
+  summarise(
+    
+    ## 3 MONTHS
+    "Denominator (3MO)" = paste0(
+      format(sum(VC_AIM3_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "GSED SF (3MO)" = paste0(
+      format(sum(VC_AIM3_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "GSED LF (3MO)" = paste0(
+      format(sum(VC_AIM3_LF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_LF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "FCI (3MO)" = paste0(
+      format(sum(VC_AIM3_FCI_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_FCI_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    
+    ## 6 MONTHS
+    "Denominator (6MO)" = paste0(
+      format(sum(VC_AIM3_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "GSED SF (6MO)" = paste0(
+      format(sum(VC_AIM3_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "GSED LF (6MO)" = paste0(
+      format(sum(VC_AIM3_LF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_LF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "FCI (6MO)" = paste0(
+      format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    ## 12 MONTHS
+    "Denominator (12MO)" = paste0(
+      format(sum(VC_AIM3_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+    
+    "GSED SF (12MO)" = paste0(
+      format(sum(VC_AIM3_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "GSED LF (12MO)" = paste0(
+      format(sum(VC_AIM3_LF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_LF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+    
+    "FCI (12MO)" = paste0(
+      format(sum(VC_AIM3_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")")
+    
+    
+  ) %>%
+  
+  t() %>% as.data.frame() %>%
+  `colnames<-`(c(.[1,])) %>%
+  slice(-1) %>%
+  add_column(
+    .before = 1,
+    "Total" = gsed_aim3_data %>%
+      plyr::summarise(
+        
+        ## 3 MONTHS
+        "Denominator (3MO)" = paste0(
+          format(sum(VC_AIM3_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
+        "GSED SF (3MO)" = paste0(
+          format(sum(VC_AIM3_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "GSED LF (3MO)" = paste0(
+          format(sum(VC_AIM3_LF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_LF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "FCI (3MO)" = paste0(
+          format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        
+        ## 6 MONTHS
+        "Denominator (6MO)" = paste0(
+          format(sum(VC_AIM3_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
+        "GSED SF (6MO)" = paste0(
+          format(sum(VC_AIM3_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "GSED LF (6MO)" = paste0(
+          format(sum(VC_AIM3_LF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_LF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "FCI (6MO)" = paste0(
+          format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        ## 12 MONTHS
+        "Denominator (12MO)" = paste0(
+          format(sum(VC_AIM3_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+        
+        "GSED SF (12MO)" = paste0(
+          format(sum(VC_AIM3_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "GSED LF (12MO)" = paste0(
+          format(sum(VC_AIM3_LF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_LF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+        
+        "FCI (12MO)" = paste0(
+          format(sum(VC_AIM3_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")")
+        
+      ) %>%
+      t() %>%
+      as.data.frame() %>%
+      `colnames<-`(c(.[1,])) %>% unlist()
+  )
 
 
-<!-- ``` -->
 
-<!-- ```{r, out.width = '100%'} -->
-<!-- gsed_aim3_tab <- gsed_aim3_tab %>% gtsave("gsed_aim3_tab.png", expand = 10) -->
-<!-- knitr::include_graphics("gsed_aim3_tab.png") -->
-<!-- ``` -->
+```
+
+```{r}
+
+gsed_aim3_tab_data <- gsed_aim3_tab %>%
+  `rownames<-` (c(
+    "Denominator, n",
+    "GSED SF",
+    "GSED LF",
+    "FCI",
+    "Denominator, n ",
+    "GSED SF ",
+    "GSED LF ",
+    "FCI ",
+    "Denominator, n  ",
+    "GSED SF  ",
+    "GSED LF  ",
+    "FCI  "
+  )
+  ) %>%
+  mutate_at(vars(everything()), ~ifelse(. == "0 (NaN)", "0 (0)", .))
+
+gsed_aim3_tab <- tb_theme1(gsed_aim3_tab_data) %>%
+  tab_header(
+    title = md("Table 20. ReMIND Assessment Completion")
+  ) %>%
+  tab_row_group(
+    label = html("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED required; FCI optional) <sup>a</sup></span>"),
+    rows = 1:4
+  ) %>%
+  tab_row_group(
+    label = html("<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>"),
+    rows = 5:8
+  ) %>%
+tab_row_group(
+    label = html("<span style='font-size: 18px'>12 month visit (Late window: 52 to <61 weeks) (GSED required; FCI optional) <sup>c</sup></span>"),
+    rows = 9:12
+  ) %>%
+  row_group_order(groups = c("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED required; FCI optional) <sup>a</sup></span>",
+                             "<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>",
+                             "<span style='font-size: 18px'>12 month visit (Late window: 52 to <61 weeks) (GSED required; FCI optional) <sup>c</sup></span>"
+                             ))  %>%
+tab_footnote(
+  footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n passed late window with >=26 weeks gestation AND (has not closed out OR closed out with closeout date >=26wks).</span>")
+) %>%
+  tab_footnote(
+  footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=52 weeks gestation AND (has not closed out OR closed out with closeout date >=52wks).</span>")
+) %>%
+  tab_footnote(
+    footnote = md("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=61 weeks gestation OR closed out with closeout
+  reason reported as: *1-year postpartum follow-up period has ended*.</span>")
+  )
+
+
+```
+
+```{r, out.width = '100%'}
+gsed_aim3_tab <- gsed_aim3_tab %>% gtsave("gsed_aim3_tab.png", expand = 10)
+knitr::include_graphics("gsed_aim3_tab.png")
+```

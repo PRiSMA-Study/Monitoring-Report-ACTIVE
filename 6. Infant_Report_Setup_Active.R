@@ -13,10 +13,13 @@ library(lubridate)
 library(readxl)
 library(dplyr)
 
-UploadDate = "2024-10-18"
+UploadDate = "2024-11-15"
 
 load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "MatData_Wide_", UploadDate, ".RData"))
 load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "InfData_Wide_", UploadDate, ".RData"))
+
+## extract end_preg_ga from MatData_Pnc_Visits (created in Maternal_Report_Setup-Active.R)
+load(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data", "/", "MatData_Pnc_Visits", ".RData"))
 
 # set path to save 
 path_to_save <- "D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"
@@ -30,7 +33,10 @@ MatNames_sheet <- read_excel("~/Monitoring Report/code/varNames_sheet.xlsx", she
 InfNames_sheet <- read_excel("~/Monitoring Report/code/varNames_sheet.xlsx", sheet = "InfantVars")
 
 mat_enroll <- read_csv(paste0("Z:/Outcome Data/", UploadDate, "/MAT_ENROLL.csv")) %>% 
-  select(SITE, SCRNID, MOMID, PREGID, ENROLL, EST_CONCEP_DATE,GA_DIFF_DAYS,  EDD_BOE,BOE_METHOD, BOE_GA_WKS_ENROLL, BOE_GA_DAYS_ENROLL)
+  select(SITE, SCRNID, MOMID, PREGID, ENROLL, EST_CONCEP_DATE,GA_DIFF_DAYS, 
+         EDD_BOE,BOE_METHOD, BOE_GA_WKS_ENROLL, BOE_GA_DAYS_ENROLL)
+
+MatData_Pnc_Visits_subset <- MatData_Pnc_Visits %>% select(SITE, MOMID, PREGID, ENDPREG_DAYS)
 
 inf_outcomes <- read_csv(paste0("Z:/Outcome Data/", UploadDate, "/INF_OUTCOMES.csv")) %>% 
   select(SITE, MOMID, PREGID, INFANTID, ADJUD_NEEDED, LIVEBIRTH)
@@ -64,8 +70,8 @@ InfData_Report <- InfData_Wide %>%
          contains("_VISIT_COMPLETE"),
          contains("_PNC_AT_VISIT_DAYS"),
          contains("_PNC_AT_VISIT_WKS")) %>% 
-  mutate(DELIVERY_DATETIME = as.POSIXct(DELIVERY_DATETIME, format= "%Y-%m-%d %H:%M")) %>% 
-  filter(PREGID %in% mat_enroll$PREGID) %>% 
+  # mutate(DELIVERY_DATETIME = as.POSIXct(DELIVERY_DATETIME, format= "%Y-%m-%d %H:%M")) %>% 
+  filter(PREGID %in% as.vector(mat_enroll$PREGID)) %>% 
   # if duplicates, take the most recent
   group_by(SITE, MOMID, PREGID, INFANTID) %>% 
   arrange(-desc(M09_DELIV_DSSTDAT)) %>%
@@ -171,8 +177,8 @@ Inf_Visit_Complete_Pnc <- InfData_Pnc_Visits %>%
   ## filter for livebirths 
   filter(LIVEBIRTH == 1) %>% 
   # merge in est conception date 
-  left_join(MatData_Report %>% select(SITE, MOMID, PREGID, EST_CONCEP_DATE, GESTAGE_AT_BIRTH_DAYS, GESTAGE_AT_BIRTH_WKS), by = c("SITE", "MOMID", "PREGID")) %>% 
-  rename(ENDPREG_DAYS = GESTAGE_AT_BIRTH_DAYS) %>% 
+  left_join(MatData_Pnc_Visits_subset %>% select(SITE, MOMID, PREGID, ENDPREG_DAYS), 
+            by = c("SITE", "MOMID", "PREGID")) %>% 
   ## ON TIME WINDOWS
   # Numerator for PNC Visit Completion -- exclude any particpants who have closed out (M23_CLOSE_DSSTDAT must be greater than the on-time window (if it's not then that means the participant has closeout in the window))
   mutate(VC_PNC0_NUM =ifelse(ANY_TYPE_VISIT_COMPLETE_7 == 1 & PNC0_PASS == 1, 1, 0),
@@ -222,10 +228,10 @@ mutate(VC_PNC0_DENOM_LATE = ifelse(PNC0_PASS_LATE==1 &
        VC_PNC6_DENOM_LATE_PROT = ifelse(PNC6_PASS_LATE_PROT==1 & 
                                           ((M24_CLOSE_DSSTDAT > PNC6_LATE_PROT) | is.na(M24_CLOSE_DSSTDAT)), 1, 0),
        
-       VC_PNC26_DENOM_LATE = ifelse(PNC26_PASS_LATE==1 & ENDPREG_DAYS>139 & 
+       VC_PNC26_DENOM_LATE = ifelse(PNC26_PASS_LATE==1 & 
                                       ((M24_CLOSE_DSSTDAT > PNC26_LATE) | is.na(M24_CLOSE_DSSTDAT)), 1, 0),
        
-       VC_PNC52_DENOM_LATE = ifelse((PNC52_PASS_LATE==1 & ENDPREG_DAYS>139 & is.na(M24_CLOSE_DSSTDAT)) | 
+       VC_PNC52_DENOM_LATE = ifelse((PNC52_PASS_LATE==1 & is.na(M24_CLOSE_DSSTDAT)) | 
                                       M24_CLOSE_DSDECOD==1, 1, 0)
 )
 
@@ -317,3 +323,43 @@ Inf_Form_Completion_Pnc <- InfData_Pnc_Visits %>%
 
 ## export 
 save(Inf_Form_Completion_Pnc, file= paste0(path_to_save, "Inf_Form_Completion_Pnc",".RData",sep = ""))
+
+#**************************************************************************************
+#### HEAT MAPS #### 
+#* Are forms completed with visit status = 1 or 2 for EACH visit? 
+#* PRISMA figure 3a/3b
+
+#* Num: By form: visit type = i AND visit status = 1 or 2 AND passed late window 
+#* Denom: Passed window for visit type = i AND didn't closeout AND has not yet delivered
+#**************************************************************************************
+
+# PNC
+## i filtered out anyone who has an endpreg and then
+# for pnc visits where we do not expect those with miscarriages, i filter 
+Inf_Heat_Maps_Pnc <- InfData_Pnc_Visits %>%
+  filter(LIVEBIRTH==1) %>% 
+  left_join(MatData_Pnc_Visits_subset, by = c("SITE", "MOMID", "PREGID")) %>% 
+  # filter(!is.na(ENDPREG_DAYS)) %>% ## only include participants with a birth outcome
+  select(SITE, MOMID, PREGID, INFANTID, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("TYPE_VISIT"),
+         contains("VISIT_COMPLETE"),
+         contains("_PASS"), contains("_ONTIME"), contains("_LATE"), M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD, DOB, ENDPREG_DAYS) %>%
+  ## generate denominators - LATE
+  # has the late window passed AND has not delivered AND has not closed out OR has a form in this visit 
+  mutate(HM_PNC0_DENOM_LATE = ifelse((PNC0_PASS_LATE==1 &
+                                        ((M24_CLOSE_DSSTDAT > PNC0_LATE) | is.na(M24_CLOSE_DSSTDAT))), 1, 0),
+         HM_PNC1_DENOM_LATE = ifelse((PNC1_PASS_LATE==1 &
+                                        ((M24_CLOSE_DSSTDAT > PNC1_LATE) | is.na(M24_CLOSE_DSSTDAT))), 1, 0),
+         HM_PNC4_DENOM_LATE = ifelse((PNC4_PASS_LATE==1 &
+                                        ((M24_CLOSE_DSSTDAT > PNC4_LATE) | is.na(M24_CLOSE_DSSTDAT))), 1, 0),
+         HM_PNC6_DENOM_LATE = ifelse((PNC6_PASS_LATE==1 & 
+                                        ((M24_CLOSE_DSSTDAT > PNC6_LATE) | is.na(M24_CLOSE_DSSTDAT))), 1, 0),
+         
+         HM_PNC26_DENOM_LATE = ifelse((PNC26_PASS_LATE==1 & ENDPREG_DAYS>139 & 
+                                         ((M24_CLOSE_DSSTDAT > PNC26_LATE) | is.na(M24_CLOSE_DSSTDAT))), 1, 0),
+         
+         HM_PNC52_DENOM_LATE = ifelse((PNC52_PASS_LATE==1 & ENDPREG_DAYS>139 & is.na(M24_CLOSE_DSSTDAT)) | 
+                                        M24_CLOSE_DSDECOD==1, 1, 0)
+  )
+
+## export 
+save(Inf_Heat_Maps_Pnc, file= paste0(path_to_save, "Inf_Heat_Maps_Pnc",".RData",sep = ""))
