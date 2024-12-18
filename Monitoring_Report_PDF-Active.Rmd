@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-11-19)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2024-12-17)"
 output:
   pdf_document:
     toc: no
@@ -18,7 +18,7 @@ editor_options:
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, out.width = "100%") 
 knitr::opts_chunk$set(out.width = "100%", fig.align = "center")
 
-## last updated: 25 October 2024
+## last updated: 17 December 2024
 
 library(tidyverse) 
 library(knitr) 
@@ -34,7 +34,7 @@ library(webshot2)
 library(grid)
 library(gridExtra)
 
-UploadDate = "2024-11-15" 
+UploadDate = "2024-12-13" 
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
 
@@ -138,18 +138,18 @@ study to establish global hemoglobin thresholds for maternal anemia
 
 **Versions:**
 
-**Date issued:** 2024-11-19
+**Date issued:** 2024-12-17
 
-**Included data last updated in Synapse:** 2024-11-15
+**Included data last updated in Synapse:** 2024-12-13
 
 **Last enrollment date:**
 
--   Kenya: 2024-11-14
--   Pakistan: 2024-11-08
--   Ghana: 2024-11-14
--   Zambia: 2024-11-06
--   India CMC: 2024-11-01
--   India SAS: 2024-11-08
+-   Kenya: 2024-12-11
+-   Pakistan: 2024-12-06
+-   Ghana: 2024-12-11
+-   Zambia: 2024-11-25
+-   India CMC: 2024-11-29
+-   India SAS: 2024-12-06
 
 ```{r, results='hide' }
 
@@ -344,6 +344,7 @@ tb_prescreen_all <- MatData_Screen_Enroll %>%
 ```
 
 ```{r}
+
 prisma_tab2 <- tb_theme1(tb_prescreen_all) %>% 
   tab_header(
     title = md("**PRISMA Table 2**")
@@ -5225,6 +5226,9 @@ heat_map_data_anc <- heat_map_data_anc %>%
   mutate(PCT_BIN = case_when(FORM %in% c("MNH01", "MNH02", "MNH03") & VISIT %in% c("ANC20", "ANC28", "ANC36")~ "Form not required", TRUE ~ PCT_BIN),
          PCT_BIN = case_when(FORM %in% c("MNH02", "MNH03") & VISIT %in% c("ANC32")~ "Form not required", TRUE ~ PCT_BIN)
          )
+
+
+
 ```
 
 ```{r}
@@ -5246,8 +5250,8 @@ out <- heat_map_data_anc %>%
   geom_tile(color = "grey40")  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
   facet_grid(rows = vars(VISIT)) +
   scale_fill_manual(values = custom_palette,
-                    labels = c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-                               "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+                    labels = str_wrap(c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                                        "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"), width = 10), 
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
   xlab("Expected forms") +
@@ -5270,6 +5274,33 @@ out <- heat_map_data_anc %>%
         
         ) + 
   coord_fixed(ratio = 0.175, expand = TRUE)  # Adjust the ratio to make the tiles shorter 0.35
+
+
+  # scale_fill_manual(values = custom_palette,
+  #                   labels = c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+  #                              "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
+  #                   drop = FALSE) +
+  # labs(fill = str_wrap("Percent Complete", width = 8)) +
+  # xlab("Expected forms") +
+  # ylab("Study site") + 
+  # guides(fill = guide_legend(reverse = TRUE, nrow = 2)) +
+  # theme_minimal() +
+  # theme(legend.position = "bottom",
+  #       axis.text.x = element_text(size = 8), # , angle = 90
+  #       axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
+  #       axis.text.y = element_text(size = 8, colour = "black", hjust=1),
+  #       legend.text = element_text(size = 8),
+  #       axis.title.y = element_blank(),
+  #       # panel.spacing = unit(1, "lines"),  # More space between facets
+  #       # strip.text.y = element_text(size = 8, margin = margin(t = 11, b = 10)),  # Space for facet labels
+  #       # legend.margin = margin(grid::unit(0, "cm")),
+  #       # legend.key.width = grid::unit(0.5, "cm"),
+  #       plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
+  #       # plot.margin = margin(t = 5, r = 10, b = 10, l = 10),
+  #       # plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)
+  #       
+  #       ) + 
+  # coord_fixed(ratio = 0.175, expand = TRUE)  # Adjust the ratio to make the tiles shorter 0.35
 
 
 ```
@@ -5590,9 +5621,6 @@ complete if the data reports the visit was conducted in person or by
 phone (variable name: INF_VISIT_MNHXX ). If there is no late window for
 a visit, the on-time window is used.
 
-*Goal:* 100% completion for enrollment; 90% completion for all other
-visits
-
 *Numerator:* Any form with visit type = i (variable name: `TYPE_VISIT`)
 AND have a complete visit status (where variable name:
 `MAT_VISIT_MNHXX`=1, 2, or 3) AND passed late window for visit type = i
@@ -5843,6 +5871,7 @@ AND has not closed out OR closed out with reason for closeout=1-year
 followup completed).*
 
 ```{r}
+
 birthoutcome <- InfData_Pnc_Visits %>%
   group_by(SITE) %>%
   summarise(
@@ -5891,6 +5920,7 @@ PNC0 <- Inf_Prot_Compliance_Pnc %>%
       format(round(sum(M15_VISIT_COMPLETE_7==1 & PC_PNC0_DENOM == 1, na.rm = TRUE)/sum(PC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
       ")")
     ) %>%
+  mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
   
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
@@ -5898,6 +5928,8 @@ PNC0 <- Inf_Prot_Compliance_Pnc %>%
   add_column(
     .before = 1,
     "Total" = Inf_Prot_Compliance_Pnc %>%
+    
+    mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator, n" = paste0(
@@ -5917,12 +5949,11 @@ PNC0 <- Inf_Prot_Compliance_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(M15_VISIT_COMPLETE_7==1 & PC_PNC0_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(M15_VISIT_COMPLETE_7==1 & PC_PNC0_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(M15_VISIT_COMPLETE_7==1 & PC_PNC0_DENOM == 1, na.rm = TRUE)/sum(PC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(M15_VISIT_COMPLETE_7==1 & PC_PNC0_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(PC_PNC0_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
       ) %>% 
-      
       t() %>%
       as.data.frame() %>%
       `colnames<-`(c(.[1,])) %>% unlist()
@@ -5955,13 +5986,14 @@ PNC1 <- Inf_Prot_Compliance_Pnc %>%
       format(round(sum(M15_VISIT_COMPLETE_8==1 & PC_PNC1_DENOM == 1, na.rm = TRUE)/sum(PC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
       ")")
   ) %>%
-  
+    mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
   slice(-1) %>%
   add_column(
     .before = 1,
     "Total" = Inf_Prot_Compliance_Pnc %>%
+      mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator, n" = paste0(
@@ -5981,9 +6013,9 @@ PNC1 <- Inf_Prot_Compliance_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(M15_VISIT_COMPLETE_8==1 & PC_PNC1_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(M15_VISIT_COMPLETE_8==1 & PC_PNC1_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(M15_VISIT_COMPLETE_8==1 & PC_PNC1_DENOM == 1, na.rm = TRUE)/sum(PC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(M15_VISIT_COMPLETE_8==1 & PC_PNC1_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(PC_PNC1_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
       ) %>% 
       
@@ -6019,13 +6051,15 @@ PNC4 <- Inf_Prot_Compliance_Pnc %>%
       format(round(sum(M15_VISIT_COMPLETE_9==1 & PC_PNC4_DENOM == 1, na.rm = TRUE)/sum(PC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
       ")")
   ) %>%
-  
+    mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
+
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
   slice(-1) %>%
   add_column(
     .before = 1,
     "Total" = Inf_Prot_Compliance_Pnc %>%
+      mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator, n" = paste0(
@@ -6045,9 +6079,9 @@ PNC4 <- Inf_Prot_Compliance_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(M15_VISIT_COMPLETE_9==1 & PC_PNC4_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(M15_VISIT_COMPLETE_9==1 & PC_PNC4_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(M15_VISIT_COMPLETE_9==1 & PC_PNC4_DENOM == 1, na.rm = TRUE)/sum(PC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(M15_VISIT_COMPLETE_9==1 & PC_PNC4_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(PC_PNC4_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
       ) %>% 
       
@@ -6085,13 +6119,15 @@ PNC6 <- Inf_Prot_Compliance_Pnc %>%
       format(round(sum(M15_VISIT_COMPLETE_10==1 & PC_PNC6_DENOM == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
       ")")
   ) %>%
-  
+    mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
+
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
   slice(-1) %>%
   add_column(
     .before = 1,
     "Total" = Inf_Prot_Compliance_Pnc %>%
+      mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator, n" = paste0(
@@ -6111,9 +6147,9 @@ PNC6 <- Inf_Prot_Compliance_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(M15_VISIT_COMPLETE_10==1 & PC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(M15_VISIT_COMPLETE_10==1 & PC_PNC6_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(M15_VISIT_COMPLETE_10==1 & PC_PNC6_DENOM == 1, na.rm = TRUE)/sum(PC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(M15_VISIT_COMPLETE_10==1 & PC_PNC6_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(PC_PNC6_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
       ) %>% 
       
@@ -6151,13 +6187,15 @@ PNC26 <- Inf_Prot_Compliance_Pnc %>%
       format(round(sum(M15_VISIT_COMPLETE_11==1 & PC_PNC26_DENOM == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
       ")")
   ) %>%
-  
+    mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
+
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
   slice(-1) %>%
   add_column(
     .before = 1,
     "Total" = Inf_Prot_Compliance_Pnc %>%
+      mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator, n" = paste0(
@@ -6177,9 +6215,9 @@ PNC26 <- Inf_Prot_Compliance_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(M15_VISIT_COMPLETE_11==1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(M15_VISIT_COMPLETE_11==1 & PC_PNC26_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(M15_VISIT_COMPLETE_11==1 & PC_PNC26_DENOM == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(M15_VISIT_COMPLETE_11==1 & PC_PNC26_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(PC_PNC26_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
       ) %>% 
       
@@ -6215,13 +6253,15 @@ PNC52 <- Inf_Prot_Compliance_Pnc %>%
       format(round(sum(M15_VISIT_COMPLETE_12==1 & PC_PNC52_DENOM == 1, na.rm = TRUE)/sum(PC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
       ")")
   ) %>%
-  
+    mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
+
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
   slice(-1) %>%
   add_column(
     .before = 1,
     "Total" = Inf_Prot_Compliance_Pnc %>%
+      mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator, n" = paste0(
@@ -6241,9 +6281,9 @@ PNC52 <- Inf_Prot_Compliance_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(M15_VISIT_COMPLETE_12==1 & PC_PNC52_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(M15_VISIT_COMPLETE_12==1 & PC_PNC52_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(M15_VISIT_COMPLETE_12==1 & PC_PNC52_DENOM == 1, na.rm = TRUE)/sum(PC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(M15_VISIT_COMPLETE_12==1 & PC_PNC52_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(PC_PNC52_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
       ) %>% 
       
@@ -6271,32 +6311,32 @@ inf_prot_compliance_pnc <- bind_rows(birthoutcome,
                  "Denominator, n",
                  "MNH13 Infant Clinical Status",
                  "MNH14 Infant POC",
-                 "MNH15 Infant Vaccination",
+                 "MNH15 Infant Vaccination**",
                  ## PNC1 (6-9)
                  "Denominator, n ",
                  "MNH13 Infant Clinical Status ",
                  "MNH14 Infant POC ",
-                 "MNH15 Infant Vaccination ",
+                 "MNH15 Infant Vaccination** ",
                  ## PNC4 (10-13)
                  "Denominator, n  ",
                  "MNH13 Infant Clinical Status  ",
                  "MNH14 Infant POC  ",
-                 "MNH15 Infant Vaccination  ",
+                 "MNH15 Infant Vaccination**  ",
                  ## PNC6 (14-17)
                  "Denominator, n   ",
                  "MNH13 Infant Clinical Status   ",
                  "MNH14 Infant POC   ",
-                 "MNH15 Infant Vaccination   ",
+                 "MNH15 Infant Vaccination**   ",
                  ## PNC26 (18-21)
                  "Denominator, n    ",
                  "MNH13 Infant Clinical Status    ",
                  "MNH14 Infant POC    ",
-                 "MNH15 Infant Vaccination    ",
+                 "MNH15 Infant Vaccination**    ",
                  ## PNC52 (22-25)
                  "Denominator, n     ",
                  "MNH13 Infant Clinical Status     ",
                  "MNH14 Infant POC     ",
-                 "MNH15 Infant Vaccination     "
+                 "MNH15 Infant Vaccination**     "
   )
   )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
@@ -6347,7 +6387,12 @@ prisma_tab13_1 <- tb_theme1(table13_1) %>%
   
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table.</span>")  
+  )  %>% 
+  
+  tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>**</sup> Total denominator does not include Pakistan.</span>")  
   )   
+ 
 
 ## PART 2
 prisma_tab13_2 <- tb_theme1(table13_2) %>% 
@@ -6405,7 +6450,11 @@ prisma_tab13_2 <- tb_theme1(table13_2) %>%
   ) %>% 
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If a date of birth is missing, the particpant is removed from this table.</span>")  
-  )  
+  )  %>% 
+  
+  tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>**</sup> Total denominator does not include Pakistan.</span>")  
+  )   
 
 
 ```
@@ -6495,13 +6544,14 @@ PNC0 <- Inf_Form_Completion_Pnc %>%
     
     
     ) %>%
-  
+  mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
   slice(-1) %>%
   add_column(
     .before = 1,
     "Total" = Inf_Form_Completion_Pnc %>%
+      mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator" = paste0(
@@ -6521,9 +6571,9 @@ PNC0 <- Inf_Form_Completion_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(!is.na(M15_VISIT_COMPLETE_7) & FC_PNC0_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(!is.na(M15_VISIT_COMPLETE_7) & FC_PNC0_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(!is.na(M15_VISIT_COMPLETE_7) & FC_PNC0_DENOM == 1, na.rm = TRUE)/sum(FC_PNC0_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(!is.na(M15_VISIT_COMPLETE_7) & FC_PNC0_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(FC_PNC0_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
         
       ) %>%
@@ -6562,13 +6612,14 @@ PNC1 <- Inf_Form_Completion_Pnc %>%
     
     
     ) %>%
-  
+  mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
   slice(-1) %>%
   add_column(
     .before = 1,
     "Total" = Inf_Form_Completion_Pnc %>%
+      mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator" = paste0(
@@ -6588,9 +6639,9 @@ PNC1 <- Inf_Form_Completion_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(!is.na(M15_VISIT_COMPLETE_8) & FC_PNC1_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(!is.na(M15_VISIT_COMPLETE_8) & FC_PNC1_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(!is.na(M15_VISIT_COMPLETE_8) & FC_PNC1_DENOM == 1, na.rm = TRUE)/sum(FC_PNC1_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(!is.na(M15_VISIT_COMPLETE_8) & FC_PNC1_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(FC_PNC1_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
         
       ) %>%
@@ -6629,13 +6680,14 @@ PNC4 <- Inf_Form_Completion_Pnc %>%
     
     
     ) %>%
-  
+  mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
   slice(-1) %>%
   add_column(
     .before = 1,
     "Total" = Inf_Form_Completion_Pnc %>%
+      mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator" = paste0(
@@ -6655,9 +6707,9 @@ PNC4 <- Inf_Form_Completion_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(!is.na(M15_VISIT_COMPLETE_9) & FC_PNC4_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(!is.na(M15_VISIT_COMPLETE_9) & FC_PNC4_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(!is.na(M15_VISIT_COMPLETE_9) & FC_PNC4_DENOM == 1, na.rm = TRUE)/sum(FC_PNC4_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(!is.na(M15_VISIT_COMPLETE_9) & FC_PNC4_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(FC_PNC4_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
         
       ) %>%
@@ -6695,13 +6747,14 @@ PNC6 <- Inf_Form_Completion_Pnc %>%
     
     
     ) %>%
-  
+  mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
   slice(-1) %>%
   add_column(
     .before = 1,
     "Total" = Inf_Form_Completion_Pnc %>%
+      mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator" = paste0(
@@ -6721,9 +6774,9 @@ PNC6 <- Inf_Form_Completion_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(!is.na(M15_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(!is.na(M15_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(!is.na(M15_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1, na.rm = TRUE)/sum(FC_PNC6_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(!is.na(M15_VISIT_COMPLETE_10) & FC_PNC6_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(FC_PNC6_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
         
       ) %>%
@@ -6762,13 +6815,14 @@ PNC26 <- Inf_Form_Completion_Pnc %>%
     
     
     ) %>%
-  
+  mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
   slice(-1) %>%
   add_column(
     .before = 1,
     "Total" = Inf_Form_Completion_Pnc %>%
+      mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator" = paste0(
@@ -6788,9 +6842,9 @@ PNC26 <- Inf_Form_Completion_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(!is.na(M15_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(!is.na(M15_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(!is.na(M15_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(!is.na(M15_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(FC_PNC26_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
         
       ) %>%
@@ -6828,13 +6882,14 @@ PNC52 <- Inf_Form_Completion_Pnc %>%
     
     
     ) %>%
-  
+  mutate(`MNH15 Infant Vaccination` = case_when(SITE == "Pakistan" ~ "-- (-)", TRUE ~ `MNH15 Infant Vaccination` )) %>% 
   t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
   slice(-1) %>%
   add_column(
     .before = 1,
     "Total" = Inf_Form_Completion_Pnc %>%
+      mutate(M15_VISIT_COMPLETE_7 = case_when(SITE == "Pakistan" ~ NA, TRUE ~ M15_VISIT_COMPLETE_7)) %>% 
       plyr::summarise(
         
         "Denominator" = paste0(
@@ -6854,9 +6909,9 @@ PNC52 <- Inf_Form_Completion_Pnc %>%
           ")"),
         
         "MNH15 Infant Vaccination" = paste0(
-          format(sum(!is.na(M15_VISIT_COMPLETE_12) & FC_PNC52_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
+          format(sum(!is.na(M15_VISIT_COMPLETE_12) & FC_PNC52_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE), nsmall = 0, digits = 2),
           " (",
-          format(round(sum(!is.na(M15_VISIT_COMPLETE_12) & FC_PNC52_DENOM == 1, na.rm = TRUE)/sum(FC_PNC52_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          format(round(sum(!is.na(M15_VISIT_COMPLETE_12) & FC_PNC52_DENOM == 1 & SITE != "Pakistan", na.rm = TRUE)/sum(FC_PNC52_DENOM==1 & SITE != "Pakistan", na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
           ")")
         
       ) %>%
@@ -6882,32 +6937,32 @@ inf_form_comp_pnc <- bind_rows(birthoutcome,
                   "Denominator, n",
                   "MNH13 Infant Clinical Status",
                   "MNH14 Infant POC",
-                  "MNH15 Infant Vaccination",
+                  "MNH15 Infant Vaccination**",
                  ## PNC1 (6-9)
                   "Denominator, n ",
                   "MNH13 Infant Clinical Status ",
                   "MNH14 Infant POC ",
-                  "MNH15 Infant Vaccination ",
+                  "MNH15 Infant Vaccination** ",
                  ## PNC4 (10-13)
                   "Denominator, n  ",
                   "MNH13 Infant Clinical Status  ",
                   "MNH14 Infant POC  ",
-                  "MNH15 Infant Vaccination  ",
+                  "MNH15 Infant Vaccination**  ",
                  ## PNC6 (14-17)
                   "Denominator, n   ",
                   "MNH13 Infant Clinical Status   ",
                   "MNH14 Infant POC   ",
-                  "MNH15 Infant Vaccination   ",
+                  "MNH15 Infant Vaccination**   ",
                  ## PNC26 (18-21)
                   "Denominator, n    ",
                   "MNH13 Infant Clinical Status    ",
                   "MNH14 Infant POC    ",
-                  "MNH15 Infant Vaccination    ",
+                  "MNH15 Infant Vaccination**    ",
                  ##PNC52 (22-25)
                   "Denominator, n     ",
                   "MNH13 Infant Clinical Status     ",
                   "MNH14 Infant POC     ",
-                  "MNH15 Infant Vaccination     "
+                  "MNH15 Infant Vaccination**     "
                  )
                )  %>% 
   mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
@@ -6958,6 +7013,10 @@ prisma_tab14_1 <- tb_theme1(table14_1) %>%
 
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If an date of birth is missing, the particpant is removed from this table.</span>")  
+  )   %>% 
+  
+  tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>**</sup> Total denominator does not include Pakistan.</span>")  
   )   
 
 
@@ -7018,7 +7077,11 @@ prisma_tab14_2 <- tb_theme1(table14_2) %>%
   ) %>% 
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>Note</sup> passed window denominators for all visits are calculated by date and time of birth reported in MNH09. If a date of birth is missing, the particpant is removed from this table.</span>")  
-  )  
+  ) %>% 
+  
+  tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>**</sup> Total denominator does not include Pakistan.</span>")  
+  )    
 
 ```
 
@@ -7251,10 +7314,9 @@ PNC52_PCT <- Inf_Heat_Maps_Pnc %>%
 inf_heat_map_data_pnc <- bind_rows(PNC0_PCT, PNC1_PCT, PNC4_PCT, PNC6_PCT, PNC26_PCT, PNC52_PCT)
 
 
-# heat_map_data_pnc <- heat_map_data_pnc %>% 
-#   mutate(PCT_BIN = case_when(FORM %in% c("MNH05", "MNH07", "MNH08") & VISIT %in% c("PNC0", "PNC1", "PNC4")~ "Form not required", TRUE ~ PCT_BIN),
-#          PCT_BIN = case_when(FORM %in% c("MNH07", "MNH08") & VISIT %in% c("PNC26", "PNC52")~ "Form not required", TRUE ~ PCT_BIN)
-#          )
+inf_heat_map_data_pnc <- inf_heat_map_data_pnc %>% 
+  mutate(PCT_BIN = case_when(FORM %in% c("MNH15") & SITE %in% c("Pakistan") ~ "N/A", TRUE ~ PCT_BIN)
+         )
 
 ```
 
@@ -7267,7 +7329,7 @@ UNIQUE_VISITS = as.vector(unique(inf_heat_map_data_pnc$VISIT))
 
 inf_heat_map_data_pnc <- inf_heat_map_data_pnc %>% filter(!is.na(PCT_BIN))
 # set levels for percent bins
-inf_heat_map_data_pnc$PCT_BIN <- factor(inf_heat_map_data_pnc$PCT_BIN, levels = c("Form not required", "0-9", "10-19", "20-29", "30-39", "40-49",
+inf_heat_map_data_pnc$PCT_BIN <- factor(inf_heat_map_data_pnc$PCT_BIN, levels = c("N/A", "0-9", "10-19", "20-29", "30-39", "40-49",
                                "50-59", "60-69", "70-79", "80-89", "90-100"))
 # set levels for visits
 inf_heat_map_data_pnc$VISIT <- factor(inf_heat_map_data_pnc$VISIT, levels = c("PNC0", "PNC1", "PNC4", "PNC6", "PNC26", "PNC52"))
@@ -7278,7 +7340,7 @@ out <- inf_heat_map_data_pnc %>%
   geom_tile(color = "grey40")  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
   facet_grid(rows = vars(VISIT)) +
   scale_fill_manual(values = custom_palette,
-                    labels = str_wrap(c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
+                    labels = str_wrap(c("N/A", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
                                         "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"), width = 10), 
                     drop = FALSE) +
   labs(fill = str_wrap("Percent Complete", width = 8)) +
@@ -7371,11 +7433,11 @@ phone (variable name: MAT_VISIT_MNHXX ).
 
 *Numerator:* Livebirth with visit type = i (variable name: `TYPE_VISIT`)
 AND have complete visit status (where variable name: `MAT_VISIT_MNHXX`=1
-or 2) AND passed late window
+or 2) AND passed on time window
 
-*Denominator:* Livebirth passed late window AND (has not closed out OR
+*Denominator:* Livebirth passed on time window AND (has not closed out OR
 closed out with closeout date \> visit window). *For PNC52 visits
-denominator is passed late window for visit type = i AND has not closed
+denominator is passed on time window for visit type = i AND has not closed
 out OR closed out with reason for closeout=1-year followup completed).*
 
 ```{r}
@@ -7550,29 +7612,29 @@ gsed_sf_tab <- tb_theme1(gsed_sf_tab_data) %>%
     title = md("Table 16. GSED and FCI in PRISMA/ReMAPP Cohort")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED & FCI optional) <sup>a</sup></span>"),
+    label = html("<span style='font-size: 18px'>3 month visit (On time window (+2 weeks): 13 to <17 weeks) (GSED & FCI optional) <sup>a</sup></span>"),
     rows = 1:3
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>"),
+    label = html("<span style='font-size: 18px'>6 month visit (On time window (+2 weeks): 26 to <30 weeks) (GSED & FCI optional) <sup>b</sup></span>"),
     rows = 4:6
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>12 month visit (Late window: 52 to <64 weeks) (GSED required; FCI optional) <sup>c</sup></span>"),
+    label = html("<span style='font-size: 18px'>12 month visit (On time window (+2 weeks): 52 to <56 weeks) (GSED required; FCI optional) <sup>c</sup></span>"),
     rows = 7:9
   ) %>%
 
-  row_group_order(groups = c("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED & FCI optional) <sup>a</sup></span>",
-                             "<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>",
-                             "<span style='font-size: 18px'>12 month visit (Late window: 52 to <64 weeks) (GSED required; FCI optional) <sup>c</sup></span>"))  %>%
+  row_group_order(groups = c("<span style='font-size: 18px'>3 month visit (On time window (+2 weeks): 13 to <17 weeks) (GSED & FCI optional) <sup>a</sup></span>",
+                             "<span style='font-size: 18px'>6 month visit (On time window (+2 weeks): 26 to <30 weeks) (GSED & FCI optional) <sup>b</sup></span>",
+                             "<span style='font-size: 18px'>12 month visit (On time window (+2 weeks): 52 to <56 weeks) (GSED required; FCI optional) <sup>c</sup></span>"))  %>%
   tab_footnote(
-    footnote = md("<span style='font-size: 18px'><sup>a</sup> denominator is n passed late window with >=26 weeks gestation AND (has not closed out OR closed out with closeout date >=26wks).</span>")
+    footnote = md("<span style='font-size: 18px'><sup>a</sup> denominator is n passed late window with >=17 weeks gestation AND (has not closed out OR closed out with closeout date >=26wks).</span>")
   ) %>% 
   tab_footnote(
-    footnote = md("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=52 weeks gestation AND (has not closed out OR closed out with closeout date >=52wks).</span>")
+    footnote = md("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=30 weeks gestation AND (has not closed out OR closed out with closeout date >=52wks).</span>")
   ) %>% 
 tab_footnote(
-  footnote = md("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=64 weeks gestation OR closed out with closeout reason reported as: *1-year postpartum follow-up period has ended*.</span>")
+  footnote = md("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=56 weeks gestation OR closed out with closeout reason reported as: *1-year postpartum follow-up period has ended*.</span>")
   ) 
 
 ```
@@ -8382,11 +8444,11 @@ a visit, the on-time window is used.
 
 *Numerator:* Aim 3 enrolled livebirth with visit date within visit
 window AND have complete visit status (where variable name:
-`MAT_VISIT_MNHXX`=1 or 2) AND passed late window
+`MAT_VISIT_MNHXX`=1 or 2) AND passed on time window
 
-*Denominator:* Aim 3 enrolled livebirth passed late window AND (has not
+*Denominator:* Aim 3 enrolled livebirth passed on time window AND (has not
 closed out OR closed out with closeout date \> visit window). *For PNC52
-visits denominator is passed late window for visit type = i AND has not
+visits denominator is passed on time window for visit type = i AND has not
 closed out OR closed out with reason for closeout=1-year followup
 completed).*
 
@@ -8592,29 +8654,29 @@ gsed_aim3_tab <- tb_theme1(gsed_aim3_tab_data) %>%
     title = md("Table 20. ReMIND Assessment Completion")
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED required; FCI optional) <sup>a</sup></span>"),
+    label = html("<span style='font-size: 18px'>3 month visit (On time window (+2 weeks): 13 to <17 weeks) (GSED required; FCI optional) <sup>a</sup></span>"),
     rows = 1:4
   ) %>%
   tab_row_group(
-    label = html("<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>"),
+    label = html("<span style='font-size: 18px'>6 month visit (On time window (+2 weeks): 26 to <30 weeks) (GSED & FCI optional) <sup>b</sup></span>"),
     rows = 5:8
   ) %>%
 tab_row_group(
-    label = html("<span style='font-size: 18px'>12 month visit (Late window: 52 to <61 weeks) (GSED required; FCI optional) <sup>c</sup></span>"),
+    label = html("<span style='font-size: 18px'>12 month visit (On time window (+2 weeks): 52 to <56 weeks) (GSED required; FCI optional) <sup>c</sup></span>"),
     rows = 9:12
   ) %>%
-  row_group_order(groups = c("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED required; FCI optional) <sup>a</sup></span>",
-                             "<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>",
-                             "<span style='font-size: 18px'>12 month visit (Late window: 52 to <61 weeks) (GSED required; FCI optional) <sup>c</sup></span>"
+  row_group_order(groups = c("<span style='font-size: 18px'>3 month visit (On time window (+2 weeks): 13 to <17 weeks) (GSED required; FCI optional) <sup>a</sup></span>",
+                             "<span style='font-size: 18px'>6 month visit (On time window (+2 weeks): 26 to <30 weeks) (GSED & FCI optional) <sup>b</sup></span>",
+                             "<span style='font-size: 18px'>12 month visit (On time window (+2 weeks): 52 to <56 weeks) (GSED required; FCI optional) <sup>c</sup></span>"
                              ))  %>%
 tab_footnote(
-  footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n passed late window with >=26 weeks gestation AND (has not closed out OR closed out with closeout date >=26wks).</span>")
+  footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n passed late window with >=17 weeks gestation AND (has not closed out OR closed out with closeout date >=26wks).</span>")
 ) %>%
   tab_footnote(
-  footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=52 weeks gestation AND (has not closed out OR closed out with closeout date >=52wks).</span>")
+  footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=30 weeks gestation AND (has not closed out OR closed out with closeout date >=52wks).</span>")
 ) %>%
   tab_footnote(
-    footnote = md("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=61 weeks gestation OR closed out with closeout
+    footnote = md("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=56 weeks gestation OR closed out with closeout
   reason reported as: *1-year postpartum follow-up period has ended*.</span>")
   )
 

@@ -40,7 +40,7 @@ library(lubridate)
 library(readxl)
 library(dplyr)
 
-UploadDate = "2024-10-18"
+UploadDate = "2024-12-13"
 
 load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "MatData_Wide_", UploadDate, ".RData"))
 suppressWarnings(load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "InfData_Wide_", UploadDate, ".RData")))
@@ -92,7 +92,10 @@ InfData_Report <- InfData_Wide %>%
 ## export 
 save(InfData_Report, file= paste0(path_to_save, "InfData_Report",".RData",sep = ""))
 
-mat_enroll <- read_csv(paste0("Z:/Outcome Data/", UploadDate, "/MAT_ENROLL.csv")) %>% 
+# mat_enroll <- read_csv(paste0("Z:/Outcome Data/", UploadDate, "/MAT_ENROLL.csv")) %>% 
+#   select(SITE, SCRNID, MOMID, PREGID, ENROLL, EST_CONCEP_DATE,GA_DIFF_DAYS,  EDD_BOE,BOE_METHOD, BOE_GA_WKS_ENROLL, BOE_GA_DAYS_ENROLL)
+
+mat_enroll <- read_excel(paste0("Z:/Outcome Data/", UploadDate, "/MAT_ENROLL.xlsx")) %>% 
   select(SITE, SCRNID, MOMID, PREGID, ENROLL, EST_CONCEP_DATE,GA_DIFF_DAYS,  EDD_BOE,BOE_METHOD, BOE_GA_WKS_ENROLL, BOE_GA_DAYS_ENROLL)
 
 #**************************************************************************************
@@ -160,9 +163,6 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                          TRUE ~ 99),
     CONSENT = case_when(!is.na(M02_CONSENT_IEORRES) ~ M02_CONSENT_IEORRES,
                         TRUE ~ 99)) %>% 
-    # ENROLL_test = case_when(M02_CONSENT_IEORRES == 1 & ELIGIBLE == 1 ~ 1,## MAY7 UPDATES: (M02_SCRN_RETURN == 1 | is.na(M02_SCRN_RETURN) to account for particpants who returned for screening and/or sites not using the variable
-    #                    ELIGIBLE == 0 | M02_CONSENT_IEORRES == 0 | M02_CONSENT_IEORRES == 77 ~ 0,
-    #                    TRUE ~ 77)) %>%
   ## Assign denominators
   mutate(PRESCREEN_DENOM = case_when(PRESCREEN == 1 ~ 1,
                                      TRUE ~ 0)) %>%      
@@ -196,7 +196,7 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                                        M00_PREGNANT_IEORRES == 1 & 
                                        (M00_EGA_LT25_IEORRES==1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")), 0, 99)),
     ## if you answer 1 to PRESCR_PREGSIGN & PRESCR_GA25 & PRESCR_AGE & PRESCR_CATCHAREA, you answer PRESCR_OTHER
-    PRESCR_OTHER = ifelse(M00_OTHR_IEORRES == 0, 1,
+    PRESCR_OTHER = ifelse(M00_OTHR_IEORRES == 0 | (M00_OTHR_IEORRES==77 & SITE == "Pakistan"), 1,
                           ifelse(M00_OTHR_IEORRES == 1 & 
                                    M00_CATCHMENT_IEORRES == 1 & 
                                    M00_AGE_IEORRES == 1  & 
@@ -208,7 +208,7 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                                ifelse((M00_CON_YN_DSDECOD == 0 | 
                                          M00_ASSNT_YN_DSDECOD == 0| M00_ASSNT_YN_DSDECOD == 0) & ## consent has "or" statements. if one method did not consent, then the rest are "77"
                                         (M00_CON_LAR_YN_DSDECOD == 0 | M00_CON_LAR_YN_DSDECOD == 77) & 
-                                        M00_OTHR_IEORRES == 0 & 
+                                       (M00_OTHR_IEORRES == 0 | (M00_OTHR_IEORRES==77 & SITE == "Pakistan")) & 
                                         M00_CATCHMENT_IEORRES == 1 & 
                                         M00_AGE_IEORRES == 1  & 
                                         M00_PREGNANT_IEORRES == 1 & 
@@ -218,7 +218,7 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                                    (M00_EGA_LT25_IEORRES == 1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")) & 
                                     M00_AGE_IEORRES == 1 &
                                     M00_CATCHMENT_IEORRES == 1 & 
-                                    M00_OTHR_IEORRES == 0 & 
+                                    (M00_OTHR_IEORRES == 0 | (M00_OTHR_IEORRES==77 & SITE == "Pakistan")) & 
                                     CONSENT_PRESCREEN == 1, 1,
                                   ifelse(M00_PREGNANT_IEORRES == 0 | M00_EGA_LT25_IEORRES == 0 | M00_AGE_IEORRES == 0 |
                                            M00_CATCHMENT_IEORRES == 0 | M00_OTHR_IEORRES == 1 | CONSENT_PRESCREEN == 0, 0, 99)
@@ -900,7 +900,7 @@ Prot_Compliance_MNH26 <- MatData_Anc_Visits %>%
                                   (SITE == "Ghana" & M02_SCRN_OBSSTDAT >= "2022-12-28") | 
                                   (SITE == "Zambia" & M02_SCRN_OBSSTDAT >= "2022-12-15") | 
                                   (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-06-20") |
-                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-08-15"), 1, 0)) %>%
+                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-12-12"), 1, 0)) %>%
   filter(REMAPP_LAUNCH ==1)  %>% 
   # NUMERATOR for protocol compliance 
   mutate(M26_ANCLESS20_NUM =ifelse(((M26_VISIT_COMPLETE_1 == 1 & ANC20_LATE < UploadDate) | 
@@ -1129,10 +1129,9 @@ MatData_Hb_Visit <- MatData_Anc_Visits %>%
                                   (SITE == "Ghana" & M02_SCRN_OBSSTDAT >= "2022-12-28") | 
                                   (SITE == "Zambia" & M02_SCRN_OBSSTDAT >= "2022-12-15") | 
                                   (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-06-20") |
-                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-08-15"), 1, 0)) %>%
+                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-12-12"), 1, 0)) %>%
   filter(ENROLL == 1 & REMAPP_LAUNCH ==1)
 
-test <- MatData_Hb_Visit %>% filter(SITE == "India-CMC") %>% select(SITE, MOMID, PREGID,US_GA_WKS_ENROLL, ANC20_OVERDUE, ANC20_PASS_LATE, HB_COMPLETED_2, M08_CBC_HB_LBORRES_2, DenHBV2, REMAPP_LAUNCH)
 
 ## export 
 save(MatData_Hb_Visit, file= paste0(path_to_save, "MatData_Hb_Visit",".RData",sep = ""))
@@ -1157,7 +1156,7 @@ MatData_Anc_Remapp <- MatData_Anc_Visits %>%
                                   (SITE == "Ghana" & M02_SCRN_OBSSTDAT >= "2022-12-28") | 
                                   (SITE == "Zambia" & M02_SCRN_OBSSTDAT >= "2022-12-15") | 
                                   (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-06-20") |
-                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-08-15"), 1, 0)) %>%
+                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-12-12"), 1, 0)) %>%
   filter(ENROLL == 1 & REMAPP_LAUNCH ==1) 
 
 MatData_Hb_GA_Visit_1 <- MatData_Anc_Remapp %>% 
@@ -1236,12 +1235,11 @@ save(MatData_Hb_GA_Visit, file= paste0(path_to_save, "MatData_Hb_GA_Visit",".RDa
  #*includes: CRIT_s, HEALTHY_ELIGIBLE
 #**************************************************************************************
 # import BRINDA adjusted dataset
-adj_ferritin <- read.csv(paste0("Z:/Outcome Data/" ,UploadDate, "/mnh08_adjusted-", UploadDate, ".csv")) %>% 
+adj_ferritin <-  read.csv(paste0("Z:/Outcome Data/",UploadDate, "/mnh08_adjusted-", UploadDate, ".csv")) %>%  
   filter(M08_TYPE_VISIT==1) %>% 
   select(SITE, MOMID, PREGID, contains("adj")) %>% 
   distinct(SITE, MOMID, PREGID, .keep_all = TRUE)
 
-# mnh08_adjusted-2024-10-18
 
 df_maternal <- MatData_Screen_Enroll %>%
   filter(ENROLL == 1) %>% 
@@ -1250,7 +1248,7 @@ df_maternal <- MatData_Screen_Enroll %>%
                                   (SITE == "Ghana" & M02_SCRN_OBSSTDAT >= "2022-12-28") | 
                                   (SITE == "Zambia" & M02_SCRN_OBSSTDAT >= "2022-12-15") | 
                                   (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-06-20") |
-                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-08-15"), 1, 0)) %>%
+                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-12-12"), 1, 0)) %>%
   filter(REMAPP_LAUNCH == 1) %>% 
   left_join(adj_ferritin, by = c("SITE", "MOMID", "PREGID")) 
 
@@ -1643,4 +1641,3 @@ df_eli_long$Variable <- factor(
              "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19"))
 
 save(df_eli_long, file= paste0(path_to_save, "df_eli_long",".RData",sep = ""))
-
