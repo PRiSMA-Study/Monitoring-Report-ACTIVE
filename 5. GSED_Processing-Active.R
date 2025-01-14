@@ -1,7 +1,7 @@
 #*****************************************************************************
 #* Monitoring report GSED SF/LF/FCI
 #* Drafted: 4 September 2024, Stacie Loisate (Translating Nazia's Stata Code to R)
-#* Last updated: 25 October 2024
+#* Last updated: 14 January 2025
 
 #*****************************************************************************
 #*****************************************************************************
@@ -71,6 +71,127 @@ names(aim3_zam) <- toupper(names(aim3_zam))
 aim3_merged <- bind_rows(aim3_gha, aim3_cmc, aim3_ke, aim3_pak, aim3_zam) %>% 
   relocate(SITE, .before = MOMID) %>% 
   distinct(SITE, MOMID, PREGID)
+
+
+## import ReMIND IDs (this will be used for the remind specific tables (currently table 20))
+## Ghana ##
+aim3_gha_3m_remind <- read.xlsx(paste0("Z:/ReMAPP_Aim3_IDs/ReMIND-InfantIDs/data_tracker_", "ghana", "_3M", ".xlsx")) %>% 
+  mutate(NEW = 1, 
+         TIME_3 = 1) %>% 
+  rename(PREGID = "Preg_ID") %>% 
+  rename(INFANTID = "Infant_ID") %>% 
+  select(PREGID, INFANTID, NEW, TIME_3) %>% 
+  filter(!is.na(PREGID))
+
+aim3_gha_12m_remind <- read.xlsx(paste0("Z:/ReMAPP_Aim3_IDs/ReMIND-InfantIDs/data_tracker_", "ghana", "_12M", ".xlsx")) %>% 
+  mutate(NEW = 1, 
+         TIME_12 = 1) %>% 
+  rename(PREGID = "Preg_ID") %>% 
+  rename(INFANTID = "Infant_ID") %>% 
+  select(PREGID, INFANTID, NEW, TIME_12) %>% 
+  filter(!is.na(PREGID))
+
+aim3_gha_remind <- aim3_gha_3m_remind %>% full_join(aim3_gha_12m_remind, by = c("PREGID", "INFANTID", "NEW")) %>% 
+  group_by(PREGID, INFANTID) %>%
+  mutate(n=n()) %>%
+  mutate(SITE = "Ghana") %>% 
+  select(SITE, PREGID, INFANTID)
+
+## CMC ##
+aim3_cmc_3m_remind <- read.xlsx(paste0("Z:/ReMAPP_Aim3_IDs/ReMIND-InfantIDs/data_tracker_", "india", "_3M", ".xlsx")) %>% 
+  mutate(NEW = 1, 
+         TIME_3 = 1) %>% 
+  rename(PREGID = "Preg_ID") %>% 
+  rename(INFANTID = "Infant_ID") %>% 
+  select(PREGID, INFANTID, NEW, TIME_3) %>% 
+  filter(!is.na(PREGID))
+
+aim3_cmc_12m_remind <- read.xlsx(paste0("Z:/ReMAPP_Aim3_IDs/ReMIND-InfantIDs/data_tracker_", "india", "_12M", ".xlsx")) %>% 
+  mutate(NEW = 1, 
+         TIME_12 = 1) %>% 
+  rename(PREGID = "Preg_ID") %>% 
+  rename(INFANTID = "Infant_ID") %>% 
+  select(PREGID, INFANTID, NEW, TIME_12) %>% 
+  filter(!is.na(PREGID))
+
+aim3_cmc_remind <- aim3_cmc_3m_remind %>% full_join(aim3_cmc_12m_remind, by = c("PREGID", "INFANTID", "NEW")) %>% 
+  group_by(PREGID, INFANTID) %>%
+  mutate(n=n()) %>%
+  distinct(PREGID,  INFANTID, n) %>%
+  mutate(SITE = "India-CMC") %>% 
+  select(SITE, PREGID, INFANTID)
+
+## Kenya ##
+aim3_ke_3m_remind <- read.xlsx(paste0("Z:/ReMAPP_Aim3_IDs/ReMIND-InfantIDs/data_tracker_", "kenya", "_3M", ".xlsx")) %>% 
+  mutate(NEW = 1, 
+         TIME_3 = 1) %>% 
+  rename(PREGID = "Preg_ID") %>% 
+  rename(INFANTID = "Infant_ID") %>% 
+  select(PREGID, INFANTID, NEW, TIME_3) %>% 
+  filter(!is.na(PREGID))
+
+aim3_ke_12m_remind <- read.xlsx(paste0("Z:/ReMAPP_Aim3_IDs/ReMIND-InfantIDs/data_tracker_", "kenya", "_12M", ".xlsx")) %>% 
+  mutate(NEW = 1, 
+         TIME_12 = 1) %>% 
+  rename(PREGID = "Preg_ID") %>% 
+  rename(INFANTID = "Infant_ID") %>% 
+  select(PREGID, INFANTID, NEW, TIME_12) %>% 
+  filter(!is.na(PREGID))
+
+aim3_ke_remind <- aim3_ke_3m_remind %>% full_join(aim3_ke_12m_remind, by = c("PREGID", "INFANTID", "NEW")) %>% 
+  group_by(PREGID, INFANTID)  %>% 
+  mutate(SITE = "Kenya") %>% 
+  select(SITE, PREGID, INFANTID)
+
+# write.csv(aim3_ke_remind, paste0("~/Output/Outcomes-Queries/", "aim3_ke_remind" ,".csv"), row.names=FALSE)
+
+## Pakistan ## NO DISCREPANCIES
+aim3_pak_3m_remind <- read.xlsx(paste0("Z:/ReMAPP_Aim3_IDs/ReMIND-InfantIDs/data_tracker_", "Pakistan", "_3M", ".xlsx")) %>% 
+  select(Preg_ID, Infant_ID) %>% 
+  mutate(NEW = 1, 
+         TIME_3 = 1) %>% 
+  rename(PREGID = "Preg_ID") %>% 
+  rename(INFANTID = "Infant_ID") %>% 
+  select(PREGID, INFANTID, NEW, TIME_3) %>% 
+  filter(!is.na(PREGID))
+
+aim3_pak_12m_remind <- read.xlsx(paste0("Z:/ReMAPP_Aim3_IDs/ReMIND-InfantIDs/data_tracker_", "Pakistan", "_12M", ".xlsx")) %>% 
+  select(Preg_ID, Infant_ID) %>% 
+  mutate(NEW = 1, 
+         TIME_12 = 1) %>% 
+  rename(PREGID = "Preg_ID") %>% 
+  rename(INFANTID = "Infant_ID") %>% 
+  select(PREGID, INFANTID, NEW, TIME_12) %>% 
+  filter(!is.na(PREGID))
+
+aim3_pak_remind <- aim3_pak_3m_remind %>% full_join(aim3_pak_12m_remind, by = c("PREGID", "INFANTID", "NEW")) %>% 
+  group_by(PREGID, INFANTID)  %>%
+  mutate(SITE = "Pakistan") %>% 
+  select(SITE, PREGID, INFANTID)
+
+## Zambia ## 
+aim3_zam_3m_remind <- read.xlsx(paste0("Z:/ReMAPP_Aim3_IDs/ReMIND-InfantIDs/data_tracker_", "zambia", "_3M", ".xlsx")) %>% 
+  select(Preg_ID, Infant_ID) %>% 
+  mutate(NEW = 1, 
+         TIME_3 = 1) %>% 
+  rename(PREGID = "Preg_ID") %>% 
+  rename(INFANTID = "Infant_ID") %>% 
+  select(PREGID, INFANTID, NEW, TIME_3) %>% 
+  filter(!is.na(PREGID))
+
+aim3_zam_12m_remind <- read.xlsx(paste0("Z:/ReMAPP_Aim3_IDs/ReMIND-InfantIDs/data_tracker_", "zambia", "_12M", ".xlsx")) %>% 
+  select(Preg_ID, Infant_ID) %>% 
+  mutate(NEW = 1, 
+         TIME_12 = 1) %>% 
+  rename(PREGID = "Preg_ID") %>% 
+  rename(INFANTID = "Infant_ID") %>% 
+  select(PREGID, INFANTID, NEW, TIME_12) %>% 
+  filter(!is.na(PREGID))
+
+aim3_zam_remind <- aim3_zam_3m_remind %>% full_join(aim3_zam_12m_remind, by = c("PREGID", "INFANTID", "NEW")) %>% 
+  group_by(PREGID, INFANTID) %>% 
+  mutate(SITE = "Zambia") %>% 
+  select(SITE, PREGID, INFANTID)
 
 #*****************************************************************************
 #*****************************************************************************
