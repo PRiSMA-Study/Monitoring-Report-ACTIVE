@@ -2,7 +2,7 @@
 #* INFANT WIDE DATASET by VISIT 
 #*Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #*Input: .RData files for each form (generated from 1. data import code)
-#* Last updated:18 October 2024
+#* Last updated: 25 February 2025
 
 #*Output:   
 #* 1. InfData_Wide.RData wide dataset by INFANTID and visit type (one row for each infant at each visit)
@@ -24,7 +24,7 @@ rm(list = ls())
 library(tidyverse)
 library(lubridate)
 library(readxl)
-UploadDate = "2024-10-18"
+UploadDate = "2025-02-21"
 
 #*****************************************************************************
 #* Import merged data 
@@ -40,7 +40,7 @@ walk(rdata_files, ~ load(.x, .GlobalEnv))
 if (exists("m09_merged") == TRUE){ m09_merged <- m09_merged %>% mutate(VISIT_DATE = M09_MAT_LD_OHOSTDAT) }
 #if (exists("m11_merged") == TRUE){ m11_merged <- m11_merged %>% mutate(VISIT_DATE = M11_VISIT_OBSSTDAT) }
 if (exists("m13_infantmerged") == TRUE){ m13_infantmerged <- m13_infantmerged %>% mutate(VISIT_DATE = M13_VISIT_OBSSTDAT) %>% 
-   filter(!is.na(INFANTID))}
+  filter(!is.na(INFANTID))}
 if (exists("m14_infantmerged") == TRUE){ m14_infantmerged <- m14_infantmerged %>% mutate(VISIT_DATE = M14_VISIT_OBSSTDAT) %>% 
   filter(!is.na(INFANTID))}
 if (exists("m15_infantmerged") == TRUE){ m15_infantmerged <- m15_infantmerged %>% mutate(VISIT_DATE = M15_OBSSTDAT)  %>% 
@@ -104,7 +104,7 @@ m09_INF4 <- m09_wide %>% rename("INFANTID" = "M09_INFANTID_INF4") %>%
 ## bind all infants together 
 m09_inf <- bind_rows(m09_INF1, m09_INF2, m09_INF3, m09_INF4)  %>%
   # mutate(DELIVERY_DATETIME = ymd(parse_date_time(M09_DELIV_DSSTDAT_INF1, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))))
- mutate(DELIVERY_DATETIME = as.POSIXct(DELIVERY_DATETIME, format= "%Y-%m-%d %H:%M"))  # assign time field type for time of birth
+  mutate(DELIVERY_DATETIME = as.POSIXct(DELIVERY_DATETIME, format= "%Y-%m-%d %H:%M"))  # assign time field type for time of birth
 
 ## put all forms into a list 
 all_out <- mget(ls(pattern = "_infantmerged*"))
@@ -191,7 +191,6 @@ visit_pnc_8 <- inf_data_out_wide %>%
   select(-TYPE_VISIT) %>% 
   rename_with(~paste0(., "_", 8), .cols = -c("SITE", "MOMID", "PREGID", "INFANTID", "DELIVERY_DATETIME")) 
 
-
 visit_pnc_9 <- inf_data_out_wide %>% 
   filter(TYPE_VISIT == 9) %>% 
   select(-TYPE_VISIT) %>% 
@@ -200,29 +199,39 @@ visit_pnc_9 <- inf_data_out_wide %>%
 visit_pnc_10 <- inf_data_out_wide %>% 
   filter(TYPE_VISIT == 10) %>% 
   select(-TYPE_VISIT) %>% 
-  rename_with(~paste0(., "_", 10), .cols = -c("SITE", "MOMID", "PREGID", "INFANTID", "DELIVERY_DATETIME")) 
+  rename_with(~paste0(., "_", 10), .cols = -c("SITE", "MOMID", "PREGID", "INFANTID", "DELIVERY_DATETIME"))
 
 visit_pnc_11 <- inf_data_out_wide %>% 
   filter(TYPE_VISIT == 11) %>% 
   select(-TYPE_VISIT) %>% 
-  rename_with(~paste0(., "_", 11), .cols = -c("SITE", "MOMID", "PREGID", "INFANTID", "DELIVERY_DATETIME")) 
+  rename_with(~paste0(., "_", 11), .cols = -c("SITE", "MOMID", "PREGID", "INFANTID", "DELIVERY_DATETIME"))
 
 visit_pnc_12 <- inf_data_out_wide %>% 
   filter(TYPE_VISIT == 12) %>% 
   select(-TYPE_VISIT) %>% 
   rename_with(~paste0(., "_", 12), .cols = -c("SITE", "MOMID", "PREGID", "INFANTID", "DELIVERY_DATETIME")) 
 
+# test for duplicates: 
+test7 <- visit_pnc_7 %>% group_by(SITE, INFANTID) %>% mutate(n=n()) %>% filter(n>1)
+test8 <- visit_pnc_8 %>% group_by(SITE, INFANTID) %>% mutate(n=n()) %>% filter(n>1)
+test9 <- visit_pnc_9 %>% group_by(SITE, INFANTID) %>% mutate(n=n()) %>% filter(n>1)
+test10 <- visit_pnc_10 %>% group_by(SITE, INFANTID) %>% mutate(n=n()) %>% filter(n>1)
+test11 <- visit_pnc_11 %>% group_by(SITE, INFANTID) %>% mutate(n=n()) %>% filter(n>1)
+test12 <- visit_pnc_12 %>% group_by(SITE, INFANTID) %>% mutate(n=n()) %>% filter(n>1)
+
 infant_pnc_visit_out <- mget(ls(pattern = "visit_pnc_"))
 gc()
 # merge all forms together 
 InfData_Wide <- infant_pnc_visit_out %>% reduce(full_join, by =  c("SITE", "MOMID", "PREGID", "INFANTID", "DELIVERY_DATETIME")) %>% distinct()
+# 
 
+test <- InfData_Wide %>% group_by(INFANTID) %>% mutate(n=n()) %>% filter(n>1) %>% select(SITE, MOMID, PREGID, INFANTID, n)
 # merge m24 infant closeout into dataset
 m24_infantmerged <- m24_infantmerged %>% 
-  mutate(M24_VISIT_COMPLETE = ifelse(!is.na(M24_CLOSE_DSDECOD), 1, 0))
+  mutate(M24_VISIT_COMPLETE = ifelse(!is.na(M24_CLOSE_DSDECOD), 1, 0)) 
 
 
-InfData_Wide <- full_join(InfData_Wide, m24_infantmerged, by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% distinct()
+InfData_Wide <- left_join(InfData_Wide, m24_infantmerged, by = c("SITE", "INFANTID")) %>% distinct()
 
 ## Merge in MNH11 post-delivery outcomes 
 m11_merged_out <- m11_merged %>% #select(-c("MOMID", "PREGID")) %>% 
@@ -334,7 +343,7 @@ InfData_Wide <- left_join(InfData_Wide, non_sched_form_wide_all, by =c("SITE", "
   distinct()
 
 ## Merge in birth outcome data 
-m09_inf_to_merge <- m09_inf %>% select(SITE, MOMID, PREGID, INFANTID, M09_DELIV_DSSTDAT, M09_BIRTH_DSTERM)
+m09_inf_to_merge <- m09_inf %>% select(SITE, MOMID, PREGID, INFANTID, M09_DELIV_DSSTDAT, M09_BIRTH_DSTERM) 
 InfData_Wide <- left_join(InfData_Wide, m09_inf_to_merge, by = c("SITE", "MOMID", "PREGID", "INFANTID")) 
 
 table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_7)
@@ -342,6 +351,7 @@ table(InfData_Wide$SITE, InfData_Wide$M13_TYPE_VISIT_8)
 #*****************************************************************************
 #* Export wide dataset 
 #*****************************************************************************
+
 ## export to personal
 setwd(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, sep = ""))
 save(InfData_Wide, file= paste("InfData_Wide","_", UploadDate,".RData",sep = ""))
