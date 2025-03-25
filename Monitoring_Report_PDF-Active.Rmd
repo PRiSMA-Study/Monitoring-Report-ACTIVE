@@ -8261,7 +8261,7 @@ knitr::include_graphics("remapp_table2.png")
 ### Figure 8: Eligibility status and missingness by ReMAPP healthy cohort criteria
 
 *Value:* Illustrates the distribution of each healthy cohort criteria
-(C1-C19) among women enrolled in PRISMA since ReMAPP launch. Missing
+(C1-C20) among women enrolled in PRISMA since ReMAPP launch. Missing
 means missing form, note that it includes pending data (test not
 performed yet or result pending).
 
@@ -8291,7 +8291,7 @@ plot_criteria %>%
 
 ```
 
-**Description of eligibility criteria (C1-C19):**
+**Description of eligibility criteria (C1-C20):**
 
 -   C1: Aged 18 to 34 years;
 -   C2: Gestational age \<14 weeks
@@ -8322,6 +8322,7 @@ plot_criteria %>%
     Eβthal, Cβthal, CD-Punjab, ED-Punjab, D-D-Punjab, D-Punjabβthal,
     Thalassemia major, Thalassemia intermedia, glucose-6-phosphate
     dehydrogenase deficiency, or Alpha thalassemia
+-   C20: Normal glucose-6-phosphate dehydrogenase (>=6.1 U/g Hb)
 
 \newpage
 
