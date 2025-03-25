@@ -1,5 +1,7 @@
 ## PRISMA & ReMAPP Monitoring Report
-#### Last Updated: 25 February 2025
+#### Last Updated: 25 March 2025
+- Added G6PD and updated hemoglobinopathies logic for healthy cohort (Table 19 & Figure 8)
+
 
 ### Overview
 
