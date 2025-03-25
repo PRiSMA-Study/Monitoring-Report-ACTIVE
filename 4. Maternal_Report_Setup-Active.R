@@ -1149,6 +1149,7 @@ save(MatData_Hb_GA_Visit, file= paste0(path_to_save, "MatData_Hb_GA_Visit",".RDa
 #*Output: healthyOutcome.rda
 #*includes: CRIT_s, HEALTHY_ELIGIBLE
 #**************************************************************************************
+
 df_maternal <- MatData_Screen_Enroll %>%
   filter(ENROLL == 1) %>% 
   mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT >= "2023-04-14") |
@@ -1208,9 +1209,9 @@ if (p50_ferritin_zm < 10 ) {
 
 # save(df_maternal, file = "derived_data/df_maternal.rda")
 
-## 07/03 UPDATED CRITERIA 
+## 3/25 UPDATED CRITERIA FOR HEMOGLOBINOPATHIES
 #derive criteria
-#derive criteria
+  #derive criteria
 df_criteria <- df_maternal %>%
   dplyr::select(
     SITE, SCRNID, MOMID, PREGID,ENROLL,# sf_adj,,
@@ -1235,6 +1236,7 @@ df_criteria <- df_maternal %>%
     M08_RBC_LBPERF_2_1, M08_RBC_THALA_LBORRES_1, M08_RBC_LBPERF_3_1,
     M08_MN_LBPERF_12_1, M08_CRP_LBORRES_1, M08_MN_LBPERF_13_1, M08_AGP_LBORRES_1,
     M08_RBC_G6PD_LBORRES_1, FERRITIN_LBORRES,
+    contains("M08_RBC_THALA_"),M08_RBC_SPFY_THALA_1,M08_RBC_SICKLE_LBORRES_1,
     num_range("M06_HB_POC_LBORRES_",1:12),
     num_range("M08_CBC_HB_LBORRES_",1:12),
     num_range("M08_LBSTDAT_",1:12),
@@ -1242,15 +1244,15 @@ df_criteria <- df_maternal %>%
     num_range("M09_INFANTID_INF",1:4,"_6"),
     num_range("M09_BIRTH_DSTERM_INF",1:4,"_6"), 
     num_range("M09_DELIV_DSSTDAT_INF",1:4,"_6"), BOE_GA_DAYS_ENROLL
-    
+
   ) %>% 
   mutate(
     # A. age at enrollment
     # Aged 18 to 34 years
     AGE_ENROLL = case_when(!M02_SCRN_OBSSTDAT %in% c(ymd("1907-07-07"), ymd("1905-05-05")) & !M00_BRTHDAT %in% c(ymd("1907-07-07"), ymd("1905-05-05"))~ 
-                             as.numeric(ymd(M02_SCRN_OBSSTDAT) - ymd(M00_BRTHDAT))/365,
-                           M00_ESTIMATED_AGE > 0 ~ M00_ESTIMATED_AGE,
-                           TRUE ~ NA),
+                        as.numeric(ymd(M02_SCRN_OBSSTDAT) - ymd(M00_BRTHDAT))/365,
+                    M00_ESTIMATED_AGE > 0 ~ M00_ESTIMATED_AGE,
+                    TRUE ~ NA),
     
     CRIT_AGE = ifelse((AGE_ENROLL > 0 & AGE_ENROLL < 18) | AGE_ENROLL > 34, 0,
                       ifelse(AGE_ENROLL >= 18 & AGE_ENROLL <= 34, 1, 55)
@@ -1293,10 +1295,9 @@ df_criteria <- df_maternal %>%
   #replace negative value to NA in order to use BRINDA package 
   mutate_at(vars(c(M08_FERRITIN_LBORRES_1, M08_CRP_LBORRES_1, M08_AGP_LBORRES_1, FERRITIN_LBORRES)), ~ replace(., . < 0, NA)) 
 
-
 df_criteria <- df_criteria %>% 
   mutate(
-    ## ask savannah to double check:
+  ## ask savannah to double check:
     # G. no subclinical inflammation (CRP<=5 and/or AGP<=1) check unit (mg/L for CRP and g/L for AGP in dd) double check the calculation before use
     CRIT_INFLAM = case_when(
       (M08_CRP_LBORRES_1>5 & !is.na(M08_CRP_LBORRES_1)) | (M08_AGP_LBORRES_1>1 & !is.na(M08_AGP_LBORRES_1)) ~ 0, ## if high inflammation --> 0, inelgible
@@ -1304,7 +1305,7 @@ df_criteria <- df_criteria %>%
       M08_MN_LBPERF_12_1 == 0 | M08_MN_LBPERF_13_1 == 0 ~ 55,
       TRUE ~ 55
     ),
-    
+
     # F. no iron deficiency (not iron deficient: serum ferritin > 15 mcg/L(Ug/L)) 
     CRIT_IRON = case_when(
       (CRIT_INFLAM ==0 & FERRITIN_LBORRES <70) | (CRIT_INFLAM == 1 & FERRITIN_LBORRES<15) ~ 0, ## 0, ineligible if high inflammation & ferritin <70 OR normal inflammation & ferritin <15
@@ -1312,22 +1313,6 @@ df_criteria <- df_criteria %>%
       CRIT_INFLAM == 55 ~  55, ## if inflammation status is pending, 55, pending
       TRUE ~ NA_real_
     )
-    # CRIT_IRON = case_when(
-    #   sf_adj > 15 ~ 1,
-    #   sf_adj >= 0 & sf_adj <= 15 ~ 0,
-    #   TRUE ~ NA_real_
-    # ),
-    # CRIT_IRON = case_when(
-    #   FERRITIN_LBORRES > 15 ~ 1,
-    #   FERRITIN_LBORRES >= 0 & FERRITIN_LBORRES <= 15 ~ 0,
-    #   TRUE ~ NA_real_
-    # ),
-    # CRIT_INFLAM = case_when(
-    #   M08_CRP_LBORRES_1 >= 0 & M08_CRP_LBORRES_1 <= 5 & M08_AGP_LBORRES_1 > 0 & M08_AGP_LBORRES_1 <= 1 ~ 1,
-    #   M08_CRP_LBORRES_1 > 5 | M08_AGP_LBORRES_1 > 1 ~ 0,
-    #   M08_MN_LBPERF_12_1 == 0 | M08_MN_LBPERF_13_1 == 0 ~ 55,
-    #   TRUE ~ 55
-    # )
   ) %>% 
   rowwise() %>% 
   mutate_at(vars(starts_with("M06_BP_")), ~ ifelse(. < 0, NA, .)) %>% 
@@ -1370,8 +1355,25 @@ df_criteria <- df_criteria %>%
     # J. No hemoglobinopathies: SS, SC, SE, EE, CC, SD-Punjab, SN2thal, EN2thal, 
     #CN2thal, CD-Punjab, ED-Punjab, D-D-Punjab, D-PunjabN2thal, Thalassemia major, Thalassemia intermedia, or Alpha thalassemia
     CRIT_HEMOGLOBINOPATHIES = case_when(
-      M08_RBC_THALA_LBORRES_1 == 0 ~ 1,
-      M08_RBC_THALA_LBORRES_1 == 1 ~ 0, 
+      # Case 1: Any of the M08_RBC_THALA_x variables is 1 OR grepl() condition is met
+      (M08_RBC_THALA_1_1 == 1 | M08_RBC_THALA_2_1 == 1 | M08_RBC_THALA_3_1 == 1 | M08_RBC_THALA_4_1 == 1 |
+         M08_RBC_THALA_5_1 == 1 | M08_RBC_THALA_6_1 == 1 | M08_RBC_THALA_7_1 == 1 | M08_RBC_THALA_8_1 == 1 |
+         M08_RBC_THALA_9_1 == 1 | M08_RBC_THALA_10_1 == 1 | M08_RBC_THALA_11_1 == 1 | M08_RBC_THALA_12_1 == 1 |
+         M08_RBC_THALA_13_1 == 1 | M08_RBC_THALA_14_1 == 1 ) ~ 0,
+      # Case 2: grepl condition with M08_RBC_THALA_19
+      (grepl("Interme|Diseas|Major", M08_RBC_SPFY_THALA_1, ignore.case = TRUE) & M08_RBC_THALA_19_1 == 1) ~ 0,
+      # Case 3: If M08_RBC_SICKLE_LBORRES is 1, assign 0
+      M08_RBC_SICKLE_LBORRES_1 == 1 ~ 0,
+      # Case 4: All M08_RBC_THALA_x are 0, but M08_RBC_THALA_16, 17, or 18 is 1 OR thala test results are 0
+      ((M08_RBC_THALA_1_1 == 0 & M08_RBC_THALA_2_1 == 0 & M08_RBC_THALA_3_1 == 0 & M08_RBC_THALA_4_1 == 0 &
+          M08_RBC_THALA_5_1 == 0 & M08_RBC_THALA_6_1 == 0 & M08_RBC_THALA_7_1 == 0 & M08_RBC_THALA_8_1 == 0 &
+          M08_RBC_THALA_9_1 == 0 & M08_RBC_THALA_10_1 == 0 & M08_RBC_THALA_11_1 == 0 & M08_RBC_THALA_12_1 == 0 &
+          M08_RBC_THALA_13_1 == 0 & M08_RBC_THALA_14_1 == 0) &
+         (M08_RBC_THALA_15_1 == 1 | M08_RBC_THALA_16_1 == 1 | M08_RBC_THALA_17_1 == 1 | M08_RBC_THALA_18_1 == 1)) |
+        M08_RBC_THALA_LBORRES_1 == 0 ~ 1,
+      # Case 5: grepl condition with M08_RBC_THALA_19 if it has trait/any regular hemoglobanopathy without disease
+      (grepl("TRAIT|AF|FC|AE|AS", M08_RBC_SPFY_THALA_1, ignore.case = TRUE) & M08_RBC_THALA_19_1 == 1) ~ 1,
+      # Default case
       TRUE ~ 55
     ),
     #K. No reported cigarette smoking, tobacco chewing, or betel nut use during pregnancy
@@ -1432,6 +1434,9 @@ df_criteria <- df_criteria %>%
                              ifelse(M06_HCV_POC_LBORRES_1 == 0, 1, 55))
   ) 
 
+#After enrollment, participants will be excluded from the final analysis if any of the following occur: 
+#Multiple pregnancies not identified at recruitment
+
 save(df_criteria, file= paste0(path_to_save, "df_criteria",".RData",sep = ""))
 #**************************************************************************************
 #*2. check eligibility and save df_healthy.rda
@@ -1456,6 +1461,25 @@ healthyOutcome <- df_criteria %>%
 
 df_healthy <- healthyOutcome %>% 
   filter(HEALTHY_ELIGIBLE == 1)
+
+# test <- healthyOutcome %>% 
+#   mutate(HEALTHY_ELIGIBLE_14WK = case_when(
+#     if_all(starts_with("CRIT_") & !matches("CRIT_GA"), ~.x %in% c(1, 666)) ~ 1, #eligible
+#     if_any(starts_with("CRIT_"), ~.x == 0) ~ 0, #Not eligible
+#     if_any(starts_with("CRIT_"), ~.x %in% c(55, 99)) ~ 55, # pending
+#     HEALTHY_CHECK < 19 ~ 3 #19 criteria pending
+#   )) %>%
+#   # filter(HEALTHY_ELIGIBLE_14WK ==0) %>%
+#   select(SITE, MOMID, PREGID,HEALTHY_ELIGIBLE, HEALTHY_ELIGIBLE_14WK,starts_with("CRIT"))
+# 
+# table(healthyOutcome$CRIT_GA,healthyOutcome$HEALTHY_ELIGIBLE)
+# table(healthyOutcome$CRIT_GA, healthyOutcome$HEALTHY_ELIGIBLE_14WK)
+# table(healthyOutcome$CRIT_GA)
+# 
+# table(test$CRIT_GA, test$HEALTHY_ELIGIBLE_14WK)
+# table(test$CRIT_GA, test$HEALTHY_ELIGIBLE)
+
+# table(df_healthy$SITE)
 
 save(healthyOutcome, file= paste0(path_to_save, "healthyOutcome",".RData",sep = ""))
 save(df_healthy, file= paste0(path_to_save, "df_healthy",".RData",sep = ""))
@@ -1487,7 +1511,8 @@ df_eli <- df_criteria %>%
     C16 = ifelse(!is.na(CRIT_HEPATITISC),CRIT_HEPATITISC,55),
     C17 = ifelse(!is.na(CRIT_IRON),CRIT_IRON,55),
     C18 = ifelse(!is.na(CRIT_INFLAM),CRIT_INFLAM,55), 
-    C19 = ifelse(!is.na(CRIT_HEMOGLOBINOPATHIES),CRIT_HEMOGLOBINOPATHIES,55)
+    C19 = ifelse(!is.na(CRIT_HEMOGLOBINOPATHIES),CRIT_HEMOGLOBINOPATHIES,55),
+    C20 = ifelse(!is.na(CRIT_G6PD),CRIT_G6PD,55)
   )
 
 df_eli$C1 <- factor(
@@ -1599,6 +1624,12 @@ df_eli$C19 <- factor(
   labels = c("Eligible", "Ineligible", "Pending")
 )
 
+df_eli$C20 <- factor(
+  df_eli$C20,
+  levels = c(1,0,55),
+  labels = c("Eligible", "Ineligible", "Pending")
+)
+
 df_eli_long <- df_eli %>% 
   dplyr::select(-starts_with("CRIT_")) %>% 
   pivot_longer(cols = -c(MOMID, PREGID, SITE), 
@@ -1608,7 +1639,8 @@ df_eli_long <- df_eli %>%
 #order variable value
 df_eli_long$Variable <- factor(
   df_eli_long$Variable,
-  levels = c("C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", 
-             "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19"))
+  levels = c("C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11",
+             "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20"))
 
 save(df_eli_long, file= paste0(path_to_save, "df_eli_long",".RData",sep = ""))
+
