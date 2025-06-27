@@ -96,60 +96,26 @@ if (exists("m21_merged") == TRUE){ m21_merged <- m21_merged %>% filter(M21_AETER
 
 ## Remove momid and pregid from MNH00 to merge -- we are going to only have the momid and pregid as defined in m02
 m01_enroll <- m01_merged %>% filter(M01_TYPE_VISIT == 1) %>% ## only want enrollment visit 
-  select(-MOMID, -PREGID) %>%  # merge in MOMID and PREGID from mnh02 later 
   rename("TYPE_VISIT" = M01_TYPE_VISIT) %>% 
-  # filter out any ultrasound visit dates that are 07-07-1907
+  left_join(mat_enroll %>% select(SITE, MOMID, PREGID, PREG_START_DATE, GA_DIFF_DAYS, BOE_GA_DAYS_ENROLL, BOE_GA_WKS_ENROLL,
+                                  US_GA_WKS_ENROLL, US_GA_DAYS_ENROLL, LMP_GA_WKS_ENROLL, LMP_GA_DAYS_ENROLL, EDD_BOE),
+            by = c("SITE", "MOMID", "PREGID")) %>%  ## ADD IN MAT_ENROLLMENT HERE AND USE GA AND LMP AT ENROLLMENT VARIABLES HERE
+  select(-MOMID, -PREGID) %>%  # merge in MOMID and PREGID from mnh02 later 
+  mutate(PREG_START_DATE = ymd(PREG_START_DATE)) %>% 
+  ## filter out any ultrasound visit dates that are 07-07-1907
   filter(M01_US_OHOSTDAT != ymd("1907-07-07")) %>%   ## FOR KENYA DATA, THIS WILL BE 2007-07-07
-  # calculate us ga in days with reported ga in wks + days. if ga is -7 or -5, replace with NA
-  ## combine ga weeks and days variables to get a single gestational age variable
-  mutate(GA_US_DAYS_FTS1 =  ifelse(!SITE %in% c("India-CMC", "India-SAS") & M01_US_GA_WKS_AGE_FTS1!= -7 & M01_US_GA_DAYS_AGE_FTS1 != -7,  (M01_US_GA_WKS_AGE_FTS1 * 7 + M01_US_GA_DAYS_AGE_FTS1), NA), 
-         GA_US_DAYS_FTS2 =  ifelse(!SITE %in% c("India-CMC", "India-SAS") & M01_US_GA_WKS_AGE_FTS2!= -7 & M01_US_GA_DAYS_AGE_FTS2 != -7,  (M01_US_GA_WKS_AGE_FTS2 * 7 + M01_US_GA_DAYS_AGE_FTS2), NA),
-         GA_US_DAYS_FTS3 =  ifelse(!SITE %in% c("India-CMC", "India-SAS") & M01_US_GA_WKS_AGE_FTS3!= -7 & M01_US_GA_DAYS_AGE_FTS3 != -7,  (M01_US_GA_WKS_AGE_FTS3 * 7 + M01_US_GA_DAYS_AGE_FTS3), NA),
-         GA_US_DAYS_FTS4 =  ifelse(!SITE %in% c("India-CMC", "India-SAS") & M01_US_GA_WKS_AGE_FTS4!= -7 & M01_US_GA_DAYS_AGE_FTS4 != -7,  (M01_US_GA_WKS_AGE_FTS4 * 7 + M01_US_GA_DAYS_AGE_FTS4), NA)) %>% 
-  ## combine ga weeks and days variables to get a single gestational age variable - CMC is using acog - use this here 
-  mutate(GA_US_DAYS_FTS1 =  ifelse(SITE %in% c("India-CMC", "India-SAS") & M01_CAL_GA_WKS_AGE_FTS1!= -7 & M01_CAL_GA_DAYS_AGE_FTS1 != -7,  (M01_CAL_GA_WKS_AGE_FTS1 * 7 + M01_CAL_GA_DAYS_AGE_FTS1), GA_US_DAYS_FTS1), 
-         GA_US_DAYS_FTS2 =  ifelse(SITE %in% c("India-CMC", "India-SAS") & M01_CAL_GA_WKS_AGE_FTS2!= -7 & M01_CAL_GA_DAYS_AGE_FTS2 != -7,  (M01_CAL_GA_WKS_AGE_FTS2 * 7 + M01_CAL_GA_DAYS_AGE_FTS2), GA_US_DAYS_FTS2),
-         GA_US_DAYS_FTS3 =  ifelse(SITE %in% c("India-CMC", "India-SAS") & M01_CAL_GA_WKS_AGE_FTS3!= -7 & M01_CAL_GA_DAYS_AGE_FTS3 != -7,  (M01_CAL_GA_WKS_AGE_FTS3 * 7 + M01_CAL_GA_DAYS_AGE_FTS3), GA_US_DAYS_FTS3),
-         GA_US_DAYS_FTS4 =  ifelse(SITE %in% c("India-CMC", "India-SAS") & M01_CAL_GA_WKS_AGE_FTS4!= -7 & M01_CAL_GA_DAYS_AGE_FTS4 != -7,  (M01_CAL_GA_WKS_AGE_FTS4 * 7 + M01_CAL_GA_DAYS_AGE_FTS4), GA_US_DAYS_FTS4)) %>% 
-  #  pull the largest GA for multiple fetuses + convert to weeks
-  mutate(US_GA_DAYS_ENROLL = pmax(GA_US_DAYS_FTS1, GA_US_DAYS_FTS2, GA_US_DAYS_FTS3, GA_US_DAYS_FTS4, na.rm = TRUE)) %>% ## where GA_US_DAYS_FTSx is the reported GA by ultrasound (added together M01_US_GA_WKS_AGE_FTSx and M01_US_GA_DAYS_AGE_FTSx to get a single estimate in days)
-  mutate(US_GA_WKS_ENROLL = US_GA_DAYS_ENROLL %/% 7) %>% 
-  #  convert ga by LMP to days and wks
-  mutate(LMP_GA_DAYS_ENROLL =  ifelse(M01_GA_LMP_WEEKS_SCORRES != -7 & M01_GA_LMP_DAYS_SCORRES != -7,  (M01_GA_LMP_WEEKS_SCORRES * 7 + M01_GA_LMP_DAYS_SCORRES), NA)) %>% 
-  mutate(LMP_GA_WKS_ENROLL = LMP_GA_DAYS_ENROLL %/% 7) %>%
   ## generate indicator variable for missing US 
   mutate(MISSING_BOTH_US_LMP = ifelse((US_GA_WKS_ENROLL < 0 & LMP_GA_WKS_ENROLL < 0) | 
                                         (is.na(US_GA_WKS_ENROLL) & is.na(LMP_GA_WKS_ENROLL)), 1, 0)) %>% 
-  #  calculate the difference in days between reported LMP and reported US
-  mutate(GA_DIFF_DAYS = LMP_GA_DAYS_ENROLL-US_GA_DAYS_ENROLL) %>%
-  #  obtain best obstetric estimate in weeks
-  mutate(BOE_GA_DAYS_ENROLL = case_when(LMP_GA_DAYS_ENROLL %/% 7 < 9 ~
-                                          if_else(abs(GA_DIFF_DAYS) <= 5,
-                                                  LMP_GA_DAYS_ENROLL,
-                                                  US_GA_DAYS_ENROLL),
-                                        LMP_GA_DAYS_ENROLL %/% 7 < 16 ~
-                                          if_else(abs(GA_DIFF_DAYS) <=7,
-                                                  LMP_GA_DAYS_ENROLL, US_GA_DAYS_ENROLL),
-                                        LMP_GA_DAYS_ENROLL %/% 7 >= 16 ~
-                                          if_else(abs(GA_DIFF_DAYS) <=10,
-                                                  LMP_GA_DAYS_ENROLL, US_GA_DAYS_ENROLL),
-                                        TRUE ~ US_GA_DAYS_ENROLL)) %>%
-  mutate(BOE_GA_WKS_ENROLL = BOE_GA_DAYS_ENROLL %/% 7) %>% 
-  # generate EDD based on BOE 
-  # "zero out" GA and obtain the estimated "date of conception" 
-  mutate(PREG_START_DATE = M01_US_OHOSTDAT - US_GA_DAYS_ENROLL) %>% 
-  # add 280 days to PREG_START_DATE to generate EDD based on BOE 
-  mutate(EDD_BOE = PREG_START_DATE + 280) %>% 
   ## EDD based on ultrasound 
-  mutate(EDD_US =  PREG_START_DATE + 280) %>% 
+  mutate(EDD_US =  PREG_START_DATE + 280) %>%
   group_by(SCRNID) %>%
   arrange(-desc(M01_US_OHOSTDAT)) %>%
   slice(1) %>%
   mutate(n=n()) %>%
   ungroup() %>%
-  select(-n)
-
-
+  select(-n) 
+  
 ## Only select ID variables from MNH02 to merge into MNH01 
 m02_wide <- m02_merged %>% select(SITE, SCRNID, MOMID, PREGID, M02_SCRN_OBSSTDAT)  %>% 
   mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
@@ -230,7 +196,7 @@ m01_to_bind <- m01_merged %>%
   arrange(-desc(M01_VISIT_DATE)) %>%
   slice(1) %>%
   mutate(n=n()) %>%
-  ungroup() 
+  ungroup()
 
 m00_to_bind <- m00_merged %>% 
   mutate(TYPE_VISIT = 1)
