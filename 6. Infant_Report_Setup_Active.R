@@ -2,7 +2,7 @@
 #### MONITORING REPORT SETUP -- INFANT ####
 #* Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #* Input: .RData files for each form (generated from 1. data import code) and infant outcomes (generated in code linked here: https://github.com/PRiSMA-Study/PRISMA-Public/blob/main/PRISMA-Infant-Constructed-Outcomes/Infant-Constructed-Variables.R)
-#* Last updated: 25 October 2024
+#* Last updated: 27 June 2025
 
 
 ## load in data 
@@ -363,3 +363,367 @@ Inf_Heat_Maps_Pnc <- InfData_Pnc_Visits %>%
 
 ## export 
 save(Inf_Heat_Maps_Pnc, file= paste0(path_to_save, "Inf_Heat_Maps_Pnc",".RData",sep = ""))
+
+
+
+#**************************************************************************************
+#### BILIRULER #### 
+#**************************************************************************************
+
+ 
+###Set up dataset (infants_livebirths_combined)
+
+infants_livebirths <- inf_outcomes_full %>%
+  filter(LIVEBIRTH==1) %>%
+  #Add MNH11
+  left_join(mnh11,  by = c("SITE", "MOMID", "PREGID","INFANTID")) %>%
+  left_join(InfData_Report %>%
+              select(SITE, MOMID, PREGID, INFANTID, M11_VISIT_COMPLETE_6), 
+            by = c("SITE", "MOMID", "PREGID","INFANTID")) %>% 
+  #Add postnatal age (from Stacie's code)
+  mutate(M11_VISIT_OBSSTTIM = replace(M11_VISIT_OBSSTTIM, M11_VISIT_OBSSTTIM %in% c("77:77", "99:99", "55:55:00"), NA), # replace default value time with NA 
+         M11_VISIT_DATETIME = as.POSIXct(paste(M11_VISIT_OBSSTDAT, M11_VISIT_OBSSTTIM), format= "%Y-%m-%d %H:%M")) %>%  # assign time field type 
+  # calculate age (hours and days) at MNH11 visit (if no default value visit date, then calculate)
+  mutate(DELIVERY_DATETIME = as.POSIXct(DELIVERY_DATETIME,format="%Y-%m-%d %H:%M")) %>%
+  mutate(M11_AGE_AT_VISIT_DATETIME = floor(difftime(M11_VISIT_DATETIME,DELIVERY_DATETIME,units = "hours")))
+
+#Add PNC-0 
+mnh13_pnc0 <- mnh13 %>% filter(M13_TYPE_VISIT==7)
+mnh14_pnc0 <- mnh14 %>% filter(M14_TYPE_VISIT==7)
+infants_livebirths_pnc0 <- infants_livebirths %>%
+  left_join(mnh13_pnc0,by=c("SITE","MOMID","PREGID","INFANTID")) %>%
+  left_join(mnh14_pnc0,by=c("SITE","MOMID","PREGID","INFANTID")) %>%
+  #rename 
+  rename_with(~paste0(., "_", 7), .cols = c(contains("M13"), contains("M14")))
+
+#Add PNC-1
+mnh13_pnc1 <- mnh13 %>% filter(M13_TYPE_VISIT==8)
+mnh14_pnc1 <- mnh14 %>% filter(M14_TYPE_VISIT==8)
+infants_livebirths_pnc1 <- infants_livebirths %>%
+  left_join(mnh13_pnc1,by=c("SITE","MOMID","PREGID","INFANTID")) %>%
+  left_join(mnh14_pnc1,by=c("SITE","MOMID","PREGID","INFANTID")) %>%
+  rename_with(~paste0(., "_", 8), .cols = c(contains("M13"), contains("M14"))) %>%
+  select("SITE","MOMID","PREGID","INFANTID",contains("M13"),contains("M14"))
+
+#Combine 2 pnc visits
+infants_livebirths_pnccombined <- infants_livebirths_pnc0 %>%
+  left_join(infants_livebirths_pnc1,by=c("SITE","MOMID","PREGID","INFANTID"))
+
+#Add PNC-4?
+mnh13_pnc4 <- mnh13 %>% filter(M13_TYPE_VISIT==9)
+mnh14_pnc4 <- mnh14 %>% filter(M14_TYPE_VISIT==9)
+infants_livebirths_pnc4 <- infants_livebirths %>%
+  left_join(mnh13_pnc4,by=c("SITE","MOMID","PREGID","INFANTID")) %>%
+  left_join(mnh14_pnc4,by=c("SITE","MOMID","PREGID","INFANTID")) %>%
+  rename_with(~paste0(., "_", 9), .cols = c(contains("M13"), contains("M14"))) %>%
+  select("SITE","MOMID","PREGID","INFANTID",contains("M13"),contains("M14"))
+
+#COMBINE ALL PNC VISITS
+infants_livebirths_pnccombined <- infants_livebirths_pnccombined %>%
+  left_join(infants_livebirths_pnc4,by=c("SITE","MOMID","PREGID","INFANTID"))
+
+#Add MNH20 (Hospitalizations)
+infants_livebirths_combined <- infants_livebirths_pnccombined %>%
+  left_join(mnh20,by=c("SITE","MOMID","PREGID","INFANTID"))
+
+#Add MNH24 (Infant closeout)
+infants_livebirths_combined <- infants_livebirths_combined %>%
+  left_join(mnh24,by=c("SITE","MOMID","PREGID","INFANTID"))%>%
+  distinct(INFANTID,.keep_all=TRUE)
+
+#More postnatal age calculations
+infants_livebirths_combined <- infants_livebirths_combined %>%
+  #PNC-0
+  mutate(M14_TCB_OBSSTTIM_7 = replace(M14_TCB_OBSSTTIM_7, M14_TCB_OBSSTTIM_7 %in% c("77:77", "99:99", "55:55:00"), NA)) %>% # replace default value time with NA 
+  mutate(M14_VISIT_DATETIME_7 = as.POSIXct(paste(M14_VISIT_OBSSTDAT_7, M14_TCB_OBSSTTIM_7), format= "%Y-%m-%d %H:%M")) %>%  # assign time field type 
+  # calculate age (hours and days) at PNC-0 visit (if no default value visit date, then calculate)
+  mutate(M14_AGE_AT_VISIT_DATETIME_7 = floor(difftime(M14_VISIT_DATETIME_7,DELIVERY_DATETIME,units = "hours"))) %>%
+  #PNC-1
+  mutate(M14_TCB_OBSSTTIM_8 = replace(M14_TCB_OBSSTTIM_8, M14_TCB_OBSSTTIM_8 %in% c("77:77", "99:99", "55:55:00"), NA)) %>% # replace default value time with NA 
+  mutate(M14_VISIT_DATETIME_8 = as.POSIXct(paste(M14_VISIT_OBSSTDAT_8, M14_TCB_OBSSTTIM_8), format= "%Y-%m-%d %H:%M")) %>%  # assign time field type 
+  # calculate age (hours and days) at PNC-1 visit (if no default value visit date, then calculate)
+  mutate(M14_AGE_AT_VISIT_DATETIME_8 = floor(difftime(M14_VISIT_DATETIME_8,DELIVERY_DATETIME,units = "hours"))) %>% 
+  #PNC-4
+  mutate(M14_TCB_OBSSTTIM_9 = replace(M14_TCB_OBSSTTIM_9, M14_TCB_OBSSTTIM_9 %in% c("77:77", "99:99", "55:55:00"), NA)) %>% # replace default value time with NA 
+  mutate(M14_VISIT_DATETIME_9 = as.POSIXct(paste(M14_VISIT_OBSSTDAT_9, M14_TCB_OBSSTTIM_9), format= "%Y-%m-%d %H:%M")) %>%  # assign time field type 
+  # calculate age (hours and days) at PNC-0 visit (if no default value visit date, then calculate)
+  mutate(M14_AGE_AT_VISIT_DATETIME_9 = floor(difftime(M14_VISIT_DATETIME_9,DELIVERY_DATETIME,units = "hours"))) %>%
+  
+  #Replace values with NAs
+  mutate(M11_TBILIRUBIN_UMOLL_LBORRES = replace(M11_TBILIRUBIN_UMOLL_LBORRES,M11_TBILIRUBIN_UMOLL_LBORRES=="-7",NA),
+         M14_TCB_UMOLL_LBORRES_7 = replace(M14_TCB_UMOLL_LBORRES_7,M14_TCB_UMOLL_LBORRES_7=="-7",NA),
+         M14_TCB_UMOLL_LBORRES_8 = replace(M14_TCB_UMOLL_LBORRES_8,M14_TCB_UMOLL_LBORRES_8=="-7",NA),
+         M14_TCB_UMOLL_LBORRES_9 = replace(M14_TCB_UMOLL_LBORRES_9,M14_TCB_UMOLL_LBORRES_9=="-7",NA)
+  ) %>%
+  
+  #Convert units from umol/L to mg/dL at 3 sites
+  mutate(M11_TBILIRUBIN_UMOLL_LBORRES = 
+           case_when(SITE=="Zambia" | 
+                       SITE=="Kenya" | 
+                       SITE=="India-SAS" 
+                     ~ M11_TBILIRUBIN_UMOLL_LBORRES / 17.1,
+                     TRUE ~ M11_TBILIRUBIN_UMOLL_LBORRES )) %>%
+  mutate(M14_TCB_UMOLL_LBORRES_7 = 
+           case_when(SITE=="Zambia" | 
+                       SITE=="Kenya" | 
+                       SITE=="India-SAS" 
+                     ~ M14_TCB_UMOLL_LBORRES_7 / 17.1,
+                     TRUE ~ M14_TCB_UMOLL_LBORRES_7)) %>%
+  mutate(M14_TCB_UMOLL_LBORRES_8 = 
+           case_when(SITE=="Zambia" | 
+                       SITE=="Kenya" | 
+                       SITE=="India-SAS" 
+                     ~ M14_TCB_UMOLL_LBORRES_8 / 17.1,
+                     TRUE ~ M14_TCB_UMOLL_LBORRES_8)) %>%
+  mutate(M14_TCB_UMOLL_LBORRES_9 = 
+           case_when(SITE=="Zambia" | 
+                       SITE=="Kenya" | 
+                       SITE=="India-SAS" 
+                     ~ M14_TCB_UMOLL_LBORRES_9 / 17.1,
+                     TRUE ~ M14_TCB_UMOLL_LBORRES_9)) %>%
+  
+  #change datetime to make comparisons
+  mutate(DEATHDATE_MNH24 = as.POSIXct(DEATHDATE_MNH24,format="%Y-%m-%d")) %>%
+  mutate(M11_VISIT_OBSSTDAT=as.POSIXct(M11_VISIT_OBSSTDAT,format="%Y-%m-%d")) %>%
+  mutate(M13_VISIT_OBSSTDAT_7=as.POSIXct(M13_VISIT_OBSSTDAT_7,format="%Y-%m-%d")) %>%
+  mutate(M13_VISIT_OBSSTDAT_8=as.POSIXct(M13_VISIT_OBSSTDAT_8,format="%Y-%m-%d")) %>%
+  mutate(M14_VISIT_OBSSTDAT_7=as.POSIXct(M14_VISIT_OBSSTDAT_7,format="%Y-%m-%d")) %>%
+  mutate(M14_VISIT_OBSSTDAT_8=as.POSIXct(M14_VISIT_OBSSTDAT_8,format="%Y-%m-%d")) %>%
+  mutate(DOB=as.POSIXct(DOB,format="%Y-%m-%d")) %>%
+  mutate(M24_CLOSE_DSSTDAT=as.POSIXct(M24_CLOSE_DSSTDAT,format="%Y-%m-%d"))
+
+
+#MNH36 PROCESSING STARTS HERE
+#pull out duplicates of MNH36
+
+mnh36IPC <- mnh36 %>%
+  filter(M36_TYPE_VISIT==6) 
+IPCduplicates <- mnh36IPC %>%
+  filter(duplicated(INFANTID))
+mnh36IPC <- mnh36IPC %>%
+  filter(!duplicated(INFANTID))
+
+mnh36PNC0 <- mnh36 %>%
+  filter(M36_TYPE_VISIT==7) 
+PNC0duplicates <- mnh36PNC0 %>%
+  filter(duplicated(INFANTID))
+mnh36PNC0 <- mnh36PNC0 %>%
+  filter(!duplicated(INFANTID))
+
+mnh36PNC1 <- mnh36 %>%
+  filter(M36_TYPE_VISIT==8) 
+PNC1duplicates <- mnh36PNC1 %>%
+  filter(duplicated(INFANTID))
+mnh36PNC1 <- mnh36PNC1 %>%
+  filter(!duplicated(INFANTID))
+
+mnh36PNC4 <- mnh36 %>%
+  filter(M36_TYPE_VISIT==9) 
+PNC4duplicates <- mnh36PNC4 %>%
+  filter(duplicated(INFANTID))
+mnh36PNC4 <- mnh36PNC4 %>%
+  filter(!duplicated(INFANTID))
+
+mnh36PNC6 <- mnh36 %>%
+  filter(M36_TYPE_VISIT==10) 
+PNC6duplicates <- mnh36PNC6 %>%
+  filter(duplicated(INFANTID))
+mnh36PNC6 <- mnh36PNC6 %>%
+  filter(!duplicated(INFANTID))
+
+mnh36_77 <- mnh36 %>%
+  filter(M36_TYPE_VISIT==77) 
+duplicates77 <- mnh36_77 %>%
+  filter(duplicated(INFANTID))
+mnh36_77 <- mnh36_77 %>%
+  filter(!duplicated(INFANTID))
+
+#Merge them all back together, without duplicates
+
+mnh36 <- bind_rows(mnh36IPC,mnh36PNC0,mnh36PNC1,mnh36PNC4,mnh36PNC6,mnh36_77)
+
+
+#In the Bili-ruler protocol, ideally 2 people take measurements using both Bili-ruler and MST. If Bili-ruler measurements differ by 2 or more, or MST measurements differ by 3 or more, then the two people are prompted to work together to take a 3rd measurement. 
+#Then the outlier is dropped, and the remaining two are averaged. 
+#The function below chooses the outlier and averages the remaining two measurements.
+
+joint_function <- function(BILI_1,BILI_2,BILI_JOINT){
+  vec <- sort(c(BILI_1,BILI_2,BILI_JOINT))
+  if(abs(vec[3]-vec[2]) > abs(vec[2]-vec[1])){
+    return((vec[1]+vec[2])/2)
+  }  
+  else if(abs(vec[3]-vec[2]) < abs(vec[2]-vec[1])){
+    return((vec[3]+vec[2])/2)
+  }
+  else if(abs(vec[3]-vec[2]) == abs(vec[2]-vec[1])){
+    return((vec[1]+vec[2]+vec[3])/3)
+  }
+}
+
+#Calculate the 'final' bili-ruler and MST value. Only 1 Bili-ruler & 1 MST value are ultimately used in analysis: 
+#If there is 1 measurement, use the 1
+#if there are 2 measurements, average them
+#if there are 3 measurements, use joint_function 
+#if there are 0 measurements, mark as 'NA'
+
+mnh36 <- mnh36 %>%
+  filter(!is.na(M36_MST_1)& !is.na(M36_MST_2) & !is.na(M36_MST_JOINT) & 
+           !is.na(M36_BILI_1) & !is.na(M36_BILI_2) & !is.na(M36_BILI_JOINT)) %>%
+  rowwise() %>%
+  mutate(M36_BILI_FINAL = case_when(
+    #2 valid #s, diff of 1 or 0
+    (M36_BILI_1 %in% c(1,2,3,4,5,6) & 
+       M36_BILI_2 %in% c(1,2,3,4,5,6) &
+       abs(M36_BILI_1 - M36_BILI_2) < 2)
+    ~ (M36_BILI_1+M36_BILI_2)/2,
+    #2 PRISMA staff, 2 valid IDs, diff of 2 or more, 3rd measurement successful
+    (M36_BILI_1 %in% c(1,2,3,4,5,6) & 
+       M36_BILI_2 %in% c(1,2,3,4,5,6) & 
+       abs(M36_BILI_1 - M36_BILI_2) >= 2 & 
+       M36_BILI_JOINT %in% c(1,2,3,4,5,6)) 
+    ~ joint_function(M36_BILI_1,M36_BILI_2,M36_BILI_JOINT),
+    #2 PRISMA staff, 2 valid IDs, diff of 2 or more, 3rd measurement not valid
+    (M36_BILI_1 %in% c(1,2,3,4,5,6) & 
+       M36_BILI_2 %in% c(1,2,3,4,5,6) & 
+       abs(M36_BILI_1 - M36_BILI_2) >= 2 & 
+       !(M36_BILI_JOINT %in% c(1,2,3,4,5,6)))
+    ~ (M36_BILI_1+M36_BILI_2)/2,
+    #1 valid #
+    (M36_BILI_1 %in% c(1,2,3,4,5,6) & 
+       !(M36_BILI_2 %in% c(1,2,3,4,4,5,6)))
+    ~ M36_BILI_1,
+    (M36_BILI_2 %in% c(1,2,3,4,5,6) & 
+       !(M36_BILI_1 %in% c(1,2,3,4,4,5,6)))
+    ~ M36_BILI_2,
+    #no valid #
+    !(M36_BILI_1 %in% c(1,2,3,4,5,6)) & 
+      !(M36_BILI_2 %in% c(1,2,3,4,4,5,6))
+    ~ NA,
+    TRUE ~ NA),
+    #Same thing for MST values:
+    M36_MST_FINAL = case_when(
+      #2 valid #s, diff of 1 or 0
+      (M36_MST_1 %in% c(1,2,3,4,5,6) & 
+         M36_MST_2 %in% c(1,2,3,4,5,6) &
+         abs(M36_MST_1 - M36_MST_2) < 2)
+      ~ (M36_MST_1+M36_MST_2)/2,
+      #2 PRISMA staff, 2 valid IDs, diff of 2 or more, 3rd measurement successful
+      (M36_MST_1 %in% c(1,2,3,4,5,6) & 
+         M36_MST_2 %in% c(1,2,3,4,5,6) & 
+         abs(M36_MST_1 - M36_MST_2) >= 2 & 
+         M36_MST_JOINT %in% c(1,2,3,4,5,6))
+      ~ joint_function(M36_MST_1,M36_MST_2,M36_MST_JOINT),
+      #2 PRISMA staff, 2 valid IDs, diff of 2 or more, 3rd measurement not valid
+      (M36_MST_1 %in% c(1,2,3,4,5,6) & 
+         M36_MST_2 %in% c(1,2,3,4,5,6) & 
+         abs(M36_MST_1 - M36_MST_2) >= 2 & 
+         !(M36_MST_JOINT %in% c(1,2,3,4,5,6)))
+      ~ (M36_MST_1+M36_MST_2)/2,
+      #1 valid #
+      (M36_MST_1 %in% c(1,2,3,4,5,6) & 
+         !(M36_MST_2 %in% c(1,2,3,4,4,5,6)))
+      ~ M36_MST_1,
+      (M36_MST_2 %in% c(1,2,3,4,5,6) & 
+         !(M36_MST_1 %in% c(1,2,3,4,4,5,6)))
+      ~ M36_MST_2,
+      #no valid #
+      (!(M36_MST_1 %in% c(1,2,3,4,5,6)) & 
+         !(M36_MST_2 %in% c(1,2,3,4,4,5,6)))
+      ~ NA,
+      TRUE ~ NA))
+
+
+#After duplicates are pulled out, rename variables so they are associated the visit (*_7, etc)
+#This next code chunk will rearrange mnh36 to be wide rather than long, and then join it with the previous infants_livebirths_combined dataset (which had MNH11, MNH13, MNH14)
+
+mnh36IPC <- mnh36 %>%
+  filter(M36_TYPE_VISIT==6) 
+names(mnh36IPC) <- paste0(names(mnh36IPC),"_6")
+mnh36IPC <- mnh36IPC %>%
+  rename("MOMID" = "MOMID_6",
+         "PREGID" = "PREGID_6",
+         "INFANTID" = "INFANTID_6",
+         "SITE" = "SITE_6")
+
+mnh36PNC0 <- mnh36 %>%
+  filter(M36_TYPE_VISIT==7) 
+names(mnh36PNC0) <- paste0(names(mnh36PNC0),"_7")
+mnh36PNC0 <- mnh36PNC0 %>%
+  rename("MOMID" = "MOMID_7",
+         "PREGID" = "PREGID_7",
+         "INFANTID" = "INFANTID_7",
+         "SITE" = "SITE_7")
+
+mnh36PNC1 <- mnh36 %>%
+  filter(M36_TYPE_VISIT==8) 
+names(mnh36PNC1) <- paste0(names(mnh36PNC1),"_8")
+mnh36PNC1 <- mnh36PNC1 %>%
+  rename("MOMID" = "MOMID_8",
+         "PREGID" = "PREGID_8",
+         "INFANTID" = "INFANTID_8",
+         "SITE" = "SITE_8") 
+
+mnh36PNC4 <- mnh36 %>%
+  filter(M36_TYPE_VISIT==9) 
+names(mnh36PNC4) <- paste0(names(mnh36PNC4),"_9")
+mnh36PNC4 <- mnh36PNC4 %>%
+  rename("MOMID" = "MOMID_9",
+         "PREGID" = "PREGID_9",
+         "INFANTID" = "INFANTID_9",
+         "SITE" = "SITE_9")  
+
+mnh36PNC6 <- mnh36 %>%
+  filter(M36_TYPE_VISIT==10)
+names(mnh36PNC6) <- paste0(names(mnh36PNC6),"_10")
+mnh36PNC6 <- mnh36PNC6 %>% 
+  rename("MOMID" = "MOMID_10",
+         "PREGID" = "PREGID_10",
+         "INFANTID" = "INFANTID_10",
+         "SITE" = "SITE_10") 
+
+mnh36_77 <- mnh36 %>%
+  filter(M36_TYPE_VISIT==77)
+names(mnh36_77) <- paste0(names(mnh36_77),"_77")
+mnh36_77 <- mnh36_77 %>% 
+  rename("MOMID" = "MOMID_77",
+         "PREGID" = "PREGID_77",
+         "INFANTID" = "INFANTID_77",
+         "SITE" = "SITE_77") 
+
+#Making the wide version of mnh36
+mnh36merged <- mnh36IPC %>%
+  full_join(mnh36PNC0,by=c("MOMID","PREGID","INFANTID","SITE")) %>%
+  full_join(mnh36PNC1,by=c("MOMID","PREGID","INFANTID","SITE")) %>%
+  full_join(mnh36PNC4,by=c("MOMID","PREGID","INFANTID","SITE")) %>%
+  full_join(mnh36PNC6,by=c("MOMID","PREGID","INFANTID","SITE")) %>%
+  full_join(mnh36_77,by=c("MOMID","PREGID","INFANTID","SITE")) 
+
+#Add mnh36 data to infants_livebirths_combined (all still wide version)
+
+InfData_BiliRuler <- infants_livebirths_combined %>%
+  full_join(mnh36merged,by=c("MOMID","PREGID","INFANTID","SITE")) %>%
+  mutate(DOB = as.Date(DOB)) %>%
+  mutate(M13_VISIT_OBSSTDAT_9 = as.Date(M13_VISIT_OBSSTDAT_9),
+         M14_VISIT_OBSSTDAT_9 = as.Date(M14_VISIT_OBSSTDAT_9)) %>%
+  #HERE WE ADD STACIE'S DATASETS FROM THE MONITORING REPORT; these must be present for the code to work
+  left_join(Inf_Visit_Complete_Pnc %>% select(-DOB), by = c("SITE","MOMID","PREGID","INFANTID")) %>%
+  left_join(Inf_Form_Completion_Pnc, by = c("SITE","MOMID","PREGID","INFANTID")) %>%
+  left_join(Inf_Prot_Compliance_Pnc, by = c("SITE","MOMID","PREGID","INFANTID")) %>%
+  mutate(
+    #Add the Bili-ruler study start date, which helps us determine which infants we expect to be enrolled in the Bili-ruler substudy
+    STUDYSTARTDATE = case_when(
+      SITE=="Ghana" ~ NA,
+      SITE=="India-CMC" ~ as.Date(strptime("2024-11-13",format="%Y-%m-%d")),
+      SITE=="India-SAS" ~ as.Date(strptime("2024-12-03",format="%Y-%m-%d")),
+      SITE=="Kenya" ~ as.Date(strptime("2025-01-13",format="%Y-%m-%d")),
+      SITE=="Pakistan" ~ as.Date(strptime("2024-10-24",format="%Y-%m-%d")),
+      SITE=="Zambia" ~ as.Date(strptime("2024-11-04",format="%Y-%m-%d")), 
+      TRUE ~ NA)
+  ) %>% 
+  select(SITE, DOB, M11_VISIT_COMPLETE_6, M11_VISIT_OBSSTDAT, STUDYSTARTDATE,
+         M36_VISIT_OBSSTDAT_6, contains("M36_TYPE_VISIT"),contains("M36_VISIT_OBSSTDAT"),
+         contains("M36_INF_VISIT_MNH36"), VC_PNC0_NUM_LATE, VC_PNC1_NUM_LATE, VC_PNC4_NUM_LATE,
+         VC_PNC6_NUM_LATE)
+
+## export 
+save(InfData_BiliRuler, file= paste0(path_to_save, "InfData_BiliRuler",".RData",sep = ""))
