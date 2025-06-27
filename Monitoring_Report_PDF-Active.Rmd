@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2025-02-25)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2025-06-17)"
 output:
   pdf_document:
     toc: no
@@ -7,18 +7,19 @@ output:
     latex_engine: xelatex
     keep_tex: false
 include-in-header:
-- \usepackage{ booktabs,longtable}
+# - \usepackage{ booktabs,longtable}
 editor_options: 
   markdown: 
     wrap: 72
 ---
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, out.width = "100%") 
 knitr::opts_chunk$set(out.width = "100%", fig.align = "center")
 
 options(chromote.chrome_args = c("--headless=new"))
 
-## last updated: 25 February 2025
+## last updated: 27 June 2025
 
 library(tidyverse) 
 library(knitr) 
@@ -34,10 +35,16 @@ library(webshot2)
 library(grid)
 library(gridExtra)
 library(chromote)
+library(readxl)
 
-UploadDate = "2025-02-21" 
 
+UploadDate = "2025-06-13" 
+
+mat_enroll <- read_xlsx(paste0("Z:/Outcome Data/", UploadDate, "/MAT_ENROLL.xlsx"))
+remapp_ids <- mat_enroll %>% filter(REMAPP_ENROLL ==1)
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
+# load(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/MatData_Screen_Enroll.RData"))
+# load(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/df_criteria.RData"))
 
 ## import all rda files 
 rda_files = list.files(pattern="*.RData")
@@ -105,7 +112,7 @@ tb_theme1 <- function(matrix){
     ) %>%
     fmt_markdown(columns = everything()) %>%
     tab_options(table.width = pct(100)) %>%
-    cols_width(1 ~ px(240)) ## to make rows more spread out, reduce this number 
+    cols_width(1 ~ px(225)) ## to make rows more spread out, reduce this number 
 } 
 
 
@@ -139,18 +146,18 @@ study to establish global hemoglobin thresholds for maternal anemia
 
 **Versions:**
 
-**Date issued:** 2025-02-25
+**Date issued:** 2025-06-17
 
-**Included data last updated in Synapse:** 2025-02-21
+**Included data last updated in Synapse:** 2025-06-13
 
 **Last enrollment date:**
 
--   Kenya: 2025-02-20
--   Pakistan: 2025-02-14
--   Ghana: 2025-02-19
--   Zambia: 2025-02-12
--   India CMC: 2025-02-07
--   India SAS: 2025-02-18
+-   Kenya: 2025-06-12
+-   Pakistan: 2025-06-05
+-   Ghana: 2025-04-22
+-   Zambia: 2025-03-20
+-   India CMC: 2025-05-30
+-   India SAS: 2025-03-04
 
 ```{r, results='hide' }
 
@@ -162,17 +169,19 @@ lastscreen <- MatData_Screen_Enroll %>%
   mutate(last_screen = max((M00_SCRN_OBSSTDAT), na.rm = TRUE)) %>% 
   ungroup()
 
+
 lastenroll <- MatData_Screen_Enroll %>%
-  filter(M02_SCRN_OBSSTDAT <= UploadDate) %>% 
-  filter(ENROLL == 1) %>% 
-  select(M00_SCRN_OBSSTDAT, M02_SCRN_OBSSTDAT, SITE) %>%
+  mutate(M02_SCRN_OBSSTDAT = ymd(M02_SCRN_OBSSTDAT)) %>%
+  filter(M02_SCRN_OBSSTDAT  <= UploadDate) %>%
+  filter(ENROLL == 1) %>%
+  select(M02_SCRN_OBSSTDAT , SITE) %>%
   group_by(SITE) %>%
-  mutate(last_enroll = max((M02_SCRN_OBSSTDAT), na.rm = TRUE)) %>% 
+  mutate(last_enroll = max((M02_SCRN_OBSSTDAT ), na.rm = TRUE)) %>%
   ungroup()
 
- # table(lastscreen$last_screen, lastscreen$SITE)
- table(lastenroll$last_enroll, lastenroll$SITE)
-## 
+
+table(lastenroll$last_enroll, lastenroll$SITE)
+
 ##new 
 date_last_enrll_pak <- lastenroll %>% filter(SITE == "Pakistan") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_ke <- lastenroll %>% filter(SITE == "Kenya") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
@@ -253,6 +262,11 @@ tb_prescreen_enroll <- MatData_Screen_Enroll %>%
 ) %>% 
       t() %>% unlist()
   ) 
+
+tb_prescreen_enroll <- tb_prescreen_enroll %>% 
+  mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
+  mutate_all(funs(str_replace(., "NA", "0")))
+             
 
 # 
 ```
@@ -494,7 +508,7 @@ tb_enroll <- MatData_Screen_Enroll %>%
   summarise("Screened, n" = sum(SCREEN == 1, na.rm=TRUE),
             "Missed screening, n^a^" = sum(PRESCR_ELIGIBLE ==1 & SCREEN == 0, na.rm = TRUE),
             "Enrolled, n(%)^b^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
-                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             
               "Gestational age at enrollment, mean (SD)" = paste0(format(round(mean(US_GA_WKS_ENROLL, na.rm = TRUE),2), 
                                                         nsmall=0, digits = 2), " (",format(round(sd(US_GA_WKS_ENROLL, 
@@ -502,19 +516,19 @@ tb_enroll <- MatData_Screen_Enroll %>%
               "Enrolled in 1st trimester, n(%)^c^" = paste0(sum(US_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
                           format(round(sum(US_GA_WKS_ENROLL < 14, na.rm = TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, 2), nsmall = 0, digits = 2),
     ")"),
-          "Did not return for screening^d^" = paste0(sum(SCRN_RETURN == 0, na.rm=TRUE),
-                             " (", format(sum(SCRN_RETURN == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+          "Did not return for screening^d^" = paste0(sum(SCRN_RETURN == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                             " (", format(sum(SCRN_RETURN == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             
-          "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
-                             " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-          "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = paste0(sum(GA20 == 0, na.rm=TRUE),
-                                " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-          "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
-                                   " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-          "Doesn't plan to remain in catchment area" = paste0(sum(CATCHREMAIN == 0, na.rm=TRUE),
-                                   " (", format(sum(CATCHREMAIN == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-          "Did not consent" = paste0(sum(CONSENT == 0, na.rm=TRUE),
-                                  " (", format(sum(CONSENT == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
+          "Did not meet age requirement" = paste0(sum(AGE == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                             " (", format(sum(AGE == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+          "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = paste0(sum(GA20 == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                                " (", format(sum(GA20 == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+          "Outside catchment area" = paste0(sum(CATCHAREA == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                                   " (", format(sum(CATCHAREA == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+          "Doesn't plan to remain in catchment area" = paste0(sum(CATCHREMAIN == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                                   " (", format(sum(CATCHREMAIN == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+          "Did not consent" = paste0(sum(SCRN_CONSENT == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                                  " (", format(sum(SCRN_CONSENT == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
   ) %>%
     t() %>% as.data.frame() %>%
   `colnames<-`(c(.[1,])) %>%
@@ -525,7 +539,7 @@ tb_enroll <- MatData_Screen_Enroll %>%
   plyr::summarise("Screened for PRISMA (MNH02), n" = sum(SCREEN == 1, na.rm = TRUE),
             "Missed screening, n^a^" = sum(PRESCR_ELIGIBLE ==1 & SCREEN == 0, na.rm = TRUE),
             "Enrolled, n(%)^b^" = paste0(sum(ENROLL == 1, na.rm=TRUE),
-                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             
               "Gestational age at enrollment, mean (SD)" = paste0(format(round(mean(US_GA_WKS_ENROLL, na.rm = TRUE),2), 
                                                         nsmall=0, digits = 2), " (",format(round(sd(US_GA_WKS_ENROLL, 
@@ -533,20 +547,19 @@ tb_enroll <- MatData_Screen_Enroll %>%
               "Enrolled in 1st trimester, n(%)^c^" = paste0(sum(US_GA_WKS_ENROLL < 14, na.rm = TRUE)," (",
                           format(round(sum(US_GA_WKS_ENROLL < 14, na.rm = TRUE)/sum(ENROLL_DENOM == 1, na.rm=TRUE)*100, 2), nsmall = 0, digits = 2),
     ")"),
-          "Did not return for screening^d^" = paste0(sum(SCRN_RETURN == 0, na.rm=TRUE),
-                             " (", format(sum(SCRN_RETURN == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+          "Did not return for screening^d^" = paste0(sum(SCRN_RETURN == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                             " (", format(sum(SCRN_RETURN == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
             
-          "Did not meet age requirement" = paste0(sum(AGE == 0, na.rm=TRUE),
-                             " (", format(sum(AGE == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-          "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = paste0(sum(GA20 == 0, na.rm=TRUE),
-                                " (", format(sum(GA20 == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-          "Outside catchment area" = paste0(sum(CATCHAREA == 0, na.rm=TRUE),
-                                   " (", format(sum(CATCHAREA == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-          "Doesn't plan to remain in catchment area" = paste0(sum(CATCHREMAIN == 0, na.rm=TRUE),
-                                   " (", format(sum(CATCHREMAIN == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-
-          "Did not consent" = paste0(sum(CONSENT == 0, na.rm=TRUE),
-                                  " (", format(sum(CONSENT == 0, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
+          "Did not meet age requirement" = paste0(sum(AGE == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                             " (", format(sum(AGE == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+          "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = paste0(sum(GA20 == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                                " (", format(sum(GA20 == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+          "Outside catchment area" = paste0(sum(CATCHAREA == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                                   " (", format(sum(CATCHAREA == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+          "Doesn't plan to remain in catchment area" = paste0(sum(CATCHREMAIN == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                                   " (", format(sum(CATCHREMAIN == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
+          "Did not consent" = paste0(sum(SCRN_CONSENT == 0 & SCREEN_DENOM == 1, na.rm=TRUE),
+                                  " (", format(sum(SCRN_CONSENT == 0 & SCREEN_DENOM == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
       ) %>%
       t() %>% unlist()
   )
@@ -608,34 +621,39 @@ ineligible in screening are listed below. Each row should sum to 100%.
 
 ```{r, echo=FALSE}
 
-### STACKED BAR CHART
 total_bysite <- MatData_Screen_Enroll %>% 
+### STACKED BAR CHART
   filter(SCREEN == 1 & SCREEN_DENOM == 1 & is.na(ENROLL)) %>% 
-  select(SITE,SCRN_RETURN, AGE, GA20, CATCHAREA, CATCHREMAIN, CONSENT) %>%
+    filter(SCRNID != "") %>% 
+  select(SITE, SCRN_RETURN, AGE, GA20, CATCHAREA, CATCHREMAIN, SCRN_CONSENT) %>%
+  # mutate(CONSENT = case_when(SCRN_RETURN !=0 & AGE != 0 & GA20!=0 & 
+  #                             CATCHAREA !=0  & CATCHREMAIN!=0 & CONSENT==0 ~ 0, TRUE ~ 99)) %>% 
   rename( "Did not return for screening" = SCRN_RETURN,
           "Did not meet age requirement" = AGE,
           "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = GA20,
           "Outside catchment area" = CATCHAREA,
           "Doesn't plan to remain in catchment area" = CATCHREMAIN,
-          "Did not consent" = CONSENT
+          "Did not consent" = SCRN_CONSENT
            ) %>%
   ungroup() %>% 
   select(-MOMID) %>%
   pivot_longer(-SITE) %>% 
   group_by(SITE, name) %>% 
+  # filter(value == 0) %>% 
   summarise(n = sum(value==0, na.rm = TRUE),
-            n_pct = as.numeric(format(n/n()*100,digits = 2, nsmall=0))) 
+            n_pct = as.numeric(format(n/n()*100,digits = 2, nsmall=0))
+            ) 
  
 
 total_allsites <- MatData_Screen_Enroll %>% 
   filter(SCREEN == 1 & SCREEN_DENOM == 1 & is.na(ENROLL)) %>% 
-  select(SITE,SCRN_RETURN, AGE, GA20, CATCHAREA, CATCHREMAIN, CONSENT) %>%
+  select(SITE,SCRN_RETURN, AGE, GA20, CATCHAREA, CATCHREMAIN, SCRN_CONSENT) %>%
   rename( "Did not return for screening" = SCRN_RETURN,
           "Did not meet age requirement" = AGE,
           "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = GA20,
           "Outside catchment area" = CATCHAREA,
           "Doesn't plan to remain in catchment area" = CATCHREMAIN,
-          "Did not consent" = CONSENT
+          "Did not consent" = SCRN_CONSENT
            ) %>% 
   ungroup() %>% 
   select(-MOMID) %>%
@@ -748,32 +766,6 @@ ggplot() +
   ggtitle("") 
 
 
-# p <- ggplot() +
-#   geom_point(data = enroll_cum, aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE), shape = 15) +
-#   geom_line(data = enroll_cum, aes(x = START_DATE_MOM_WK, y = cum_n, color = SITE)) +
-#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
-#                expand = c(0, 0)) +
-#   scale_color_manual(values = c("#F8766D", "#A3A500", "#00BF7D", "#00B0F6", "#E76BF3", "white"),
-#                      labels = c("Ghana", "India-CMC", "Kenya", "Pakistan", "Zambia", "")) +
-#   facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
-#   theme_bw() +
-#   theme(axis.text.x = element_text(angle = 0, vjust = 1),
-#         legend.position = "bottom",
-#         legend.direction	= "horizontal",
-#         panel.grid.minor = element_blank(),
-#         axis.title.x = element_blank(),  # Remove primary x-axis label
-#         axis.text.y = element_text(size = 10), 
-#         strip.placement = "outside", 
-#         strip.background = element_rect(fill = NA, color = "grey"),
-#         panel.spacing = unit(0,"cm")) +
-#   xlab("Week") +
-#   ylab("Number of participants enrolled") +
-#   ggtitle("") 
-# 
-# 
-# ggplot_build(p)$data
-# # #F8766D (Ghana), #00BF7D (Kenya), #00B0F6 (Pakistan), #A3A500 (CMC), #E76BF3	(Zambia)
-# 
 ```
 
 \newpage
@@ -786,8 +778,9 @@ the average enrollment per month over the course of three years (one
 year for India-SAS). We can further divide to get average enrollment per
 week.
 
-```{r, echo=FALSE,out.width="49%",out.height="49%",fig.show='hold', fig.align='left'}
+```{r, echo=FALSE, out.width="49%", out.height="25%", fig.show='hold', fig.align='left'}
 
+# out.width="49%",out.height="49%"
 #****************
 # Pakistan
 #****************
@@ -836,32 +829,6 @@ enroll_cum_PA %>%
   xlab("Week") +
   ylab("Number of participants enrolled") +
   ggtitle("Pakistan") 
-
-# without year on x-axis:
-# enroll_cum_PA %>% 
-#   ggplot(aes(x = START_DATE_MOM_WK)) +
-#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
-#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
-#   geom_line(aes(y = expect_cum, color = "Expected")) +
-#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
-#   geom_vline(xintercept = ymd("2024-01-01")) +
-#   geom_vline(xintercept = ymd("2023-01-01")) +
-#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
-#                expand = c(0, 0)) +
-#   scale_color_manual("",
-#                      breaks=c("Expected","Enrolled"),
-#                      values = c("orange", "royalblue1")) +
-#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
-#   theme_bw() +
-#   theme(axis.text.x = element_text(angle = 0),
-#         legend.position="bottom",
-#         panel.grid.minor = element_blank(),
-#         strip.placement = "outside", 
-#         strip.background = element_rect(fill = NA, color = "grey"),
-#         panel.spacing = unit(0,"cm")) +
-#   xlab("Month") +
-#   ylab("Number of participants enrolled") +
-#   ggtitle("Pakistan") 
 
 #****************
 # Kenya
@@ -912,32 +879,6 @@ enroll_cum_KE %>%
   ylab("Number of participants enrolled") +
   ggtitle("Kenya") 
 
-# without year on x-axis:
-# enroll_cum_KE %>% 
-#   ggplot(aes(x = START_DATE_MOM_WK)) +
-#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
-#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
-#   geom_line(aes(y = expect_cum, color = "Expected")) +
-#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
-#   geom_vline(xintercept = ymd("2024-01-01")) +
-#   geom_vline(xintercept = ymd("2023-01-01")) +
-#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
-#                expand = c(0, 0)) +
-#   scale_color_manual("",
-#                      breaks=c("Expected","Enrolled"),
-#                      values = c("orange", "royalblue1")) +
-#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
-#   theme_bw() +
-#   theme(axis.text.x = element_text(angle = 0),
-#         legend.position="bottom",
-#         panel.grid.minor = element_blank(),
-#         strip.placement = "outside", 
-#         strip.background = element_rect(fill = NA, color = "grey"),
-#         panel.spacing = unit(0,"cm")) +
-#   xlab("Month") +
-#   ylab("Number of participants enrolled") +
-#   ggtitle("Kenya") 
-
 #****************
 # Ghana
 #****************
@@ -986,31 +927,6 @@ enroll_cum_GA %>%
   xlab("Week") +
   ylab("Number of participants enrolled") +
   ggtitle("Ghana")
-
-# without year on x-axis:
-# enroll_cum_GA %>%
-#   ggplot(aes(x = START_DATE_MOM_WK)) +
-#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
-#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
-#   geom_line(aes(y = expect_cum, color = "Expected")) +
-#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +  
-#   geom_vline(xintercept = ymd("2024-01-01")) +
-#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
-#                expand = c(0, 0)) +
-#   scale_color_manual("",
-#                      breaks=c("Expected","Enrolled"),
-#                      values = c("orange", "royalblue1")) +
-#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
-#   theme_bw() +
-#   theme(axis.text.x = element_text(angle = 0),
-#         legend.position="bottom",
-#         panel.grid.minor = element_blank(),
-#         strip.placement = "outside", 
-#         strip.background = element_rect(fill = NA, color = "grey"),
-#         panel.spacing = unit(0,"cm")) +
-#   xlab("Month") +
-#   ylab("Number of participants enrolled") +
-#   ggtitle("Ghana")
 
 #****************
 # Zambia
@@ -1061,32 +977,6 @@ enroll_cum_ZA %>%
   ylab("Number of participants enrolled") +
   ggtitle("Zambia") 
 
-# without year on x-axis:
-# enroll_cum_ZA %>% 
-#   ggplot(aes(x = START_DATE_MOM_WK)) +
-#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
-#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
-#   geom_line(aes(y = expect_cum, color = "Expected")) +
-#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
-#   geom_vline(xintercept = ymd("2024-01-01")) +
-#   geom_vline(xintercept = ymd("2023-01-01")) +
-#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
-#                expand = c(0, 0)) +
-#   scale_color_manual("",
-#                      breaks=c("Expected","Enrolled"),
-#                      values = c("orange", "royalblue1")) +
-#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
-#   theme_bw() +
-#   theme(axis.text.x = element_text(angle = 0),
-#         legend.position="bottom",
-#         panel.grid.minor = element_blank(),
-#         strip.placement = "outside", 
-#         strip.background = element_rect(fill = NA, color = "grey"),
-#         panel.spacing = unit(0,"cm")) +
-#   xlab("Month") +
-#   ylab("Number of participants enrolled") +
-#   ggtitle("Zambia") 
-
 #****************
 # India CMC
 #****************
@@ -1135,31 +1025,6 @@ enroll_cum_CMC %>%
   ylab("Number of participants enrolled") +
   ggtitle("India-CMC")
 
-# without year on x-axis:
-# enroll_cum_CMC %>% 
-#   ggplot(aes(x = START_DATE_MOM_WK)) +
-#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
-#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
-#   geom_line(aes(y = expect_cum, color = "Expected")) +
-#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
-#   geom_vline(xintercept = ymd("2024-01-01")) + 
-#   scale_x_date(date_breaks = "month", date_labels = ("%b"), 
-#                expand = c(0, 0)) +
-#   scale_color_manual("",
-#                      breaks=c("Expected","Enrolled"),
-#                      values = c("orange", "royalblue1")) +
-#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free_x", switch= "x") + 
-#   theme_bw() +
-#   theme(axis.text.x = element_text(angle = 0),
-#         legend.position="bottom",
-#         panel.grid.minor = element_blank(),
-#         strip.placement = "outside", 
-#         strip.background = element_rect(fill = NA, color = "grey"),
-#         panel.spacing = unit(0,"cm")) +
-#   xlab("Month") +
-#   ylab("Number of participants enrolled") +
-#   ggtitle("India-CMC")  
-
 #****************
 # India SAS 
 #****************
@@ -1168,7 +1033,13 @@ enroll_cum_SAS <- MatData_Screen_Enroll %>%
   arrange("", by_group=START_DATE_MOM_WK) %>% 
   filter(SCREEN == 1 & SITE == "India-SAS" & !is.na(START_DATE_MOM_WK), 
          START_DATE_MOM_WK > dmy("01/12/2023")) %>% 
+  ## calculate number of weeks between start and stop dates since SAS is only until 2000 participants
+  mutate(WEEKS_SAS_ENROLL = as.numeric(difftime(ymd("2025-03-06"), ymd("2023-12-12"), units = "weeks")),
+         DAYS_SAS_ENROLL = WEEKS_SAS_ENROLL*7
+         ) %>% 
+  
   group_by(START_DATE_MOM_WK) %>% 
+  mutate(EXPECT = 2000/DAYS_SAS_ENROLL) %>% 
   summarise(enroll_n=sum(ENROLL==1, na.rm = TRUE),
             expect_n=mean(EXPECT)) %>% 
   mutate(
@@ -1193,6 +1064,7 @@ enroll_cum_SAS %>%
   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
   scale_x_date(date_breaks = "2 months", date_labels = ("%b"), 
                expand = c(0, 0)) +
+  # ylim(0,2000)+
   scale_color_manual("",
                      breaks=c("Expected","Enrolled"),
                      values = c("orange", "royalblue1")) +
@@ -1207,38 +1079,6 @@ enroll_cum_SAS %>%
   xlab("Week") +
   ylab("Number of participants enrolled") +
   ggtitle("India-SAS")
-
-# without year on x-axis:
-# enroll_cum_SAS %>%
-#   ggplot(aes(x = START_DATE_MOM_WK)) +
-#   geom_point(aes(y = expect_cum, color = "Expected"), shape = 15) +
-#   geom_point(aes(y = enroll_cum, color = "Enrolled"), shape = 15) +
-#   geom_line(aes(y = expect_cum, color = "Expected")) +
-#   geom_line(aes(y = enroll_cum, color = "Enrolled")) +
-#   scale_x_date(date_breaks = "month", date_labels = ("%b"),
-#                expand = c(0, 0)) +
-#   scale_color_manual("",
-#                      breaks=c("Expected","Enrolled"),
-#                      values = c("orange", "royalblue1")) +
-#   # facet_grid(~year(START_DATE_MOM_WK), space = "free_x", scales = "free", switch= "x") +
-#   geom_vline(xintercept = ymd("2024-01-01")) +
-#   theme_bw() +
-#   theme(axis.text.x = element_text(angle = 0),
-#         legend.position="bottom",
-#         panel.grid.minor = element_blank(),
-#         strip.placement = "outside",
-#         strip.background = element_rect(fill = NA, color = "grey"),
-#         panel.spacing = unit(0,"cm")) +
-#   xlab("Month") +
-#   ylab("Number of participants enrolled") +
-#   ggtitle("India-SAS") 
-  # geom_rect(aes(xmin = midpoint$midpoint_2023 - days(2), xmax = midpoint$midpoint_2023 + days(5), ymin = max_y - (max_y * 0.1) - 0.1, ymax = max_y), fill = "grey", color = NA, alpha = 0.5) +
-  # annotate("text", x = midpoint$midpoint_2023, y = max_y-(max_y*.075), label = "2023", vjust = 0, hjust = 0) +
-  # # annotate("text", x = midpoint$midpoint_2024-3, y = max_y-(max_y*.075), label = "2024", vjust = 0, hjust = 0) 
-  # geom_rect(aes(xmin = midpoint$midpoint_2024 - days(5), xmax = midpoint$midpoint_2024 + days(2), ymin = max_y - (max_y * 0.1) - 0.1, ymax = max_y), fill = "grey", color = NA, alpha = 0.5) +
-  # # annotate("text", x = midpoint$midpoint_2024-3, y = max_y-(max_y*.075), label = "2024", vjust = 0, hjust = 0) 
-  # geom_text(aes(x = midpoint$midpoint_2024 - days(3), y = max_y - (max_y * 0.075), label = "2024"), vjust = 0, hjust = 0, color = "black", size = 4)
-
 
 ```
 
@@ -1353,7 +1193,6 @@ delivered OR delivered with gestational age \> late visit window) AND
 ```{r}
 #* Num: Any form with visit type = i AND visit status = 1 or 2 & Passed window for visit type = i
 #* Denom: Passed window for visit type = i
-
 
 VISIT_COMPLETE_ANC <- Visit_Complete_Anc %>%
           rowwise() %>%
@@ -1617,6 +1456,7 @@ VISIT_COMPLETE_PNC <- Visit_Complete_Pnc %>%
 ```
 
 ```{r}
+
 
 table5 <- bind_rows(VISIT_COMPLETE_ANC,
           VISIT_COMPLETE_PNC) %>% 
@@ -2904,18 +2744,6 @@ ANC32 <- Form_Completion_Anc %>%
         " (",
         format(round(sum(!is.na(M08_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
-      
-      # "MNH25 Maternal Lab" = paste0(
-      #   format(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")")
-      
-      # "MNH26 Maternal Fatigue" = paste0(
-      #   format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")")
    ) %>%
 
   t() %>% as.data.frame() %>% 
@@ -2965,17 +2793,7 @@ ANC32 <- Form_Completion_Anc %>%
         " (",
         format(round(sum(!is.na(M08_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
-      # "MNH25 Maternal Lab" = paste0(
-      #   format(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")")
-      
-      # "MNH26 Maternal Fatigue" = paste0(
-      #   format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")")
+
     ) %>%
 
         t() %>% 
@@ -2992,13 +2810,6 @@ ANC36 <- Form_Completion_Anc %>%
     "Denominator" = paste0(
         format(sum(FC_ANC36_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ), 
-      
-       # "MNH01 Ultrasound (optional)" = paste0(
-       #  format(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")"),
-
 
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(!is.na(M04_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -3039,13 +2850,7 @@ ANC36 <- Form_Completion_Anc %>%
     "Denominator" = paste0(
         format(sum(FC_ANC36_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ), 
-          
-       # "MNH01 Ultrasound (optional)" = paste0(
-       #  format(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")"),
-       # 
+
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(!is.na(M04_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
@@ -3509,33 +3314,6 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
   xlab("Estimated Gestational Age") +
   ylab("Number of participants")
 
-
-# pak_subset <-figure2 %>% filter(SITE == "Pakistan") %>% 
-#   mutate(AGE_AT_UPLOAD_WKS = AGE_AT_UPLOAD_DAYS %/% 7) 
-# 
-# data_dictionary <- data.frame("varname" = names(pak_subset),
-#                               "definition" = c("site", 
-#                                                "momid",
-#                                                "pregnancy id",
-#                                                "date of birth; if this is NA then no DOB has been reported for this participant.",
-#                                                "estimated date of conception. calculated using teh date of enrollment ultrasound and gestational age at enrollment (PREG_START_DATE = ultrasound date - GA at ultrasound).",
-#                                                "binary variable for close out. if a particpant has a closeout form, this will be a 1; if no closeout form, this will be a 0.",
-#                                                "date of closeout from closeout form.",
-#                                                "date of most recent upload.",
-#                                                "estimated age in days at time of recent upload. calculated by taking upload date - estimated conception date.",
-#                                                "estimated age in weeks at time of recent upload. calculated by taking upload date - estimated conception date."))
-# path = paste0("D:/Users/stacie.loisate/Documents/Analysis/pak_momids_over42wks.xlsx")
-# # path = paste("output/",UploadDate, "_intergrowth_bw_ga_outrange_report", ".xlsx", sep = "")
-# header_st <- createStyle(textDecoration = "Bold")
-# 
-# list_of_datasets <- list("Dictionary" = data_dictionary, "Report" = pak_subset)
-# 
-# write.xlsx(list_of_datasets, file = path,
-#            headerStyle = createStyle(textDecoration = "Bold"))
-# 
-
-
-# min(figure2$AGE_AT_UPLOAD_DAYS)
 ```
 
 ```{r, results = "hide"}
@@ -3859,17 +3637,6 @@ PNC26 <- Prot_Compliance_Pnc %>%
         format(round(sum(M06_VISIT_COMPLETE_11 == 1& PC_PNC26_DENOM == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
-      # "MNH07 Maternal Specimen Collection" = paste0(
-      #   format(sum(M07_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(M07_VISIT_COMPLETE_11 == 1& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
-      # 
-      # "MNH08 Maternal Lab" = paste0(
-      #   format(sum(M08_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(M08_VISIT_COMPLETE_11 == 1& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
         format(sum(M12_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -3900,17 +3667,6 @@ PNC26 <- Prot_Compliance_Pnc %>%
         format(round(sum(M06_VISIT_COMPLETE_11 == 1& PC_PNC26_DENOM == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
-      # "MNH07 Maternal Specimen Collection" = paste0(
-      #   format(sum(M07_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(M07_VISIT_COMPLETE_11 == 1& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
-      # 
-      # "MNH08 Maternal Lab" = paste0(
-      #   format(sum(M08_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(M08_VISIT_COMPLETE_11 == 1& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
         format(sum(M12_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -4492,18 +4248,6 @@ PNC26 <- Form_Completion_Pnc %>%
         format(round(sum(!is.na(M06_VISIT_COMPLETE_11)& FC_PNC26_DENOM == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
-      # "MNH07 Maternal Specimen Collection" = paste0(
-      #   format(sum(!is.na(M07_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M07_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
-      # 
-      # "MNH08 Maternal Lab" = paste0(
-      #   format(sum(!is.na(M08_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M08_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
-
       "MNH12 Maternal PNC Clinical Status" = paste0(
         format(sum(!is.na(M12_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
@@ -4830,8 +4574,6 @@ delivered OR delivered with gestational age \> late visit window) AND
 (has not closed out OR closed out with closeout date \> visit window)
 
 ```{r}
- 
-   
     #* Num: MNH25 with visit status = 1 or 2 AND passed window for visit type = i 
     #* Denom: passed window for visit type = i 
     
@@ -4913,7 +4655,7 @@ prot_compliance_depression <- Prot_Compliance_MNH25 %>%
           as.data.frame() %>% 
           `colnames<-`(c(.[1,])) %>% unlist() 
   )
-      
+  
 ```
 
 ```{r}
@@ -5251,7 +4993,7 @@ heat_map_data_anc$VISIT <- factor(heat_map_data_anc$VISIT, levels = c("Enrollmen
 out <- heat_map_data_anc %>% 
   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
   ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40")  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
+  geom_tile(color = "grey40", show.legend = TRUE)  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
   facet_grid(rows = vars(VISIT)) +
   scale_fill_manual(values = custom_palette,
                     labels = str_wrap(c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
@@ -5278,33 +5020,6 @@ out <- heat_map_data_anc %>%
         
         ) + 
   coord_fixed(ratio = 0.175, expand = TRUE)  # Adjust the ratio to make the tiles shorter 0.35
-
-
-  # scale_fill_manual(values = custom_palette,
-  #                   labels = c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-  #                              "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-  #                   drop = FALSE) +
-  # labs(fill = str_wrap("Percent Complete", width = 8)) +
-  # xlab("Expected forms") +
-  # ylab("Study site") + 
-  # guides(fill = guide_legend(reverse = TRUE, nrow = 2)) +
-  # theme_minimal() +
-  # theme(legend.position = "bottom",
-  #       axis.text.x = element_text(size = 8), # , angle = 90
-  #       axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-  #       axis.text.y = element_text(size = 8, colour = "black", hjust=1),
-  #       legend.text = element_text(size = 8),
-  #       axis.title.y = element_blank(),
-  #       # panel.spacing = unit(1, "lines"),  # More space between facets
-  #       # strip.text.y = element_text(size = 8, margin = margin(t = 11, b = 10)),  # Space for facet labels
-  #       # legend.margin = margin(grid::unit(0, "cm")),
-  #       # legend.key.width = grid::unit(0.5, "cm"),
-  #       plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-  #       # plot.margin = margin(t = 5, r = 10, b = 10, l = 10),
-  #       # plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)
-  #       
-  #       ) + 
-  # coord_fixed(ratio = 0.175, expand = TRUE)  # Adjust the ratio to make the tiles shorter 0.35
 
 
 ```
@@ -5490,15 +5205,6 @@ PNC26_PCT <- Heat_Maps_Pnc %>%
       "MNH06" = paste0(
         format(round(sum(M06_VISIT_COMPLETE_11 == 1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
                nsmall = 0, digits = 2)),
-# 
-#       "MNH07" = paste0(
-#         format(round(sum(M07_VISIT_COMPLETE_11 == 1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
-#                nsmall = 0, digits = 2)),
-# 
-#       "MNH08" = paste0(
-#         format(round(sum(M08_VISIT_COMPLETE_11 == 1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
-#                nsmall = 0, digits = 2)),
-# 
       "MNH12" = paste0(
         format(round(sum(M12_VISIT_COMPLETE_11 == 1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
                nsmall = 0, digits = 2))
@@ -5569,17 +5275,18 @@ custom_palette <- colorRampPalette(c("grey50", "darkred", "#B22222", "#FF0000", 
 
 UNIQUE_VISITS = as.vector(unique(heat_map_data_pnc$VISIT))
 
-heat_map_data_pnc <- heat_map_data_pnc %>% filter(!is.na(PCT_BIN))
-# set levels for percent bins
-heat_map_data_pnc$PCT_BIN <- factor(heat_map_data_pnc$PCT_BIN, levels = c("Form not required", "0-9", "10-19", "20-29", "30-39", "40-49",
-                               "50-59", "60-69", "70-79", "80-89", "90-100"))
-# set levels for visits
-heat_map_data_pnc$VISIT <- factor(heat_map_data_pnc$VISIT, levels = c("PNC0", "PNC1", "PNC4", "PNC6", "PNC26", "PNC52"))
+heat_map_data_pnc <- heat_map_data_pnc %>%
+  filter(!is.na(PCT_BIN)) %>%
+  mutate(
+    PCT_BIN = factor(PCT_BIN, levels = c("Form not required", "0-9", "10-19", "20-29", "30-39", "40-49",
+                                         "50-59", "60-69", "70-79", "80-89", "90-100")),
+    VISIT = factor(VISIT, levels = c("PNC0", "PNC1", "PNC4", "PNC6", "PNC26", "PNC52"))
+  )
 
 out <- heat_map_data_pnc %>% 
   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
   ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40")  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
+  geom_tile(color = "grey40", show.legend = TRUE)  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
   facet_grid(rows = vars(VISIT)) +
   scale_fill_manual(values = custom_palette,
                     labels = str_wrap(c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
@@ -5859,17 +5566,17 @@ knitr::include_graphics("inf_visit_complete_tab.png")
 *Value:* Among liveborn infants with PNC visits marked as complete,
 percent that have all expected visit forms completed. A visit is
 considered `complete` if the data reports the visit was conducted in
-person or by phone (variable name: `MAT_VISIT_MNHXX`).
+person or by phone (variable name: `INF_VISIT_MNHXX`).
 
 *Goal:* 100% completion for all forms.
 
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND
-have a complete visit status (variable name: \``MAT_VISIT_MNHXX`=1, 2,
+have a complete visit status (variable name: \``INF_VISIT_MNHXX`=1, 2,
 or 3) AND passed late window for visit type = i
 
 *Denominator:* Any form with visit type = i (variable name:
 `TYPE_VISIT`) AND have a complete visit status (variable name:
-`MAT_VISIT_MNHXX`=1, 2, or 3) AND passed late window for visit type = i.
+`INF_VISIT_MNHXX`=1, 2, or 3) AND passed late window for visit type = i.
 *For PNC52 visits denominator is passed late window for visit type = i
 AND has not closed out OR closed out with reason for closeout=1-year
 followup completed).*
@@ -6486,12 +6193,12 @@ is considered complete when a form has been submitted for a participant.
 *Goal:* 100% completion for all forms.
 
 *Numerator:* By form: visit type = i (variable name: `TYPE_VISIT`) AND
-have any visit status (variable name: `MAT_VISIT_MNHXX`) AND passed late
+have any visit status (variable name: `INF_VISIT_MNHXX`) AND passed late
 window for visit type = i
 
 *Denominator:* Any form with visit type = i (variable name:
 `TYPE_VISIT`) AND have any visit status (variable name:
-`MAT_VISIT_MNHXX`) AND passed late window for visit type = i. *For PNC52
+`INF_VISIT_MNHXX`) AND passed late window for visit type = i. *For PNC52
 visits denominator is passed late window for visit type = i AND has not
 closed out OR closed out with reason for closeout=1-year followup
 completed).*
@@ -7341,7 +7048,7 @@ inf_heat_map_data_pnc$VISIT <- factor(inf_heat_map_data_pnc$VISIT, levels = c("P
 out <- inf_heat_map_data_pnc %>% 
   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
   ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40")  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
+  geom_tile(color = "grey40", show.legend = TRUE)  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
   facet_grid(rows = vars(VISIT)) +
   scale_fill_manual(values = custom_palette,
                     labels = str_wrap(c("N/A", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
@@ -7398,30 +7105,32 @@ infantoutcomes_output <- tb_theme1(infantoutcomes_summary) %>%
     title = md("**PRISMA Table 15**")
   )  %>% 
 
+  tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>a</sup> Total deliveries include all livebirths and stillbirths.</span>")
+ ) %>% 
 tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>a</sup> Denominator is all live births AND have passed the risk period with a visit OR died within the risk period (risk period: age = 28days).</span>")
+    footnote = html("<span style='font-size: 18px'><sup>b</sup> Denominator is all livebirths with MNH09 and MNH11 filled out AND have passed the risk period with a visit OR died within the risk period (risk period: age = 28days).</span>")
  ) %>% 
   tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>b</sup> Denominator is all live births AND have passed the risk period (risk period: 365days past birth).</span>")
+    footnote = html("<span style='font-size: 18px'><sup>c</sup> Denominator is all livebirths with MNH09 and MNH11 filled out AND have passed the risk period (risk period: 365days past birth).</span>")
  ) %>% 
   tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>c</sup> Denominator is all livebirths and stillbirths.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>d</sup> Denominator is all livebirths and stillbirths.</span>")
  ) %>% 
   tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>d</sup> Denominator is all infants with a fetal loss reported in MNH04 `(PRG_DSDECOD)` or birth outcome in MNH09 `(BIRTH_DSTERM_INF1)`.</span>")
- ) %>% 
-  tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>e</sup> 
-All infants with a TcB measurement taken at <14 weeks of life.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>e</sup> Denominator is all infants with a fetal loss reported in MNH04 `(PRG_DSDECOD)` or birth outcome in MNH09 `(BIRTH_DSTERM_INF1)`.</span>")
  ) %>% 
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>f</sup> 
+All infants with a TcB measurement taken at <14 weeks of life.</span>")
+ ) %>% 
+  tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>g</sup> 
 All infants with a jaundice assessment at <14 weeks of life.</span>")
  ) %>% 
   tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>g</sup> Denominator is all livebirths aged 0-59 days.</span>")
+    footnote = html("<span style='font-size: 18px'><sup>h</sup> Denominator is all livebirths aged 0-59 days.</span>")
  ) 
-
 
 
 ```
@@ -7636,13 +7345,13 @@ gsed_sf_tab <- tb_theme1(gsed_sf_tab_data) %>%
                              "<span style='font-size: 18px'>6 month visit (On time window (+2 weeks): 26 to <30 weeks) (GSED & FCI optional) <sup>b</sup></span>",
                              "<span style='font-size: 18px'>12 month visit (On time window (+2 weeks): 52 to <56 weeks) (GSED required; FCI optional) <sup>c</sup></span>"))  %>%
   tab_footnote(
-    footnote = md("<span style='font-size: 18px'><sup>a</sup> denominator is n passed late window with >=17 weeks gestation AND (has not closed out OR closed out with closeout date >=26wks).</span>")
+    footnote = md("<span style='font-size: 18px'><sup>a</sup> denominator is n passed late window with >=17 weeks AND (has not closed out OR closed out with closeout date >=26wks).</span>")
   ) %>% 
   tab_footnote(
-    footnote = md("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=30 weeks gestation AND (has not closed out OR closed out with closeout date >=52wks).</span>")
+    footnote = md("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=30 weeks AND (has not closed out OR closed out with closeout date >=52wks).</span>")
   ) %>% 
 tab_footnote(
-  footnote = md("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=56 weeks gestation OR closed out with closeout reason reported as: *1-year postpartum follow-up period has ended*.</span>")
+  footnote = md("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=56 weeks OR closed out with closeout reason reported as: *1-year postpartum follow-up period has ended*.</span>")
   ) 
 
 ```
@@ -7650,6 +7359,587 @@ tab_footnote(
 ```{r, out.width = '100%'}
 gsed_sf_tab <- gsed_sf_tab %>% gtsave("gsed_sf_tab.png", expand = 10)
 knitr::include_graphics("gsed_sf_tab.png")
+```
+
+\newpage
+
+### Table 17: Bili-ruler (MNH36) Visit and Form Completion 
+
+*Value:* Among liveborn infants who were due for an IPC visit after the Bili-ruler study start date,  percent that have Bili-ruler form (MNH36) completed at four visits (IPC, PNC-0, PNC-1, and PNC-4 OR PNC-6).  the visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `INF_VISIT_MNH36`=1, 2, or 3).
+
+*Goal:* 100% completion for all forms.
+
+*Numerator:* By visit type: visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: \``INF_VISIT_MNHXX`=1, 2, or 3) AND passed late window for visit type = i
+
+*Denominator:* Visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name: `M36_INF_VISIT_MNH36`=1, 2, or 3) AND passed late window for visit type = i
+AND DOB+3 (end of IPC window) is after the Bili-ruler start date.
+*Note that if an infant has passed the late window for IPC, PNC-0, AND/OR PNC-1, PRIOR to the Bili-ruler study start date, they do NOT count as a part of this denominator.  
+
+```{r}
+
+table17_1 <- c(" ","2024-11-13","2024-12-03","2025-01-13","2024-10-24","2024-11-04") %>%
+  t() %>% 
+  as.data.frame() %>%
+  `colnames<-`(c("Total","India-CMC","India-SAS","Kenya","Pakistan","Zambia")) %>% 
+  `rownames<-`(c("Bili-ruler Study Start Date")) %>%
+  as.data.frame()  
+
+table17_2 <- InfData_BiliRuler %>% 
+  filter(SITE != "Ghana") %>%
+  rowwise() %>% 
+  group_by(SITE) %>% 
+  summarise(
+    
+    #OVERALL
+    "Expected enrollment^a^, n" = 
+      paste0(sum(
+        #had a visit
+        (M11_VISIT_COMPLETE_6 == 1 & 
+           M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+          #due for a visit
+          (DOB+3 >= STUDYSTARTDATE |
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))),na.rm=TRUE)),
+    
+    "**MNH36 form complete at IPC, PNC-0, or PNC-1 (goal: 900 per site)**" = paste0((sum(
+      (!is.na(M36_TYPE_VISIT_6) | !is.na(M36_TYPE_VISIT_7) | !is.na(M36_TYPE_VISIT_8) ) ))), # | !is.na(M36_TYPE_VISIT_9) |
+       #  !is.na(M36_TYPE_VISIT_10) | !is.na(M36_TYPE_VISIT_77))))),
+    
+    "**ALL MNH36 complete at IPC, PNC-0, PNC-0, and [PNC-4 OR PNC-6] (goal: 900 per site)**" = paste0(sum(
+      (!is.na(M36_TYPE_VISIT_6) & !is.na(M36_TYPE_VISIT_7) & !is.na(M36_TYPE_VISIT_8) & (!is.na(M36_TYPE_VISIT_9) |!is.na(M36_TYPE_VISIT_10))))),
+    
+    #IPC
+    "**Denominator^b^**" = paste0(sum(
+      M11_VISIT_COMPLETE_6 ==1 & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+        ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+           (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+      ,na.rm=TRUE)),
+    
+    "MNH36 Form Complete" = paste0(sum(
+      (!is.na(M36_TYPE_VISIT_6)) & 
+        (M11_VISIT_COMPLETE_6 == 1) &
+        (DOB+3 >=  STUDYSTARTDATE | 
+        ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+           (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+      ,na.rm=TRUE),
+      " (",
+      format((sum(
+        #mnh36 form complete
+        (!is.na(M36_TYPE_VISIT_6)) & 
+        (M11_VISIT_COMPLETE_6 == 1) &
+        (DOB+3 >=  STUDYSTARTDATE | 
+        ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+           (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+      ,na.rm=TRUE) / 
+        #denominator
+        sum(M11_VISIT_COMPLETE_6 ==1 & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+        ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+           (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+      ,na.rm=TRUE)
+      * 100),nsmall = 0, digits = 2),
+      ")"),
+    
+    "MNH36 Visit Complete" = paste0(sum(
+      M36_INF_VISIT_MNH36_6 %in% c(1,2,3) & 
+        M11_VISIT_COMPLETE_6 == 1 & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+        ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+           (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+      ,na.rm=TRUE),
+      " (",
+      format((sum(
+        #visit complete
+        M36_INF_VISIT_MNH36_6 %in% c(1,2,3) & 
+          M11_VISIT_COMPLETE_6 == 1 & 
+          (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+        ,na.rm=TRUE) / 
+          #denominator
+          sum(M11_VISIT_COMPLETE_6 ==1 & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+           ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+              (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+        ,na.rm=TRUE)
+        * 100),nsmall = 0, digits = 2),
+       ")"),
+
+        #PNC-0
+    "**Denominator^b^** " = paste0(sum(
+      #Infant had PNC-0 
+      (VC_PNC0_NUM_LATE == 1) & 
+        #Same IPC denominator
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)),
+
+    "MNH36 form complete " = paste0(sum(
+      !is.na(M36_TYPE_VISIT_7) & 
+        (VC_PNC0_NUM_LATE == 1) &
+        (DOB+3 >=  STUDYSTARTDATE | 
+           ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+              (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+      " (",
+      format(sum(
+        #MNH36 form completed at PNC-0
+        !is.na(M36_TYPE_VISIT_7) &
+          (VC_PNC0_NUM_LATE == 1) &
+          (DOB+3 >=  STUDYSTARTDATE | 
+           ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+              (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE) / 
+          #denominator
+        sum((VC_PNC0_NUM_LATE == 1) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+        * 100,nsmall = 0, digits = 2),
+      ")"),
+    
+    "MNH36 visit complete " = paste0(sum(
+      M36_INF_VISIT_MNH36_7 %in% c(1,2,3) & 
+      (VC_PNC0_NUM_LATE == 1) &
+        (DOB+3 >=  STUDYSTARTDATE | 
+           ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+              (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+      " (",
+      format(sum(
+        #MNH36 visit completed at PNC-0
+        M36_INF_VISIT_MNH36_7 %in% c(1,2,3) &
+          (VC_PNC0_NUM_LATE == 1) &
+          (DOB+3 >=  STUDYSTARTDATE | 
+           ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+              (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE) / 
+          #denominator
+        sum((VC_PNC0_NUM_LATE == 1) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+        * 100,nsmall = 0, digits = 2),
+      ")"),
+    
+    #PNC-1
+    "**Denominator^b^**  " = paste0(sum(
+      VC_PNC1_NUM_LATE == 1 & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)),
+    
+    "MNH36 form complete  " = paste0(sum(
+      VC_PNC1_NUM_LATE == 1 & 
+        !is.na(M36_TYPE_VISIT_8) & 
+                 (DOB+3 >=  STUDYSTARTDATE | 
+                    ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+      " (",
+      format(sum(
+        VC_PNC1_NUM_LATE == 1 & 
+        !is.na(M36_TYPE_VISIT_8) & 
+                 (DOB+3 >=  STUDYSTARTDATE | 
+                    ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE) /
+          sum(VC_PNC1_NUM_LATE == 1 & 
+                (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+        * 100, nsmall = 0, digits = 2),
+      ")"),
+    
+    "MNH36 visit complete  " = paste0(sum(
+      VC_PNC1_NUM_LATE == 1 & 
+        M36_INF_VISIT_MNH36_8 %in% c(1,2,3) &
+        M11_VISIT_OBSSTDAT > STUDYSTARTDATE &
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+      " (",
+      format(sum(
+      VC_PNC1_NUM_LATE == 1 & 
+        M36_INF_VISIT_MNH36_8 %in% c(1,2,3) &
+        M11_VISIT_OBSSTDAT > STUDYSTARTDATE &
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)/
+        sum(VC_PNC1_NUM_LATE == 1 & 
+                (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+      * 100,nsmall = 0, digits = 2),
+      ")"),
+    
+         #PNC-4 OR PNC-6
+    "**Denominator^b^**   " = paste0(sum(
+      (VC_PNC4_NUM_LATE == 1 | VC_PNC6_NUM_LATE == 1) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)),
+    
+    "MNH36 form complete at either PNC-4 or PNC-6   " = paste0(sum(
+      ((VC_PNC4_NUM_LATE == 1 & !is.na(M36_TYPE_VISIT_9)) |
+         (VC_PNC6_NUM_LATE == 1 & !is.na(M36_TYPE_VISIT_10))) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+      " (",
+      format(sum(
+        #MNH form completed at PNC-4 or pnc-6
+        ((VC_PNC4_NUM_LATE == 1 & !is.na(M36_TYPE_VISIT_9)) |
+         (VC_PNC6_NUM_LATE == 1 & !is.na(M36_TYPE_VISIT_10))) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE) / 
+          #denominator
+          sum(
+            (VC_PNC4_NUM_LATE == 1 | VC_PNC6_NUM_LATE == 1) & 
+              (DOB+3 >=  STUDYSTARTDATE | 
+                 ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                    (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+        * 100, nsmall = 0, digits = 2),
+      ")"),
+    
+    "MNH36 visit complete at either PNC-4 or PNC-6  " = paste0(sum(
+        ((VC_PNC4_NUM_LATE == 1  & M36_INF_VISIT_MNH36_9 %in% c(1,2,3)) |  
+          (VC_PNC6_NUM_LATE == 1 & M36_INF_VISIT_MNH36_10 %in% c(1,2,3))) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+        " (",
+      format(sum(
+        #VC
+        ((VC_PNC4_NUM_LATE == 1  & M36_INF_VISIT_MNH36_9 %in% c(1,2,3)) |  
+          (VC_PNC6_NUM_LATE == 1 & M36_INF_VISIT_MNH36_10 %in% c(1,2,3))) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE) / 
+          #denominator
+        sum(
+            (VC_PNC4_NUM_LATE == 1 | VC_PNC6_NUM_LATE == 1) & 
+              (DOB+3 >=  STUDYSTARTDATE | 
+                 ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                    (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+        * 100, nsmall = 0, digits = 2),
+      ")"),
+    
+    "MNH36 form completed at PNC-4 AND PNC-6" = paste0(sum(
+        (!is.na(M36_TYPE_VISIT_9) & !is.na(M36_TYPE_VISIT_10))  & 
+        (VC_PNC4_NUM_LATE == 1 | VC_PNC6_NUM_LATE == 1) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE))
+    
+    ) %>%
+  t() %>% as.data.frame() %>%
+  `colnames<-`(c(.[1,])) %>%
+  slice(-1) %>%
+  add_column(
+    .before = 1,
+    "Total" = InfData_BiliRuler %>%
+      filter(SITE != "Ghana") %>%
+      plyr::summarise(
+    
+        #OVERALL
+    "Expected enrollment^a^, n" = 
+          paste0(sum(
+            #had a visit
+            (M11_VISIT_COMPLETE_6 == 1 & 
+               M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+              #due for a visit
+              (DOB+3 >= STUDYSTARTDATE |
+                 ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                    (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))),na.rm=TRUE)),
+    
+    "**MNH36 form complete at IPC, PNC-0, or PNC-1 (goal: 900 per site)**" = paste0((sum(
+      (!is.na(M36_TYPE_VISIT_6) | !is.na(M36_TYPE_VISIT_7) | !is.na(M36_TYPE_VISIT_8) ) ))), # | !is.na(M36_TYPE_VISIT_9) |
+       #  !is.na(M36_TYPE_VISIT_10) | !is.na(M36_TYPE_VISIT_77))))),
+    
+    "**ALL MNH36 complete at IPC, PNC-0, PNC-0, and [PNC-4 OR PNC-6] (goal: 900 per site)**" = paste0(sum(
+      (!is.na(M36_TYPE_VISIT_6) & !is.na(M36_TYPE_VISIT_7) & !is.na(M36_TYPE_VISIT_8) & (!is.na(M36_TYPE_VISIT_9) |!is.na(M36_TYPE_VISIT_10))))),
+    
+    #IPC
+    "**Denominator^b^**" = paste0(sum(
+      M11_VISIT_COMPLETE_6 ==1 & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+        ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+           (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+      ,na.rm=TRUE)),
+    
+    "MNH36 Form Complete" = paste0(sum(
+      (!is.na(M36_TYPE_VISIT_6)) & 
+        (M11_VISIT_COMPLETE_6 == 1) &
+        (DOB+3 >=  STUDYSTARTDATE | 
+        ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+           (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+      ,na.rm=TRUE),
+      " (",
+      format((sum(
+        #mnh36 form complete
+        (!is.na(M36_TYPE_VISIT_6)) & 
+        (M11_VISIT_COMPLETE_6 == 1) &
+        (DOB+3 >=  STUDYSTARTDATE | 
+        ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+           (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+      ,na.rm=TRUE) / 
+        #denominator
+        sum(M11_VISIT_COMPLETE_6 ==1 & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+        ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+           (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+      ,na.rm=TRUE)
+      * 100),nsmall = 0, digits = 2),
+      ")"),
+    
+    "MNH36 Visit Complete" = paste0(sum(
+      M36_INF_VISIT_MNH36_6 %in% c(1,2,3) & 
+        M11_VISIT_COMPLETE_6 == 1 & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+        ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+           (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+      ,na.rm=TRUE),
+      " (",
+      format((sum(
+        #visit complete
+        M36_INF_VISIT_MNH36_6 %in% c(1,2,3) & 
+          M11_VISIT_COMPLETE_6 == 1 & 
+          (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+        ,na.rm=TRUE) / 
+          #denominator
+          sum(M11_VISIT_COMPLETE_6 ==1 & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+           ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+              (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE)))
+        ,na.rm=TRUE)
+        * 100),nsmall = 0, digits = 2),
+       ")"),
+
+        #PNC-0
+    "**Denominator^b^** " = paste0(sum(
+      #Infant had PNC-0 
+      (VC_PNC0_NUM_LATE == 1) & 
+        #Same IPC denominator
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)),
+
+    "MNH36 form complete " = paste0(sum(
+      !is.na(M36_TYPE_VISIT_7) & 
+        (VC_PNC0_NUM_LATE == 1) &
+        (DOB+3 >=  STUDYSTARTDATE | 
+           ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+              (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+      " (",
+      format(sum(
+        #MNH36 form completed at PNC-0
+        !is.na(M36_TYPE_VISIT_7) &
+          (VC_PNC0_NUM_LATE == 1) &
+          (DOB+3 >=  STUDYSTARTDATE | 
+           ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+              (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE) / 
+          #denominator
+        sum((VC_PNC0_NUM_LATE == 1) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+        * 100,nsmall = 0, digits = 2),
+      ")"),
+    
+    "MNH36 visit complete " = paste0(sum(
+      M36_INF_VISIT_MNH36_7 %in% c(1,2,3) & 
+      (VC_PNC0_NUM_LATE == 1) &
+        (DOB+3 >=  STUDYSTARTDATE | 
+           ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+              (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+      " (",
+      format(sum(
+        #MNH36 visit completed at PNC-0
+        M36_INF_VISIT_MNH36_7 %in% c(1,2,3) &
+          (VC_PNC0_NUM_LATE == 1) &
+          (DOB+3 >=  STUDYSTARTDATE | 
+           ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+              (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE) / 
+          #denominator
+        sum((VC_PNC0_NUM_LATE == 1) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+        * 100,nsmall = 0, digits = 2),
+      ")"),
+    
+    #PNC-1
+    "**Denominator^b^**  " = paste0(sum(
+      VC_PNC1_NUM_LATE == 1 & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)),
+    
+    "MNH36 form complete  " = paste0(sum(
+      VC_PNC1_NUM_LATE == 1 & 
+        !is.na(M36_TYPE_VISIT_8) & 
+                 (DOB+3 >=  STUDYSTARTDATE | 
+                    ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+      " (",
+      format(sum(
+        VC_PNC1_NUM_LATE == 1 & 
+        !is.na(M36_TYPE_VISIT_8) & 
+                 (DOB+3 >=  STUDYSTARTDATE | 
+                    ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE) /
+          sum(VC_PNC1_NUM_LATE == 1 & 
+                (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+        * 100, nsmall = 0, digits = 2),
+      ")"),
+    
+    "MNH36 visit complete  " = paste0(sum(
+      VC_PNC1_NUM_LATE == 1 & 
+        M36_INF_VISIT_MNH36_8 %in% c(1,2,3) &
+        M11_VISIT_OBSSTDAT > STUDYSTARTDATE &
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+      " (",
+      format(sum(
+      VC_PNC1_NUM_LATE == 1 & 
+        M36_INF_VISIT_MNH36_8 %in% c(1,2,3) &
+        M11_VISIT_OBSSTDAT > STUDYSTARTDATE &
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)/
+        sum(VC_PNC1_NUM_LATE == 1 & 
+                (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+      * 100,nsmall = 0, digits = 2),
+      ")"),
+    
+         #PNC-4 OR PNC-6
+    "**Denominator^b^**   " = paste0(sum(
+      (VC_PNC4_NUM_LATE == 1 | VC_PNC6_NUM_LATE == 1) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)),
+    
+    "MNH36 form complete at either PNC-4 or PNC-6   " = paste0(sum(
+      ((VC_PNC4_NUM_LATE == 1 & !is.na(M36_TYPE_VISIT_9)) |
+         (VC_PNC6_NUM_LATE == 1 & !is.na(M36_TYPE_VISIT_10))) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+      " (",
+      format(sum(
+        #MNH form completed at PNC-4 or pnc-6
+        ((VC_PNC4_NUM_LATE == 1 & !is.na(M36_TYPE_VISIT_9)) |
+         (VC_PNC6_NUM_LATE == 1 & !is.na(M36_TYPE_VISIT_10))) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE) / 
+          #denominator
+          sum(
+            (VC_PNC4_NUM_LATE == 1 | VC_PNC6_NUM_LATE == 1) & 
+              (DOB+3 >=  STUDYSTARTDATE | 
+                 ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                    (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+        * 100, nsmall = 0, digits = 2),
+      ")"),
+    
+    "MNH36 visit complete at either PNC-4 or PNC-6  " = paste0(sum(
+        ((VC_PNC4_NUM_LATE == 1  & M36_INF_VISIT_MNH36_9 %in% c(1,2,3)) |  
+          (VC_PNC6_NUM_LATE == 1 & M36_INF_VISIT_MNH36_10 %in% c(1,2,3))) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE),
+        " (",
+      format(sum(
+        #VC
+        ((VC_PNC4_NUM_LATE == 1  & M36_INF_VISIT_MNH36_9 %in% c(1,2,3)) |  
+          (VC_PNC6_NUM_LATE == 1 & M36_INF_VISIT_MNH36_10 %in% c(1,2,3))) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE) / 
+          #denominator
+        sum(
+            (VC_PNC4_NUM_LATE == 1 | VC_PNC6_NUM_LATE == 1) & 
+              (DOB+3 >=  STUDYSTARTDATE | 
+                 ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                    (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE)
+        * 100, nsmall = 0, digits = 2),
+      ")"),
+    
+    "MNH36 form completed at PNC-4 AND PNC-6" = paste0(sum(
+        (!is.na(M36_TYPE_VISIT_9) & !is.na(M36_TYPE_VISIT_10))  & 
+        (VC_PNC4_NUM_LATE == 1 | VC_PNC6_NUM_LATE == 1) & 
+        (DOB+3 >=  STUDYSTARTDATE | 
+             ((M11_VISIT_OBSSTDAT >= STUDYSTARTDATE) | 
+                (is.na(M11_VISIT_OBSSTDAT) & M36_VISIT_OBSSTDAT_6 >= STUDYSTARTDATE))), na.rm=TRUE))
+        
+        
+        ) %>% 
+      t() %>% 
+      as.data.frame() %>% 
+      `colnames<-`(c(.[1,])) %>%
+      unlist() 
+    )
+
+table17_2 <- table17_2 %>% 
+  mutate_all(~ str_replace(., "NaN", "0")) %>% 
+  mutate_all(~ str_replace(., "NaN", "0"))
+
+
+```
+
+```{r}
+
+table17 <- bind_rows(table17_1,table17_2)
+
+table17_tab <- tb_theme1(table17) %>% 
+  tab_header(
+    title = md("**Table 17: Bili-ruler Form and Visit Completion**")
+  ) %>%
+  tab_row_group(
+    label=html("<span style='font-size: 18px'>Overall</span>"),
+    rows = 1:4
+  ) %>%
+  tab_row_group(
+    label=html("<span style='font-size: 18px'>IPC visit</span>"),
+    rows = 5:7
+  ) %>%
+  tab_row_group(
+    label = html("<span style='font-size: 18px'>PNC-0 visit [Target window: 3 to 5 days]</span>"),
+    rows = 8:10
+  ) %>%
+  tab_row_group(
+    label = html("<span style='font-size: 18px'>PNC-1 visit [Target window: 7 to 14 days]</span>"),
+    rows = 11:13
+  ) %>%
+  tab_row_group(
+    label = html("<span style='font-size: 18px'>PNC-4 and PNC-6 visit (Referral information at only one of these visits is needed) [Target window: 28-35 days / 6-12 weeks; Referral information only]</span>"),
+    rows = 14:17
+    ) %>%
+  gt::row_group_order(groups = c( "<span style='font-size: 18px'>Overall</span>",
+                                  "<span style='font-size: 18px'>IPC visit</span>",
+                                  "<span style='font-size: 18px'>PNC-0 visit [Target window: 3 to 5 days]</span>",
+                                  "<span style='font-size: 18px'>PNC-1 visit [Target window: 7 to 14 days]</span>",
+                                  "<span style='font-size: 18px'>PNC-4 and PNC-6 visit (Referral information at only one of these visits is needed) [Target window: 28-35 days / 6-12 weeks; Referral information only]</span>")) %>%
+  tab_style(
+    style = list(
+      cell_text(weight = "bold")
+      ),
+    locations = cells_row_groups()) %>% 
+  tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>a</sup> Infant is DUE for IPC visit after Bili-ruler study start date (DOB+3 > Study start date) OR Infant HAS a COMPLETED IPC visit after Bili-ruler study start date (there was a large gap between DOB and IPC visit, and the IPC visit occurs after the Bili-ruler start date) OR If IPC visit is missing (both MNH11 and MNH36 at IPC), then PNC0 was completed after Bili-ruler start date (IPC visit was possibly combined with PNC-0 visit).</span>")) %>% 
+    tab_footnote(
+    footnote = html("<span style='font-size: 18px'><sup>b</sup> All criteria in (a) are met AND, For IPC Visits, Visit was completed after Bili-ruler study start date OR For PNC-X visits, Visit was complete (VC_PNCX_NUM_LATE==1).</span>")) 
+
+```
+
+```{r}
+
+table17_tab <- table17_tab %>% gtsave("table17_tab.png", expand = 10)
+knitr::include_graphics("table17_tab.png")
 ```
 
 \newpage
@@ -8068,7 +8358,7 @@ tab_footnote(
 ) %>% 
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed  MNH08 with visit type=PNC-6 OR missed late window with >12 weeks postpartum AND (has not closed out or closed out with closeout date > late visit window).</span>")
-)
+) 
 
 
 
@@ -8315,14 +8605,6 @@ completed).*
 ## REMIND TABLE
 gsed_aim3_tab <- gsed_aim3_data %>%
   filter(!is.na(SITE)) %>% 
-  ## If India-SAS doesn't have data, add empty row here
-  # mutate(existing_sas = ifelse(SITE == "India-SAS", 1, 0)) %>%
-  # # ## Add empty rows for missing SITE values if the specific site doesn't exist
-  # complete(SITE = ifelse(existing_sas == 0, "India-SAS", SITE), fill = list(SITE = NA)) %>%
-  # ## If India-CMC doesn't have data, add empty row here
-  # mutate(existing_cmc = ifelse(SITE == "India-CMC", 1, 0)) %>%
-  # ## Add empty rows for missing SITE values if the specific site doesn't exist
-  # complete(SITE = ifelse(existing_cmc == 0, "India-CMC", SITE), fill = list(SITE = NA)) %>%
   rowwise() %>%
   group_by(SITE) %>%
   summarise(
@@ -8330,7 +8612,7 @@ gsed_aim3_tab <- gsed_aim3_data %>%
     ## OVERALL 
     "Enrolled in ReMIND, n" =  paste0(
       format(sum(REMIND_ENROLLMENT_STATUS ==1 & PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2)),
-
+      
     ## 3 MONTHS
     "Denominator (3MO)" = paste0(
       format(sum(VC_AIM3_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
