@@ -2,7 +2,7 @@
 #### MONITORING REPORT SETUP -- MATERNAL ####
 #* Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #* Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 25 February 2025
+#* Last updated: 27 June 2025
 
 
 #*Output:   
@@ -53,6 +53,10 @@ setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
 #* Extract variables for monitoring report 
 #*****************************************************************************
 #update/add/delete variable names in the varNames_sheet.xlsx (check if the var is multiple or singe when add)
+#*****************************************************************************
+#* Extract variables for monitoring report 
+#*****************************************************************************
+#update/add/delete variable names in the varNames_sheet.xlsx (check if the var is multiple or singe when add)
 MatNames_sheet <- read_excel("~/Monitoring Report/code/varNames_sheet.xlsx", sheet = "MaternalVars")
 InfNames_sheet <- read_excel("~/Monitoring Report/code/varNames_sheet.xlsx", sheet = "InfantVars")
 
@@ -75,7 +79,9 @@ MatData_Report <- MatData_Wide %>%
          contains("VISIT_DATE"),
          M00_KNOWN_DOBYN_SCORRES, DOB,
          contains("_FETUS_CT_PERES_US"),
-         M02_SCRN_RETURN, contains("RBC_G6PD_LBORRES")) 
+         M02_SCRN_RETURN, contains("RBC_G6PD_LBORRES"), contains("M08_RBC_THALA"),
+         contains("M08_RBC_SPFY"), contains("M08_RBC_SICKLE")
+         ) 
 
 ## export 
 save(MatData_Report, file= paste0(path_to_save, "MatData_Report",".RData",sep = ""))
@@ -93,10 +99,15 @@ InfData_Report <- InfData_Wide %>%
 save(InfData_Report, file= paste0(path_to_save, "InfData_Report",".RData",sep = ""))
 
 mat_enroll <- read_excel(paste0("Z:/Outcome Data/", UploadDate, "/MAT_ENROLL.xlsx")) %>%
-  select(SITE, SCRNID, MOMID, PREGID, ENROLL, PREG_START_DATE,GA_DIFF_DAYS,  EDD_BOE,BOE_METHOD, BOE_GA_WKS_ENROLL, BOE_GA_DAYS_ENROLL)
+  select(SITE, SCRNID, MOMID, PREGID, ENROLL, PREG_START_DATE,GA_DIFF_DAYS,
+         EDD_BOE,BOE_METHOD, BOE_GA_WKS_ENROLL, BOE_GA_DAYS_ENROLL)
 
 table(mat_enroll$SITE)
 dim(mat_enroll)
+
+mnh04  <- read.csv(paste0("D:/Users/stacie.loisate/Documents/import/", UploadDate, "/mnh04_merged.csv")) %>% 
+  select(SITE, MOMID, PREGID, M04_TYPE_VISIT, contains("FETAL_LOSS")) %>% filter(M04_TYPE_VISIT %in% c(13,14))
+
 #**************************************************************************************
 #* PRISMA Tables 1-4
 #* Table 1: Pre-screening and enrollment numbers for PRISMA MNH Study for the most recent one week 
@@ -121,8 +132,13 @@ MatData_Screen_Enroll <- MatData_Report %>%
   mutate(CUT_DATE = max(as.Date(M02_SCRN_OBSSTDAT, format = "%Y-%m-%d"), na.rm = TRUE),
          CUT_DATE_MTH = floor_date(CUT_DATE, unit = "month"),
          CUT_DATE_WK = floor_date(CUT_DATE, unit = "week", week_start = getOption("lubridate.week.start",1))) %>% 
-  ungroup() 
+  ungroup()  %>% 
+  select(-NEW_M02_SCRN_OBSSTDAT, -NEW_M02_FORMCOMPLDAT_MNH02,
+         -AGE_IEORRES, -PC_IEORRES, -CATCHMENT_IEORRES, 
+         -CATCH_REMAIN_IEORRES, -CONSENT_IEORRES, -SCRN_RETURN) 
 
+rm(MatData_Report)
+gc()
 
 # enrollment criteria
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
@@ -148,7 +164,7 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
     # binary variable indicating if a woman was screened 
     SCREEN = case_when(!is.na(M02_FORMCOMPLDAT_MNH02) ~ 1, 
                        TRUE ~ 0),
-    ## SCREENING CRITERIA
+  ## SCREENING CRITERIA
     ## eligible & enrolled
     ## M02_AGE_IEORRES = meet age requirement?
     ## M02_PC_IEORRES = <20wks gestation?
@@ -156,7 +172,7 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
     ## M02_CATCH_REMAIN_IEORRES = stay in catchment area?
     ELIGIBLE = case_when(M02_AGE_IEORRES == 1 & M02_PC_IEORRES == 1 & M02_CATCHMENT_IEORRES == 1 &
                            M02_CATCH_REMAIN_IEORRES == 1  ~ 1,
-                         # (M02_SCRN_RETURN != 0 | is.na(M02_SCRN_RETURN)) 
+                           # (M02_SCRN_RETURN != 0 | is.na(M02_SCRN_RETURN)) 
                          M02_AGE_IEORRES == 0 | M02_PC_IEORRES == 0 | M02_CATCHMENT_IEORRES == 0 |
                            M02_CATCH_REMAIN_IEORRES == 0  ~ 0,
                          TRUE ~ 99),
@@ -174,7 +190,6 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
   mutate(n=n()) %>% 
   mutate(ENROLL_FREQ = case_when(SITE == "Pakistan" & n>1 ~ 1, TRUE ~ 0))
 
-
 ## extract Reasons for exclusion (check if cases match within mnh00 and 02)
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
   #reason for exclusion in pre-screen
@@ -187,8 +202,8 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                          ifelse(M00_EGA_LT25_IEORRES == 0 & M00_PREGNANT_IEORRES == 1, 0, 99)),
     ## if you answer 1 to PRESCR_PREGSIGN & PRESCR_GA25, you answer PRESCR_AGE
     PRESCR_AGE = ifelse(M00_AGE_IEORRES == 1, 1,
-                        ifelse(M00_AGE_IEORRES == 0  & M00_PREGNANT_IEORRES == 1 & 
-                                 (M00_EGA_LT25_IEORRES==1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")), 0, 99)),
+                      ifelse(M00_AGE_IEORRES == 0  & M00_PREGNANT_IEORRES == 1 & 
+                            (M00_EGA_LT25_IEORRES==1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")), 0, 99)),
     ## if you answer 1 to PRESCR_PREGSIGN & PRESCR_GA25 & PRESCR_AGE, you answer PRESCR_CATCHAREA
     PRESCR_CATCHAREA = ifelse(M00_CATCHMENT_IEORRES == 1, 1,
                               ifelse(M00_CATCHMENT_IEORRES == 0 & 
@@ -208,14 +223,14 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
                                ifelse((M00_CON_YN_DSDECOD == 0 | 
                                          M00_ASSNT_YN_DSDECOD == 0| M00_ASSNT_YN_DSDECOD == 0) & ## consent has "or" statements. if one method did not consent, then the rest are "77"
                                         (M00_CON_LAR_YN_DSDECOD == 0 | M00_CON_LAR_YN_DSDECOD == 77) & 
-                                        (M00_OTHR_IEORRES == 0 | (M00_OTHR_IEORRES==77 & SITE == "Pakistan")) & 
+                                       (M00_OTHR_IEORRES == 0 | (M00_OTHR_IEORRES==77 & SITE == "Pakistan")) & 
                                         M00_CATCHMENT_IEORRES == 1 & 
                                         M00_AGE_IEORRES == 1  & 
                                         M00_PREGNANT_IEORRES == 1 & 
                                         (M00_EGA_LT25_IEORRES==1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")), 0, 99))) %>% 
   # eligible based on pre-screening
   mutate(PRESCR_ELIGIBLE = ifelse(M00_PREGNANT_IEORRES == 1 & 
-                                    (M00_EGA_LT25_IEORRES == 1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")) & 
+                                   (M00_EGA_LT25_IEORRES == 1 | (M00_EGA_LT25_IEORRES==77 & SITE == "Pakistan")) & 
                                     M00_AGE_IEORRES == 1 &
                                     M00_CATCHMENT_IEORRES == 1 & 
                                     (M00_OTHR_IEORRES == 0 | (M00_OTHR_IEORRES==77 & SITE == "Pakistan")) & 
@@ -263,16 +278,44 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
          M04_FETAL_LOSS_DSSTDAT_3 = replace(M04_FETAL_LOSS_DSSTDAT_3, M04_FETAL_LOSS_DSSTDAT_3==ymd("1907-07-07"), NA), 
          M04_FETAL_LOSS_DSSTDAT_4 = replace(M04_FETAL_LOSS_DSSTDAT_4, M04_FETAL_LOSS_DSSTDAT_4==ymd("1907-07-07"), NA), 
          M04_FETAL_LOSS_DSSTDAT_5 = replace(M04_FETAL_LOSS_DSSTDAT_5, M04_FETAL_LOSS_DSSTDAT_5==ymd("1907-07-07"), NA)) %>% 
-  mutate(MISCARRIAGE_DATE = pmin(M04_FETAL_LOSS_DSSTDAT_1, M04_FETAL_LOSS_DSSTDAT_2, 
+  mutate(LOSS_DATE = pmin(M04_FETAL_LOSS_DSSTDAT_1, M04_FETAL_LOSS_DSSTDAT_2, 
                                  M04_FETAL_LOSS_DSSTDAT_3 ,M04_FETAL_LOSS_DSSTDAT_4, M04_FETAL_LOSS_DSSTDAT_5, na.rm = TRUE)) %>% 
-  # calculate preg end in days (MISCARRIAGE DATE-PREG_START_DATE)
+# calculate preg end in days (MISCARRIAGE DATE-PREG_START_DATE)
+  mutate(PREG_START_DATE = ymd(PREG_START_DATE)) %>% 
   mutate(ENDPREG_DAYS = ifelse(is.na(MISCARRIAGE), GESTAGE_AT_BIRTH_DAYS, 
-                               ifelse(MISCARRIAGE==1, MISCARRIAGE_DATE-PREG_START_DATE, GESTAGE_AT_BIRTH_DAYS))) %>%   # if miscarriage=1, use MISCARRIAGE_DATE as DOB 
+                               ifelse(MISCARRIAGE==1, LOSS_DATE-PREG_START_DATE, GESTAGE_AT_BIRTH_DAYS))) %>%   # if miscarriage=1, use MISCARRIAGE_DATE as DOB 
   mutate(DOB = ifelse(is.na(MISCARRIAGE), as.character(DOB),
-                      ifelse(MISCARRIAGE==1, as.character(MISCARRIAGE_DATE), 
-                             as.character(DOB))) )%>% 
+                    ifelse(MISCARRIAGE==1, as.character(LOSS_DATE), 
+                                  as.character(DOB))) )%>% 
   # convert DOB to date class 
   mutate(DOB = as.Date(DOB, format = "%Y-%m-%d"))
+
+gc()
+## Add in losses reported at unscheduled visits 
+unscheduled_loss <- mnh04 %>% 
+  filter(M04_TYPE_VISIT%in% c(13, 14)) %>% 
+  mutate(M04_FETAL_LOSS_DSSTDAT_UNSCHED = replace(M04_FETAL_LOSS_DSSTDAT, M04_FETAL_LOSS_DSSTDAT==ymd("1907-07-07"), NA)) %>% 
+  select(SITE, MOMID, PREGID, M04_FETAL_LOSS_DSSTDAT_UNSCHED) %>% 
+  filter(!is.na(M04_FETAL_LOSS_DSSTDAT_UNSCHED)) %>% 
+  mutate(M04_FETAL_LOSS_DSSTDAT_UNSCHED = ymd(M04_FETAL_LOSS_DSSTDAT_UNSCHED))
+
+gc()
+MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
+  left_join(unscheduled_loss %>% select(SITE, MOMID, PREGID, M04_FETAL_LOSS_DSSTDAT_UNSCHED), by = c("SITE", "MOMID", "PREGID")) %>% 
+  mutate(LOSS_DATE = pmin(M04_FETAL_LOSS_DSSTDAT_UNSCHED,M04_FETAL_LOSS_DSSTDAT_1, M04_FETAL_LOSS_DSSTDAT_2,
+                                 M04_FETAL_LOSS_DSSTDAT_3 ,M04_FETAL_LOSS_DSSTDAT_4, M04_FETAL_LOSS_DSSTDAT_5, na.rm = TRUE)) %>%
+  # select(SITE, MOMID, PREGID,PREG_START_DATE,  DOB,DOB_09, ENDPREG_DAYS,GESTAGE_AT_BIRTH_DAYS, LOSS_DATE,contains("M04_FETAL_LOSS_DSSTDA")) %>%
+  mutate(ENDPREG_DAYS = ifelse(is.na(LOSS_DATE), GESTAGE_AT_BIRTH_DAYS, 
+                               ifelse(!is.na(LOSS_DATE), LOSS_DATE-PREG_START_DATE, GESTAGE_AT_BIRTH_DAYS))) %>%   # if miscarriage=1, use MISCARRIAGE_DATE as DOB 
+  mutate(GESTAGE_AT_BIRTH_DAYS = ifelse(!is.na(DOB) & is.na(GESTAGE_AT_BIRTH_DAYS), DOB-PREG_START_DATE, GESTAGE_AT_BIRTH_DAYS)) %>%   # if miscarriage=1, use MISCARRIAGE_DATE as DOB 
+  mutate(ENDPREG_DAYS = ifelse(is.na(ENDPREG_DAYS) & !is.na(GESTAGE_AT_BIRTH_DAYS), GESTAGE_AT_BIRTH_DAYS, ENDPREG_DAYS)) %>%   # if miscarriage=1, use MISCARRIAGE_DATE as DOB 
+  
+  mutate(DOB = ifelse(is.na(LOSS_DATE), as.character(DOB),
+                      ifelse(!is.na(LOSS_DATE), as.character(LOSS_DATE), 
+                             as.character(DOB))) ) %>% 
+  # convert DOB to date class 
+  mutate(DOB = as.Date(DOB, format = "%Y-%m-%d"))
+
 
 ## Has woman closed out? 
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
@@ -282,7 +325,6 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
   mutate(MATERNAL_CLOSEOUT_YN = ifelse(M23_CLOSE_DSDECOD == 1 | M23_CLOSE_DSDECOD == 2 | 
                                          M23_CLOSE_DSDECOD == 3 | M23_CLOSE_DSDECOD == 4 | 
                                          M23_CLOSE_DSDECOD == 5 | M23_CLOSE_DSDECOD == 6, 1, 0)) 
-
 
 ## export 
 save(MatData_Screen_Enroll, file= paste0(path_to_save, "MatData_Screen_Enroll",".RData",sep = ""))
@@ -1051,104 +1093,26 @@ MatData_Hb_Visit <- MatData_Anc_Visits %>%
 ## export 
 save(MatData_Hb_Visit, file= paste0(path_to_save, "MatData_Hb_Visit",".RData",sep = ""))
 #**************************************************************************************
-#* ReMAPP Figure 1: Hemoglobin measures by gestational age for participants enrolled in PRISMA MNH 
-#* Only looking at those who are enrolled 
-#* Output = MatData_HB_GA_Visit
-#* Input = MatData_Anc_Visits
-#* We need: 
-#* GA at each visit 
-#* M08_CBC_HB_LBORRES_1
-#* M08_CBC_HB_LBORRES_1
-#* M06_SPHB_VSSTAT -- Was non-invasive total hemoglobin (SpHb) measured at this visit?
-#* M06_SPHB_LBORRES -- Record non-invasive total hemoglobin (SpHb): . g/dL
-#* M06_HB_POC_LBPERF -- Was point-of-care hemoglobin test performed at this visit?
-#* M06_HB_POC_LBORRES -- Record point-of-care hemoglobin : . g/dL
-#* 
-#**************************************************************************************
-MatData_Anc_Remapp <- MatData_Anc_Visits %>% 
-  mutate(REMAPP_LAUNCH = ifelse((SITE == "Kenya" & M02_SCRN_OBSSTDAT >= "2023-04-14") |
-                                  (SITE == "Pakistan" & (M02_SCRN_OBSSTDAT >= "2022-09-22" & M02_SCRN_OBSSTDAT < "2024-04-05")) | ## add remapp end dates
-                                  (SITE == "Ghana" & M02_SCRN_OBSSTDAT >= "2022-12-28") | 
-                                  (SITE == "Zambia" & M02_SCRN_OBSSTDAT >= "2022-12-15") | 
-                                  (SITE == "India-CMC" & M02_SCRN_OBSSTDAT >= "2023-06-20") |
-                                  (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-12-12"), 1, 0)) %>%
-  filter(ENROLL == 1 & REMAPP_LAUNCH ==1) 
-
-MatData_Hb_GA_Visit_1 <- MatData_Anc_Remapp %>% 
-  select(SITE, MOMID, PREGID, M08_CBC_HB_LBORRES_1,
-         M06_SPHB_LBORRES_1,  M06_HB_POC_LBORRES_1, M06_GESTAGE_AT_VISIT_DAYS_1) %>% 
-  mutate(TYPE_VISIT = 1) %>% 
-  mutate(CBC = replace(M08_CBC_HB_LBORRES_1, M08_CBC_HB_LBORRES_1 == -7, NA ),
-         SPHB = replace(M06_SPHB_LBORRES_1, M06_SPHB_LBORRES_1 == -7, NA ),
-         POC = replace(M06_HB_POC_LBORRES_1, M06_HB_POC_LBORRES_1 == -7, NA ),
-         GA = M06_GESTAGE_AT_VISIT_DAYS_1) %>% 
-  select(SITE, MOMID, PREGID,TYPE_VISIT, CBC, SPHB, POC, GA)
-
-MatData_Hb_GA_Visit_2 <- MatData_Anc_Remapp %>% 
-  select(SITE, MOMID, PREGID, M08_CBC_HB_LBORRES_2,
-         M06_SPHB_LBORRES_2,  M06_HB_POC_LBORRES_2, M06_GESTAGE_AT_VISIT_DAYS_2) %>% 
-  mutate(TYPE_VISIT = 2) %>% 
-  mutate(CBC = replace(M08_CBC_HB_LBORRES_2, M08_CBC_HB_LBORRES_2 == -7, NA ),
-         SPHB = replace(M06_SPHB_LBORRES_2, M06_SPHB_LBORRES_2 == -7, NA ),
-         POC = replace(M06_HB_POC_LBORRES_2, M06_HB_POC_LBORRES_2 == -7, NA ),
-         GA = M06_GESTAGE_AT_VISIT_DAYS_2) %>% 
-  select(SITE, MOMID, PREGID,TYPE_VISIT, CBC, SPHB, POC, GA)
-
-MatData_Hb_GA_Visit_3 <- MatData_Anc_Remapp %>% 
-  select(SITE, MOMID, PREGID, M08_CBC_HB_LBORRES_3,
-         M06_SPHB_LBORRES_3,  M06_HB_POC_LBORRES_3, M06_GESTAGE_AT_VISIT_DAYS_3) %>% 
-  mutate(TYPE_VISIT = 3) %>% 
-  mutate(CBC = replace(M08_CBC_HB_LBORRES_3, M08_CBC_HB_LBORRES_3 == -7, NA ),
-         SPHB = replace(M06_SPHB_LBORRES_3, M06_SPHB_LBORRES_3 == -7, NA ),
-         POC = replace(M06_HB_POC_LBORRES_3, M06_HB_POC_LBORRES_3 == -7, NA ),
-         GA = M06_GESTAGE_AT_VISIT_DAYS_3) %>% 
-  select(SITE, MOMID, PREGID,TYPE_VISIT, CBC, SPHB, POC, GA)
-
-MatData_Hb_GA_Visit_4 <- MatData_Anc_Remapp %>% 
-  select(SITE, MOMID, PREGID, M08_CBC_HB_LBORRES_4,
-         M06_SPHB_LBORRES_4,  M06_HB_POC_LBORRES_4, M06_GESTAGE_AT_VISIT_DAYS_4) %>% 
-  mutate(TYPE_VISIT = 4) %>% 
-  mutate(CBC = replace(M08_CBC_HB_LBORRES_4, M08_CBC_HB_LBORRES_4 == -7, NA ),
-         SPHB = replace(M06_SPHB_LBORRES_4, M06_SPHB_LBORRES_4 == -7, NA ),
-         POC = replace(M06_HB_POC_LBORRES_4, M06_HB_POC_LBORRES_4 == -7, NA ),
-         GA = M06_GESTAGE_AT_VISIT_DAYS_4) %>% 
-  select(SITE, MOMID, PREGID,TYPE_VISIT, CBC, SPHB, POC, GA)
-
-MatData_Hb_GA_Visit_5 <- MatData_Anc_Remapp %>% 
-  select(SITE, MOMID, PREGID, M08_CBC_HB_LBORRES_5,
-         M06_SPHB_LBORRES_5,  M06_HB_POC_LBORRES_5, M06_GESTAGE_AT_VISIT_DAYS_5) %>% 
-  mutate(TYPE_VISIT = 5) %>% 
-  mutate(CBC = replace(M08_CBC_HB_LBORRES_5, M08_CBC_HB_LBORRES_5 == -7, NA ),
-         SPHB = replace(M06_SPHB_LBORRES_5, M06_SPHB_LBORRES_5 == -7, NA ),
-         POC = replace(M06_HB_POC_LBORRES_5, M06_HB_POC_LBORRES_5 == -7, NA ),
-         GA = M06_GESTAGE_AT_VISIT_DAYS_5) %>% 
-  select(SITE, MOMID, PREGID,TYPE_VISIT, CBC, SPHB, POC, GA)
-
-MatData_Hb_GA_Visit = rbind(MatData_Hb_GA_Visit_1, MatData_Hb_GA_Visit_2,MatData_Hb_GA_Visit_3,
-                            MatData_Hb_GA_Visit_4,MatData_Hb_GA_Visit_5)
-
-MatData_Hb_GA_Visit$SPHB = ifelse(MatData_Hb_GA_Visit$SPHB == "n/a", NA, as.numeric(MatData_Hb_GA_Visit$SPHB))
-
-MatData_Hb_GA_Visit <- MatData_Hb_GA_Visit %>% 
-  pivot_longer(CBC:POC) %>% 
-  rename("TEST" = "name",
-         "RESULT" = "value") %>% 
-  mutate(GA_WKS = floor(GA/7), 
-         TRIMESTER = case_when(
-           GA_WKS > 0 & GA_WKS <14 ~ 1, 
-           GA_WKS >= 14 & GA_WKS <28 ~ 2, 
-           GA_WKS >=28 & GA_WKS<42 ~ 3, 
-           TRUE ~ NA
-         ))
-
-## export 
-save(MatData_Hb_GA_Visit, file= paste0(path_to_save, "MatData_Hb_GA_Visit",".RData",sep = ""))
-#**************************************************************************************
 #*ReMAPP healthy cohort criteria 
 # Table 2 + 3
 #*Output: healthyOutcome.rda
-#*includes: CRIT_s, HEALTHY_ELIGIBLE
+ #*includes: CRIT_s, HEALTHY_ELIGIBLE
 #**************************************************************************************
+mnh08_g6pd  <- read.csv(paste0("D:/Users/stacie.loisate/Documents/import/", UploadDate, "/mnh08_merged.csv")) %>% 
+  select(SITE, MOMID, PREGID, M08_TYPE_VISIT, contains("G6PD")) %>%
+  filter(M08_RBC_G6PD_LBORRES >= 0 & M08_TYPE_VISIT %in% c(1,2,3,4,5,13)) %>%
+  mutate(M08_RBC_G6PD_LBSTDAT = as.Date(M08_RBC_G6PD_LBSTDAT, "%d-%b-%y"),
+         M08_RBC_G6PD_LBTSTDAT = case_when(!is.na(M08_RBC_G6PD_LBSTDAT) ~ ymd(M08_RBC_G6PD_LBSTDAT),
+                                           TRUE ~ ymd(M08_RBC_G6PD_LBTSTDAT))
+  ) %>% 
+  group_by(SITE, PREGID) %>% 
+  mutate(n=n()) %>% 
+  group_by(SITE, PREGID) %>%
+  arrange(desc(M08_RBC_G6PD_LBTSTDAT)) %>%
+  slice(1) %>%
+  ungroup() %>% 
+  select(-n, -M08_RBC_G6PD_LBSTDAT) %>% 
+  rename(G6PD_TYPE_VISIT = M08_TYPE_VISIT)
 
 df_maternal <- MatData_Screen_Enroll %>%
   filter(ENROLL == 1) %>% 
@@ -1160,7 +1124,6 @@ df_maternal <- MatData_Screen_Enroll %>%
                                   (SITE == "India-SAS" & M02_SCRN_OBSSTDAT >= "2023-12-12"), 1, 0)) %>%
   filter(REMAPP_LAUNCH == 1) %>% 
   mutate(FERRITIN_LBORRES  = M08_FERRITIN_LBORRES_1)
-
 
 ## adjusting ferritin units
 p50_ferritin_gh  <- median(df_maternal$M08_FERRITIN_LBORRES_1[df_maternal$SITE == "Ghana"], na.rm = TRUE)
@@ -1209,12 +1172,13 @@ if (p50_ferritin_zm < 10 ) {
 
 # save(df_maternal, file = "derived_data/df_maternal.rda")
 
-## 3/25 UPDATED CRITERIA FOR HEMOGLOBINOPATHIES
+## 07/03 UPDATED CRITERIA 
 #derive criteria
   #derive criteria
 df_criteria <- df_maternal %>%
+  left_join(mnh08_g6pd, by = c("SITE", "MOMID", "PREGID")) %>% 
   dplyr::select(
-    SITE, SCRNID, MOMID, PREGID,ENROLL,# sf_adj,,
+    SITE, SCRNID, MOMID, PREGID,ENROLL,
     M00_KNOWN_DOBYN_SCORRES, M00_BRTHDAT, M00_ESTIMATED_AGE, M00_SCHOOL_YRS_SCORRES, M00_SCHOOL_SCORRES,
     M02_SCRN_OBSSTDAT,
     M03_MARITAL_SCORRES_1, M03_SMOKE_OECOCCUR_1, M03_CHEW_BNUT_OECOCCUR_1, M03_CHEW_OECOCCUR_1, M03_DRINK_OECOCCUR_1,
@@ -1235,7 +1199,7 @@ df_criteria <- df_maternal %>%
     M08_MN_LBPERF_8_1, M08_FERRITIN_LBORRES_1, 
     M08_RBC_LBPERF_2_1, M08_RBC_THALA_LBORRES_1, M08_RBC_LBPERF_3_1,
     M08_MN_LBPERF_12_1, M08_CRP_LBORRES_1, M08_MN_LBPERF_13_1, M08_AGP_LBORRES_1,
-    M08_RBC_G6PD_LBORRES_1, FERRITIN_LBORRES,
+    M08_RBC_G6PD_LBORRES_1,M08_RBC_G6PD_LBORRES, FERRITIN_LBORRES,
     contains("M08_RBC_THALA_"),M08_RBC_SPFY_THALA_1,M08_RBC_SICKLE_LBORRES_1,
     num_range("M06_HB_POC_LBORRES_",1:12),
     num_range("M08_CBC_HB_LBORRES_",1:12),
@@ -1291,9 +1255,9 @@ df_criteria <- df_maternal %>%
                              ifelse(M06_SINGLETON_PERES_1 == 1, 1, 55)
     )) %>% 
   # F. no iron deficiency (not iron deficient: serum ferritin > 15 mcg/L(Ug/L)) 
-  #convert unit from ug/dL to mcg/L
   #replace negative value to NA in order to use BRINDA package 
   mutate_at(vars(c(M08_FERRITIN_LBORRES_1, M08_CRP_LBORRES_1, M08_AGP_LBORRES_1, FERRITIN_LBORRES)), ~ replace(., . < 0, NA)) 
+
 
 df_criteria <- df_criteria %>% 
   mutate(
@@ -1312,8 +1276,7 @@ df_criteria <- df_criteria %>%
       (CRIT_INFLAM ==0 & FERRITIN_LBORRES >=70) | (CRIT_INFLAM == 1 & FERRITIN_LBORRES>=15) ~ 1, ## 1, eligible
       CRIT_INFLAM == 55 ~  55, ## if inflammation status is pending, 55, pending
       TRUE ~ NA_real_
-    )
-  ) %>% 
+    )) %>% 
   rowwise() %>% 
   mutate_at(vars(starts_with("M06_BP_")), ~ ifelse(. < 0, NA, .)) %>% 
   mutate(
@@ -1345,38 +1308,14 @@ df_criteria <- df_criteria %>%
       M04_UNPL_CESARIAN_PROCCUR_1 == 99 ~ 0,
       TRUE ~ 55 
     ),
-    # I. Normal glucose-6-phosphate dehydrogenase (%6.1 U/g Hb)
+    # I. Normal glucose-6-phosphate dehydrogenase (%6.1 U/g Hb) [UPDATED 5/20 TO INCLUDE ALL VISITS AND NOT JUST ENROLLMENT]
     CRIT_G6PD = case_when(
-      M08_RBC_G6PD_LBORRES_1 == 77 ~ 55, #temp solution for wrong default value 77. 
-      M08_RBC_G6PD_LBORRES_1 >= 6.1 ~ 1,
-      M08_RBC_G6PD_LBORRES_1 >= 0 & M08_RBC_G6PD_LBORRES_1 < 6.1 ~ 0, 
+      M08_RBC_G6PD_LBORRES == 77 ~ 55, #temp solution for wrong default value 77. 
+      M08_RBC_G6PD_LBORRES >= 6.1 ~ 1,
+      M08_RBC_G6PD_LBORRES >= 0 & M08_RBC_G6PD_LBORRES < 6.1 ~ 0, 
       TRUE ~ 55
     ),
-    # J. No hemoglobinopathies: SS, SC, SE, EE, CC, SD-Punjab, SN2thal, EN2thal, 
-    #CN2thal, CD-Punjab, ED-Punjab, D-D-Punjab, D-PunjabN2thal, Thalassemia major, Thalassemia intermedia, or Alpha thalassemia
-    CRIT_HEMOGLOBINOPATHIES = case_when(
-      # Case 1: Any of the M08_RBC_THALA_x variables is 1 OR grepl() condition is met
-      (M08_RBC_THALA_1_1 == 1 | M08_RBC_THALA_2_1 == 1 | M08_RBC_THALA_3_1 == 1 | M08_RBC_THALA_4_1 == 1 |
-         M08_RBC_THALA_5_1 == 1 | M08_RBC_THALA_6_1 == 1 | M08_RBC_THALA_7_1 == 1 | M08_RBC_THALA_8_1 == 1 |
-         M08_RBC_THALA_9_1 == 1 | M08_RBC_THALA_10_1 == 1 | M08_RBC_THALA_11_1 == 1 | M08_RBC_THALA_12_1 == 1 |
-         M08_RBC_THALA_13_1 == 1 | M08_RBC_THALA_14_1 == 1 ) ~ 0,
-      # Case 2: grepl condition with M08_RBC_THALA_19
-      (grepl("Interme|Diseas|Major", M08_RBC_SPFY_THALA_1, ignore.case = TRUE) & M08_RBC_THALA_19_1 == 1) ~ 0,
-      # Case 3: If M08_RBC_SICKLE_LBORRES is 1, assign 0
-      M08_RBC_SICKLE_LBORRES_1 == 1 ~ 0,
-      # Case 4: All M08_RBC_THALA_x are 0, but M08_RBC_THALA_16, 17, or 18 is 1 OR thala test results are 0
-      ((M08_RBC_THALA_1_1 == 0 & M08_RBC_THALA_2_1 == 0 & M08_RBC_THALA_3_1 == 0 & M08_RBC_THALA_4_1 == 0 &
-          M08_RBC_THALA_5_1 == 0 & M08_RBC_THALA_6_1 == 0 & M08_RBC_THALA_7_1 == 0 & M08_RBC_THALA_8_1 == 0 &
-          M08_RBC_THALA_9_1 == 0 & M08_RBC_THALA_10_1 == 0 & M08_RBC_THALA_11_1 == 0 & M08_RBC_THALA_12_1 == 0 &
-          M08_RBC_THALA_13_1 == 0 & M08_RBC_THALA_14_1 == 0) &
-         (M08_RBC_THALA_15_1 == 1 | M08_RBC_THALA_16_1 == 1 | M08_RBC_THALA_17_1 == 1 | M08_RBC_THALA_18_1 == 1)) |
-        M08_RBC_THALA_LBORRES_1 == 0 ~ 1,
-      # Case 5: grepl condition with M08_RBC_THALA_19 if it has trait/any regular hemoglobanopathy without disease
-      (grepl("TRAIT|AF|FC|AE|AS", M08_RBC_SPFY_THALA_1, ignore.case = TRUE) & M08_RBC_THALA_19_1 == 1) ~ 1,
-      # Default case
-      TRUE ~ 55
-    ),
-    #K. No reported cigarette smoking, tobacco chewing, or betel nut use during pregnancy
+    # K. No reported cigarette smoking, tobacco chewing, or betel nut use during pregnancy
     CRIT_SMOKE = case_when(
       SITE == "Zambia" & (M03_SMOKE_OECOCCUR_1 == 1 | M03_CHEW_OECOCCUR_1 == 1) ~ 0,
       SITE == "Zambia" & (M03_SMOKE_OECOCCUR_1 == 0 & M03_CHEW_OECOCCUR_1 == 0) ~ 1,
@@ -1434,6 +1373,67 @@ df_criteria <- df_criteria %>%
                              ifelse(M06_HCV_POC_LBORRES_1 == 0, 1, 55))
   ) 
 
+
+## RBC MORPHOLOGY
+mnh08_raw  <- read.csv(paste0("D:/Users/stacie.loisate/Documents/import/", UploadDate, "/mnh08_merged.csv")) %>% 
+  select(SITE, MOMID, PREGID, M08_TYPE_VISIT,M08_LBSTDAT, contains("RBC")) 
+  
+#RBC Morphology 
+rbc_morph_raw  <- mnh08_raw  %>% 
+  select(SITE, MOMID, PREGID, M08_RBC_LBPERF_1, M08_RBC_LBPERF_2, M08_RBC_THALA_LBORRES, starts_with("M08_RBC_THALA"), 
+         M08_RBC_SICKLE_LBORRES, M08_RBC_SPFY_THALA, M08_LBSTDAT, M08_TYPE_VISIT) %>%
+  filter (M08_RBC_LBPERF_1 == 1 | M08_RBC_LBPERF_2 == 1) %>%
+  mutate (
+    # J. No hemoglobinopathies: SS, SC, SE, EE, CC, SD-Punjab, Sβthal, Eβthal, 
+    #Cβthal, CD-Punjab, ED-Punjab, D-D-Punjab, D-Punjabβthal, Thalassemia major, Thalassemia intermedia, or Alpha thalassemia
+    CRIT_HEMOGLOBINOPATHIES = case_when(
+      # Case 1: Any of the M08_RBC_THALA_x variables is 1 OR grepl() condition is met
+      (M08_RBC_THALA_1 == 1 | M08_RBC_THALA_2 == 1 | M08_RBC_THALA_3 == 1 | M08_RBC_THALA_4 == 1 |
+         M08_RBC_THALA_5 == 1 | M08_RBC_THALA_6 == 1 | M08_RBC_THALA_7 == 1 | M08_RBC_THALA_8 == 1 |
+         M08_RBC_THALA_9 == 1 | M08_RBC_THALA_10 == 1 | M08_RBC_THALA_11 == 1 | M08_RBC_THALA_12 == 1 |
+         M08_RBC_THALA_13 == 1 | M08_RBC_THALA_14 == 1 ) ~ 0,
+      
+      # Case 2: grepl condition with M08_RBC_THALA_19
+      (grepl("Interme|Diseas|Major|HbD Punjab", M08_RBC_SPFY_THALA, ignore.case = TRUE) & M08_RBC_THALA_19 == 1) ~ 0,
+      
+      # Case 3: If M08_RBC_SICKLE_LBORRES is 1, assign 0
+      M08_RBC_SICKLE_LBORRES == 1 ~ 0,
+      
+      # Case 4: All M08_RBC_THALA_x are 0, but M08_RBC_THALA_16, 17, or 18 is 1 OR thala test results are 0
+      ((M08_RBC_THALA_1 %in% c(0,77) & M08_RBC_THALA_2 %in% c(0,77) & M08_RBC_THALA_3 %in% c(0,77) & M08_RBC_THALA_4 %in% c(0,77) &
+          M08_RBC_THALA_5 %in% c(0,77) & M08_RBC_THALA_6 %in% c(0,77) & M08_RBC_THALA_7 %in% c(0,77) & M08_RBC_THALA_8 %in% c(0,77) &
+          M08_RBC_THALA_9 %in% c(0,77) & M08_RBC_THALA_10 %in% c(0,77) & M08_RBC_THALA_11 %in% c(0,77) & M08_RBC_THALA_12 %in% c(0,77) &
+          M08_RBC_THALA_13 %in% c(0,77) & M08_RBC_THALA_14 %in% c(0,77)) & 
+         (M08_RBC_THALA_15 == 1 | M08_RBC_THALA_16 == 1 | M08_RBC_THALA_17 == 1 | M08_RBC_THALA_18 == 1)) |
+        M08_RBC_THALA_LBORRES == 0 ~ 1,
+      
+      # Case 5: grepl condition with M08_RBC_THALA_19 if it has trait/any regular hemoglobanopathy without disease
+      (grepl("TRAIT|AF|FC|AE|AS|HbG|Normal|HbJ|HbF|", M08_RBC_SPFY_THALA, ignore.case = TRUE) & M08_RBC_THALA_19 == 1) ~ 1,
+      
+      
+      # Default case
+      TRUE ~ 55
+    ))
+
+# Step 2: Remove duplicates (keep one row per participant)
+# (Assume: no specific date available ??? pick the record where CRIT_HEMOGLOBINOPATHIES is not 55 first if possible)
+rbc_morph_criteria <- rbc_morph_raw %>%
+  group_by(SITE, MOMID, PREGID) %>%
+  arrange(CRIT_HEMOGLOBINOPATHIES) %>%  # Prioritize 0/1 over 55
+  slice(1) %>%
+  ungroup()
+
+df_criteria <- df_criteria %>% 
+  left_join(rbc_morph_criteria %>% select(SITE, MOMID, PREGID, CRIT_HEMOGLOBINOPATHIES), by = c("SITE", "MOMID", "PREGID")) %>% 
+  mutate(CRIT_HEMOGLOBINOPATHIES = case_when(CRIT_HEMOGLOBINOPATHIES ==1 ~ 1, 
+                                             CRIT_HEMOGLOBINOPATHIES ==0 ~ 0,
+                                             is.na(CRIT_HEMOGLOBINOPATHIES) | CRIT_HEMOGLOBINOPATHIES ==55 ~ 55,
+                                              TRUE ~ NA)) 
+
+## flag if any are NA
+table(df_criteria$CRIT_HEMOGLOBINOPATHIES, useNA = "ifany")
+
+
 #After enrollment, participants will be excluded from the final analysis if any of the following occur: 
 #Multiple pregnancies not identified at recruitment
 
@@ -1461,25 +1461,6 @@ healthyOutcome <- df_criteria %>%
 
 df_healthy <- healthyOutcome %>% 
   filter(HEALTHY_ELIGIBLE == 1)
-
-# test <- healthyOutcome %>% 
-#   mutate(HEALTHY_ELIGIBLE_14WK = case_when(
-#     if_all(starts_with("CRIT_") & !matches("CRIT_GA"), ~.x %in% c(1, 666)) ~ 1, #eligible
-#     if_any(starts_with("CRIT_"), ~.x == 0) ~ 0, #Not eligible
-#     if_any(starts_with("CRIT_"), ~.x %in% c(55, 99)) ~ 55, # pending
-#     HEALTHY_CHECK < 19 ~ 3 #19 criteria pending
-#   )) %>%
-#   # filter(HEALTHY_ELIGIBLE_14WK ==0) %>%
-#   select(SITE, MOMID, PREGID,HEALTHY_ELIGIBLE, HEALTHY_ELIGIBLE_14WK,starts_with("CRIT"))
-# 
-# table(healthyOutcome$CRIT_GA,healthyOutcome$HEALTHY_ELIGIBLE)
-# table(healthyOutcome$CRIT_GA, healthyOutcome$HEALTHY_ELIGIBLE_14WK)
-# table(healthyOutcome$CRIT_GA)
-# 
-# table(test$CRIT_GA, test$HEALTHY_ELIGIBLE_14WK)
-# table(test$CRIT_GA, test$HEALTHY_ELIGIBLE)
-
-# table(df_healthy$SITE)
 
 save(healthyOutcome, file= paste0(path_to_save, "healthyOutcome",".RData",sep = ""))
 save(df_healthy, file= paste0(path_to_save, "df_healthy",".RData",sep = ""))
