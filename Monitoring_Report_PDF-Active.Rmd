@@ -7652,379 +7652,17 @@ gsed_sf_tab <- gsed_sf_tab %>% gtsave("gsed_sf_tab.png", expand = 10)
 knitr::include_graphics("gsed_sf_tab.png")
 ```
 
-<!-- ### Table 13. GSED short form sample distribution  -->
-
-<!-- *Value:* Are forms completed for each visit? A visit is considered complete if the data reports the visit was conducted in person or by phone (variable name: MAT_VISIT_MNHXX ). If there is no late window for a visit, the on-time window is used. -->
-
-<!-- *Numerator:* Livebirth with visit type = i (variable name: `TYPE_VISIT`) AND have complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed late window  -->
-
-<!-- *Denominator:* Livebirth passed late window AND (has not closed out OR closed out with closeout date \> visit window). *For PNC52 visits denominator is passed late window for visit type = i AND has not closed out OR closed out with reason for closeout=1-year followup completed).* -->
-
-<!-- *Note:* Only includes infants where visit window start date >= PRISMA Expansion (v1.8) start date -->
-
-<!-- ```{r} -->
-
-<!-- gsed_sf <- gsed_sf_data %>%  -->
-
-<!--   ## If India-SAS doesn't have data, add empty row here  -->
-
-<!--   mutate(existing_sas = ifelse(SITE == "India-SAS", 1, 0)) %>% -->
-
-<!--   ## Add empty rows for missing SITE values if the specific site doesn't exist -->
-
-<!--   complete(SITE = ifelse(existing_sas == 0, "India-SAS", SITE), fill = list(SITE = NA)) %>% -->
-
-<!--   ## If India-CMC doesn't have data, add empty row here  -->
-
-<!--   mutate(existing_cmc = ifelse(SITE == "India-CMC", 1, 0)) %>% -->
-
-<!--   ## Add empty rows for missing SITE values if the specific site doesn't exist -->
-
-<!--   complete(SITE = ifelse(existing_cmc == 0, "India-CMC", SITE), fill = list(SITE = NA)) %>% -->
-
-<!--   rowwise() %>%  -->
-
-<!--   group_by(SITE) %>%  -->
-
-<!--   summarise( -->
-
-<!--     ## 3 MONTHS  -->
-
-<!--     "Denominator (3MO)" = paste0( -->
-
-<!--       format(sum(VC_GSED_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-
-<!--     ), -->
-
-<!--     "GSED SF (3MO)" = paste0( -->
-
-<!--       format(sum(VC_GSED_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--       " (", -->
-
-<!--       format(round(sum(VC_GSED_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--       ")"), -->
-
-<!--     "FCI (3MO)" = paste0( -->
-
-<!--       format(sum(VC_FCI_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--       " (", -->
-
-<!--       format(round(sum(VC_FCI_3MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--       ")"), -->
-
-<!--     ## 6 MONTHS  -->
-
-<!--     "Denominator (6MO)" = paste0( -->
-
-<!--       format(sum(VC_GSED_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-
-<!--     ), -->
-
-<!--     "GSED SF (6MO)" = paste0( -->
-
-<!--       format(sum(VC_GSED_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--       " (", -->
-
-<!--       format(round(sum(VC_GSED_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--       ")"), -->
-
-<!--     "FCI (6MO)" = paste0( -->
-
-<!--       format(sum(VC_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--       " (", -->
-
-<!--       format(round(sum(VC_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--       ")"), -->
-
-<!--     ## 12 MONTHS  -->
-
-<!--     "Denominator (12MO)" = paste0( -->
-
-<!--       format(sum(VC_GSED_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-
-<!--     ), -->
-
-<!--     "GSED SF (12MO)" = paste0( -->
-
-<!--       format(sum(VC_GSED_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--       " (", -->
-
-<!--       format(round(sum(VC_GSED_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--       ")"), -->
-
-<!--     "FCI (12MO)" = paste0( -->
-
-<!--       format(sum(VC_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--       " (", -->
-
-<!--       format(round(sum(VC_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--       ")") -->
-
-<!--   ) %>% -->
-
-<!--   mutate(`Denominator (3MO)` = case_when(SITE %in% c("India-CMC", "India-SAS", "Kenya","Pakistan", "Zambia") ~ "not assessing", TRUE ~ `Denominator (3MO)`), -->
-
-<!--          `GSED SF (3MO)` = case_when(SITE %in% c("India-CMC", "India-SAS", "Kenya","Pakistan", "Zambia") ~ "not assessing", TRUE ~ `GSED SF (3MO)`), -->
-
-<!--          `FCI (3MO)` = case_when(SITE %in% c("India-CMC", "India-SAS", "Kenya","Pakistan", "Zambia") ~ "not assessing", TRUE ~ `FCI (3MO)`), -->
-
-<!--          `Denominator (6MO)` = case_when(SITE %in% c("Pakistan") ~ "not assessing", TRUE ~ `Denominator (6MO)`), -->
-
-<!--          `GSED SF (6MO)` = case_when(SITE %in% c("Pakistan") ~ "not assessing", TRUE ~ `GSED SF (6MO)`), -->
-
-<!--          `FCI (6MO)` = case_when(SITE %in% c("India-CMC","Pakistan") ~ "not assessing", TRUE ~ `FCI (6MO)`), -->
-
-<!--          `FCI (12MO)` = case_when(SITE %in% c("India-CMC","Pakistan") ~ "not assessing", TRUE ~ `FCI (12MO)`) -->
-
-<!--          ) %>% -->
-
-<!--   t() %>% as.data.frame() %>%  -->
-
-<!--   `colnames<-`(c(.[1,])) %>%  -->
-
-<!--   slice(-1) %>%  -->
-
-<!--   add_column( -->
-
-<!--     .before = 1, -->
-
-<!--     "Total" = gsed_sf_data %>%  -->
-
-<!--       plyr::summarise( -->
-
-<!--         ## 3 MONTHS  -->
-
-<!--         "Denominator (3MO)" = paste0( -->
-
-<!--           format(sum(VC_GSED_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-
-<!--         ), -->
-
-<!--         "GSED SF (3MO)" = paste0( -->
-
-<!--           format(sum(VC_GSED_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--           " (", -->
-
-<!--           format(round(sum(VC_GSED_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--           ")"), -->
-
-<!--         "FCI (3MO)" = paste0( -->
-
-<!--           format(sum(VC_FCI_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--           " (", -->
-
-<!--           format(round(sum(VC_FCI_3MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--           ")"), -->
-
-<!--         ## 6 MONTHS  -->
-
-<!--         "Denominator (6MO)" = paste0( -->
-
-<!--           format(sum(VC_GSED_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-
-<!--         ), -->
-
-<!--         "GSED SF (6MO)" = paste0( -->
-
-<!--           format(sum(VC_GSED_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--           " (", -->
-
-<!--           format(round(sum(VC_GSED_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--           ")"), -->
-
-<!--         "FCI (6MO)" = paste0( -->
-
-<!--           format(sum(VC_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--           " (", -->
-
-<!--           format(round(sum(VC_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--           ")"), -->
-
-<!--         ## 12 MONTHS  -->
-
-<!--         "Denominator (12MO)" = paste0( -->
-
-<!--           format(sum(VC_GSED_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-
-<!--         ), -->
-
-<!--         "GSED SF (12MO)" = paste0( -->
-
-<!--           format(sum(VC_GSED_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--           " (", -->
-
-<!--           format(round(sum(VC_GSED_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--           ")"), -->
-
-<!--         "FCI (12MO)" = paste0( -->
-
-<!--           format(sum(VC_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-
-<!--           " (", -->
-
-<!--           format(round(sum(VC_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_GSED_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-
-<!--           ")") -->
-
-<!--     ) %>% -->
-
-<!--       t() %>%  -->
-
-<!--       as.data.frame() %>%  -->
-
-<!--       `colnames<-`(c(.[1,])) %>% unlist()  -->
-
-<!--   )  -->
-
-<!-- ``` -->
-
-<!-- ```{r} -->
-
-<!-- gsed_sf_tab_data <- gsed_sf %>%  -->
-
-<!--   `rownames<-` (c( -->
-
-<!--     "Denominator, n",  -->
-
-<!--     "GSED SF", -->
-
-<!--     "FCI", -->
-
-<!--     "Denominator, n ",  -->
-
-<!--     "GSED SF ", -->
-
-<!--     "FCI ",     -->
-
-<!--     "Denominator, n  ",  -->
-
-<!--     "GSED SF  ", -->
-
-<!--     "FCI  " -->
-
-<!--   ) -->
-
-<!--   ) %>%  -->
-
-<!--   mutate_at(vars(everything()), ~ifelse(. == "0 (NaN)", "0 (0)", .)) -->
-
-<!-- gsed_sf_tab <- tb_theme1(gsed_sf_tab_data) %>% -->
-
-<!--   tab_header( -->
-
-<!--     title = md("Table 13. GSED and FCI in PRISMA/ReMAPP Cohort") -->
-
-<!--   ) %>% -->
-
-<!--   tab_row_group( -->
-
-<!--     label = html("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED & FCI optional) <sup>a</sup></span>"), -->
-
-<!--     rows = 1:3 -->
-
-<!--   ) %>% -->
-
-<!--   tab_row_group( -->
-
-<!--     label = html("<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>"), -->
-
-<!--     rows = 4:6 -->
-
-<!--   ) %>% -->
-
-<!--   tab_row_group( -->
-
-<!--     label = html("<span style='font-size: 18px'>12 month visit (Late window: 52 to <64 weeks) (GSED required; FCI optional) <sup>c</sup></span>"), -->
-
-<!--     rows = 7:9 -->
-
-<!--   ) %>% -->
-
-<!--   row_group_order(groups = c("<span style='font-size: 18px'>3 month visit (Late window: 13 to <26 weeks) (GSED & FCI optional) <sup>a</sup></span>", -->
-
-<!--                              "<span style='font-size: 18px'>6 month visit (Late window: 26 to <52 weeks) (GSED & FCI optional) <sup>b</sup></span>", -->
-
-<!--                              "<span style='font-size: 18px'>12 month visit (Late window: 52 to <64 weeks) (GSED required; FCI optional) <sup>c</sup></span>"))  %>% -->
-
-<!--   tab_footnote( -->
-
-<!--     footnote = md("<span style='font-size: 18px'><sup>a</sup> denominator is n passed late window with >=26 weeks gestation AND (has not closed out OR closed out with closeout date >=26wks).</span>") -->
-
-<!--   ) %>%  -->
-
-<!--   tab_footnote( -->
-
-<!--     footnote = md("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=52 weeks gestation AND (has not closed out OR closed out with closeout date >=52wks).</span>") -->
-
-<!--   ) %>%  -->
-
-<!-- tab_footnote( -->
-
-<!--   footnote = md("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=64 weeks gestation OR closed out with closeout  -->
-
-<!--   reason reported as: *1-year postpartum follow-up period has ended*.</span>") -->
-
-<!--   )  -->
-
-<!-- ``` -->
-
-<!-- ```{r, out.width = '100%'} -->
-
-<!-- gsed_sf_tab <- gsed_sf_tab %>% gtsave("gsed_sf_tab.png", expand = 10) -->
-
-<!-- knitr::include_graphics("gsed_sf_tab.png") -->
-
-<!-- ``` -->
-
 \newpage
 
 ## **2. ReMAPP Study Monitoring Report**
 
-### Table 17: Protocol compliance for ReMAPP fatigue assessment
+### Table 18: Protocol compliance for ReMAPP fatigue assessment
 
-*Value:* Percent of fatigue assessments (MNH26) completed among women
-expected for visits in the ANC and PNC periods, regardless of visit
-completion status. A visit is considered `complete` if the data reports
-the visit was conducted in person or by phone (variable name:
-`MAT_VISIT_MNHXX`). The table below shows protocol compliance
-distributions for MNH26 forms following site launch of ReMAPP. These
-forms can be filled out either during individual visits (e.g., ANC20) or
-during combined visits after the gestational age window has passed
-(e.g., combined Enrollment and ANC20 visits).For example, the
-denominator for MNH26 completed at ANC32 is the number of participants
-who have passed the ANC36 late window to allow for combined visits.
+*Value:* Percent of fatigue assessments (MNH26) completed among women expected for visits in the ANC and PNC periods, regardless of visit completion status. A visit is considered `complete` if the data reports the visit was conducted in person or by phone (variable name: `MAT_VISIT_MNHXX`). The table below shows protocol compliance distributions for MNH26 forms following site launch of ReMAPP. These forms can be filled out either during individual visits (e.g., ANC20) or during combined visits after the gestational age window has passed (e.g., combined Enrollment and ANC20 visits).For example, the denominator for MNH26 completed at ANC32 is the number of participants who have passed the ANC36 late window to allow for combined visits.
 
-*Numerator:* MNH26 with visit type = i (variable name: `TYPE_VISIT`) AND
-have a complete visit status (variable name: `MAT_VISIT_MNHXX`) AND
-passed late window for visit type = i AND (has not delivered OR
-delivered with gestational age \> late visit window) AND (has not closed
-out OR closed out with closeout date \> visit window)
+*Numerator:* MNH26 with visit type = i (variable name: `TYPE_VISIT`) AND have a complete visit status (variable name:`MAT_VISIT_MNHXX`) AND passed late window for visit type = i AND (has not delivered OR delivered with gestational age \> late visit window) AND (has not closed out OR closed out with closeout date \> visit window)
 
-*Denominator:* Passed late window for visit type = i AND (has not
-delivered OR delivered with gestational age \> late visit window) AND
-(has not closed out OR closed out with closeout date \> visit window)
+*Denominator:* Passed late window for visit type = i AND (has not delivered OR delivered with gestational age \> late visit window) AND (has not closed out OR closed out with closeout date \> visit window)
 
 ```{r}
     
@@ -8124,7 +7762,7 @@ remapp_table1 <- prot_compliance_fatigue %>%
 ## table 8
 remapp_table1 <- tb_theme1(remapp_table1) %>% 
   tab_header(
-    title = md("**Table 17**")
+    title = md("**Table 18**")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>Fatigue assessments (MNH26)</span>"),
@@ -8175,7 +7813,7 @@ knitr::include_graphics("remapp_table1.png")
 
 \newpage
 
-### Table 18: Participant eligibility for the ReMAPP healthy cohort
+### Table 19: Participant eligibility for the ReMAPP healthy cohort
 
 *Value:* This table will be updated as lab measurements are updated and
 reported. Those who are unknown may move into eligible or ineligible
@@ -8239,7 +7877,7 @@ remapp_table2 <- remapp_table2 %>%
 ## ReMAPP table 2
 remapp_table2 <- tb_theme1(remapp_table2) %>% 
   tab_header(
-    title = md("**Table 18**")
+    title = md("**Table 19**")
   ) %>%
 tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>a</sup> a participant is considered eligible regardless of gestational age at enrollment (GA at enrollment <14 weeks criteria excluded).</span>")
@@ -8326,7 +7964,7 @@ plot_criteria %>%
 
 \newpage
 
-### Table 19: Protocol compliance for ReMAPP hemoglobin measurements by CBC
+### Table 20: Protocol compliance for ReMAPP hemoglobin measurements by CBC
 
 *Value:* Protocol compliance for CBC hemoglobin measurements at required
 ReMAPP study visits, regardless of visit completion status.
@@ -8341,8 +7979,6 @@ delivered OR delivered with gestational age \> late visit window) AND
 
 
 ```{r}
-
-
 ## denominators: 
   # DenHBV1 = MNH08 completed with visit type = 1 AND visit status = 1/2 OR enrollment overdue
   # DenHBV2 = MNH08 completed with visit type = 2 AND visit status = 1/2 AND GA at enrollment <= 17wks OR ANC20 overdue
@@ -8416,7 +8052,7 @@ remapp_table3 <- remapp_table3 %>%
 ## ReMAPP Table 3
 remapp_table3 <- tb_theme1(remapp_table3) %>% 
   tab_header(
-    title = md("**Table 19**")
+    title = md("**Table 20**")
   ) %>%
 tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n completed MNH08 with visit type=Enroll OR passed late window with >19 weeks gestation AND (has not delivered or delivered with gestational age > late visit window) AND (has not closed out or closed out with closeout date > late visit window).</span>")
@@ -8432,7 +8068,8 @@ tab_footnote(
 ) %>% 
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed  MNH08 with visit type=PNC-6 OR missed late window with >12 weeks postpartum AND (has not closed out or closed out with closeout date > late visit window).</span>")
-) 
+)
+
 
 
 ```
@@ -8442,285 +8079,485 @@ remapp_table3 <- remapp_table3 %>% gtsave("remapp_table3.png")
 knitr::include_graphics("remapp_table3.png")
 ```
 
-<!-- \newpage -->
+\newpage
 
-<!-- ```{r} -->
-<!-- ## x axis in days -->
-<!-- MatData_Hb_GA_Visit <- MatData_Hb_GA_Visit %>% filter(GA > 0) -->
+### Table 21. ReMIND Study Status
+*Value:* Distribution of birth outcomes and ReMIND enrollment status among babies born to ReMAPP Aim 3 mothers. Enrollment is defined as livebirth and mother consented to ReMIND. 
 
-<!-- ggplot(data = MatData_Hb_GA_Visit, -->
-<!--              aes(x = GA, y = RESULT, group = TEST, color = TEST), ) + -->
-<!--   geom_point(alpha = 0.25)  + -->
-<!--     facet_grid(rows = vars(SITE)) + -->
-<!--     theme_bw() + -->
-<!--     ylim(0,25) + -->
-<!--     theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1), -->
-<!--         legend.position="bottom", -->
-<!--         panel.grid.minor = element_blank(), -->
-<!--     # Adjust facet label font size -->
-<!--         strip.text = element_text(size = 7) # You can modify the size as needed -->
-<!--         ) + -->
-<!--   scale_x_continuous(breaks = c(0,49,98,147,198,245, 294), -->
-<!--                      label = c("0", "7", "14", "21", "28", "35", "42"),  -->
-<!--                      limits = c(0,294)) + -->
-<!--   xlab("Gestational Age (weeks)") + -->
-<!--   ylab("Hemoglobin (g/dL)") + -->
-<!--   scale_color_brewer(palette="Set1") +  -->
-<!--   labs(color = "Method")  -->
+```{r}
 
-<!-- ``` -->
+## REMIND TABLE
+gsed_aim3_tab_summary <- gsed_aim3_data %>%
+  filter(!is.na(SITE)) %>% 
+  rowwise() %>%
+  group_by(SITE) %>%
+  summarise(
+    
+    ## ReMAPP Aim 3 
+    "ReMAPP Aim 3 moms, n" =  paste0(
+      format(sum(MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE), nsmall = 0, digits = 2)),
+    
+    "Delivered, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME %in% c("Livebirth", "Fetal loss") & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME %in% c("Livebirth", "Fetal loss") & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)/sum(MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+    "Not yet delivered, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME == "Participant not yet delivered" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME == "Participant not yet delivered" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)/sum(MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+     "Closed out before delivery, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME == "Closed out before pregnancy outcome could be reported" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME == "Closed out before pregnancy outcome could be reported" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)/sum(MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+      "Pending pregnancy outcome, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME == "Missing pregnancy outcome" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME == "Missing pregnancy outcome" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)/sum(MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+      
+    ## Infants born to ReMAPP Aim 3 moms
+    "Infants delivered, n" =  paste0(
+      format(sum(PREG_OUTCOME %in% c("Livebirth", "Fetal loss"), na.rm = TRUE), nsmall = 0, digits = 2)),
+    
+     "Livebirths, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME =="Livebirth", na.rm = TRUE)/sum(PREG_OUTCOME %in% c("Livebirth", "Fetal loss"), na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+      "Fetal losses, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME =="Fetal loss", na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME =="Fetal loss", na.rm = TRUE)/sum(PREG_OUTCOME %in% c("Livebirth", "Fetal loss"), na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+    ## Infants enrollment status
+    "Livebirths, n" =  paste0(
+      format(sum(PREG_OUTCOME == "Livebirth", na.rm = TRUE), nsmall = 0, digits = 2)),
 
-<!-- \newpage -->
+    "Enrolled, n" =  paste0(
+      format(sum(REMIND_ENROLLMENT_STATUS ==1 & PREG_OUTCOME == "Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(REMIND_ENROLLMENT_STATUS ==1 & PREG_OUTCOME == "Livebirth", na.rm = TRUE)/sum(PREG_OUTCOME == "Livebirth", na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+    "Not enrolled, n" =  paste0(
+      format(sum(REMIND_ENROLLMENT_STATUS ==0 & PREG_OUTCOME == "Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(REMIND_ENROLLMENT_STATUS ==0 & PREG_OUTCOME == "Livebirth", na.rm = TRUE)/sum(PREG_OUTCOME == "Livebirth", na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+      "Pending, n" =  paste0(
+      format(sum(REMIND_ENROLLMENT_STATUS ==55 & PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(REMIND_ENROLLMENT_STATUS ==55 & PREG_OUTCOME =="Livebirth", na.rm = TRUE)/sum(REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")")
+  ) %>%
 
-<!-- ### Table 20. ReMIND Assessment Completion -->
+  t() %>% as.data.frame() %>%
+  `colnames<-`(c(.[1,])) %>%
+  slice(-1) %>%
+  add_column(
+    .before = 1,
+    "Total" = gsed_aim3_data %>%
+      filter(!is.na(SITE)) %>% 
+      plyr::summarise(
 
-<!-- *Value:* Are forms completed for each visit? A visit is considered -->
-<!-- complete if the data reports the visit was conducted in person or by -->
-<!-- phone (variable name: MAT_VISIT_MNHXX ). If there is no late window for -->
-<!-- a visit, the on-time window is used. -->
+    ## ReMAPP Aim 3 
+    "ReMAPP Aim 3 moms, n" =  paste0(
+      format(sum(MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE), nsmall = 0, digits = 2)),
+    
+    "Delivered, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME %in% c("Livebirth", "Fetal loss") & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME %in% c("Livebirth", "Fetal loss") & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)/sum(MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+    "Not yet delivered, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME == "Participant not yet delivered" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME == "Participant not yet delivered" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)/sum(MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+     "Closed out before delivery, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME == "Closed out before pregnancy outcome could be reported" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME == "Closed out before pregnancy outcome could be reported" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)/sum(MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+      "Pending pregnancy outcome, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME == "Missing pregnancy outcome" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME == "Missing pregnancy outcome" & MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)/sum(MOM_REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+    ## Infants born to ReMAPP Aim 3 moms
+    "Infants delivered, n" =  paste0(
+      format(sum(PREG_OUTCOME %in% c("Livebirth", "Fetal loss"), na.rm = TRUE), nsmall = 0, digits = 2)),
+    
+     "Livebirths, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME =="Livebirth", na.rm = TRUE)/sum(PREG_OUTCOME %in% c("Livebirth", "Fetal loss"), na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+      "Fetal losses, n (%)" =  paste0(
+      format(sum(PREG_OUTCOME =="Fetal loss", na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(PREG_OUTCOME =="Fetal loss", na.rm = TRUE)/sum(PREG_OUTCOME %in% c("Livebirth", "Fetal loss"), na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+    ## Infants enrollment status
+    "Livebirths, n" =  paste0(
+      format(sum(PREG_OUTCOME == "Livebirth", na.rm = TRUE), nsmall = 0, digits = 2)),
 
-<!-- *Numerator:* Aim 3 enrolled livebirth with visit date within visit -->
-<!-- window AND have complete visit status (where variable name: -->
-<!-- `MAT_VISIT_MNHXX`=1 or 2) AND passed on time window -->
+    "Enrolled, n" =  paste0(
+      format(sum(REMIND_ENROLLMENT_STATUS ==1 & PREG_OUTCOME == "Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(REMIND_ENROLLMENT_STATUS ==1 & PREG_OUTCOME == "Livebirth", na.rm = TRUE)/sum(PREG_OUTCOME == "Livebirth", na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+    "Not enrolled, n" =  paste0(
+      format(sum(REMIND_ENROLLMENT_STATUS ==0 & PREG_OUTCOME == "Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(REMIND_ENROLLMENT_STATUS ==0 & PREG_OUTCOME == "Livebirth", na.rm = TRUE)/sum(PREG_OUTCOME == "Livebirth", na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")"),
+    
+      "Pending, n" =  paste0(
+      format(sum(REMIND_ENROLLMENT_STATUS ==55 & PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(REMIND_ENROLLMENT_STATUS ==55 & PREG_OUTCOME =="Livebirth", na.rm = TRUE)/sum(REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100), nsmall = 0, digits = 2),
+      ")")
 
-<!-- *Denominator:* Aim 3 enrolled livebirth passed on time window AND (has not -->
-<!-- closed out OR closed out with closeout date \> visit window). *For PNC52 -->
-<!-- visits denominator is passed on time window for visit type = i AND has not -->
-<!-- closed out OR closed out with reason for closeout=1-year followup -->
-<!-- completed).* -->
-
-<!-- ```{r} -->
-
-<!-- ## REMIND TABLE  -->
-<!-- gsed_aim3_tab <- gsed_aim3_data %>% -->
-<!--   ## If India-SAS doesn't have data, add empty row here -->
-<!--   mutate(existing_sas = ifelse(SITE == "India-SAS", 1, 0)) %>% -->
-<!--   ## Add empty rows for missing SITE values if the specific site doesn't exist -->
-<!--   complete(SITE = ifelse(existing_sas == 0, "India-SAS", SITE), fill = list(SITE = NA)) %>% -->
-<!--   ## If India-CMC doesn't have data, add empty row here -->
-<!--   mutate(existing_cmc = ifelse(SITE == "India-CMC", 1, 0)) %>% -->
-<!--   ## Add empty rows for missing SITE values if the specific site doesn't exist -->
-<!--   complete(SITE = ifelse(existing_cmc == 0, "India-CMC", SITE), fill = list(SITE = NA)) %>% -->
-<!--   rowwise() %>% -->
-<!--   group_by(SITE) %>% -->
-<!--   summarise( -->
-
-<!--     ## 3 MONTHS -->
-<!--     "Denominator (3MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--     ), -->
-
-<!--     "GSED SF (3MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     "GSED LF (3MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_LF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_LF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     "FCI (3MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_FCI_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_FCI_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-
-<!--     ## 6 MONTHS -->
-<!--     "Denominator (6MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--     ), -->
-
-<!--     "GSED SF (6MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     "GSED LF (6MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_LF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_LF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     "FCI (6MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     ## 12 MONTHS -->
-<!--     "Denominator (12MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--     ), -->
-
-<!--     "GSED SF (12MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     "GSED LF (12MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_LF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_LF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")"), -->
-
-<!--     "FCI (12MO)" = paste0( -->
-<!--       format(sum(VC_AIM3_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--       " (", -->
-<!--       format(round(sum(VC_AIM3_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--       ")") -->
-
-
-<!--   ) %>% -->
-
-<!--   t() %>% as.data.frame() %>% -->
-<!--   `colnames<-`(c(.[1,])) %>% -->
-<!--   slice(-1) %>% -->
-<!--   add_column( -->
-<!--     .before = 1, -->
-<!--     "Total" = gsed_aim3_data %>% -->
-<!--       plyr::summarise( -->
-
-<!--         ## 3 MONTHS -->
-<!--         "Denominator (3MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--         ), -->
-
-<!--         "GSED SF (3MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
-
-<!--         "GSED LF (3MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_LF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_LF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
-
-<!--         "FCI (3MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
+      ) %>%
+      t() %>%
+      as.data.frame() %>%
+      `colnames<-`(c(.[1,])) %>% unlist()
+  )
 
 
-<!--         ## 6 MONTHS -->
-<!--         "Denominator (6MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--         ), -->
+# gsed_aim3_tab_summary[c(12), c("India-CMC", "Zambia")] = "n/a (-)"
 
-<!--         "GSED SF (6MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
+```
 
-<!--         "GSED LF (6MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_LF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_LF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
+```{r}
 
-<!--         "FCI (6MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
+gsed_aim3_tab_summary_labels <- gsed_aim3_tab_summary %>%
+  mutate_at(vars(everything()), ~ifelse(. == "0 (NaN)", "0 (0)", .))
 
-<!--         ## 12 MONTHS -->
-<!--         "Denominator (12MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2) -->
-<!--         ), -->
+gsed_aim3_summary_tab <- tb_theme1(gsed_aim3_tab_summary_labels) %>%
+  tab_header(
+    title = md("Table 21. ReMIND Study Status")
+  ) %>%
 
-<!--         "GSED SF (12MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
+  tab_row_group(
+    label = html("<span style='font-size: 18px'>ReMAPP Aim 3<sup>a</sup></span>"),
+    rows = 1:5
+  ) %>%
+  tab_row_group(
+    label = html("<span style='font-size: 18px'>Infants born to ReMAPP Aim 3 moms<sup>b</sup></span>"),
+    rows = 6:8
+  ) %>%
+tab_row_group(
+    label = html("<span style='font-size: 18px'>Infant ReMIND enrollment status<sup>c</sup></span>"),
+    rows = 9:12
+  ) %>%
+  row_group_order(groups = c("<span style='font-size: 18px'>ReMAPP Aim 3<sup>a</sup></span>",
+                             "<span style='font-size: 18px'>Infants born to ReMAPP Aim 3 moms<sup>b</sup></span>",
+                             "<span style='font-size: 18px'>Infant ReMIND enrollment status<sup>c</sup></span>"
+                             ))  %>%
+tab_footnote(
+  footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n ReMAPP aim 3 moms.</span>")
+) %>%
+tab_footnote(
+  footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n infants born to ReMAPP aim 3 moms.</span>")
+) %>%
+  tab_footnote(
+  footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n livebirths.</span>")
+) %>%
+  tab_footnote(
+  footnote = html("<span style='font-size: 18px'>Note: Pending pregnancy outcome indicates the EDD has passed but no birth outcome has been reported.</span>")
+)
 
-<!--         "GSED LF (12MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_LF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_LF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")"), -->
+```
 
-<!--         "FCI (12MO)" = paste0( -->
-<!--           format(sum(VC_AIM3_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2), -->
-<!--           " (", -->
-<!--           format(round(sum(VC_AIM3_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2), -->
-<!--           ")") -->
-
-<!--       ) %>% -->
-<!--       t() %>% -->
-<!--       as.data.frame() %>% -->
-<!--       `colnames<-`(c(.[1,])) %>% unlist() -->
-<!--   ) -->
+```{r, out.width = '100%'}
+gsed_aim3_summary_tab <- gsed_aim3_summary_tab %>% gtsave("gsed_aim3_summary_tab.png", expand = 10)
+knitr::include_graphics("gsed_aim3_summary_tab.png")
+```
 
 
+\newpage
 
-<!-- ``` -->
+### Table 22. ReMIND Assessment Completion
 
-<!-- ```{r} -->
+*Value:* Are forms completed for each visit? A visit is considered
+complete if the data reports the visit was conducted in person or by
+phone (variable name: MAT_VISIT_MNHXX ). If there is no late window for
+a visit, the on-time window is used.
 
-<!-- gsed_aim3_tab_data <- gsed_aim3_tab %>% -->
-<!--   `rownames<-` (c( -->
-<!--     "Denominator, n", -->
-<!--     "GSED SF", -->
-<!--     "GSED LF", -->
-<!--     "FCI", -->
-<!--     "Denominator, n ", -->
-<!--     "GSED SF ", -->
-<!--     "GSED LF ", -->
-<!--     "FCI ", -->
-<!--     "Denominator, n  ", -->
-<!--     "GSED SF  ", -->
-<!--     "GSED LF  ", -->
-<!--     "FCI  " -->
-<!--   ) -->
-<!--   ) %>% -->
-<!--   mutate_at(vars(everything()), ~ifelse(. == "0 (NaN)", "0 (0)", .)) -->
+*Numerator:* Aim 3 enrolled livebirth with visit date within visit window AND have complete visit status (where variable name: `MAT_VISIT_MNHXX`=1 or 2) AND passed on time window. Enrollment is defined as livebirth and mother consented to ReMIND. 
 
-<!-- gsed_aim3_tab <- tb_theme1(gsed_aim3_tab_data) %>% -->
-<!--   tab_header( -->
-<!--     title = md("Table 20. ReMIND Assessment Completion") -->
-<!--   ) %>% -->
-<!--   tab_row_group( -->
-<!--     label = html("<span style='font-size: 18px'>3 month visit (On time window (+2 weeks): 13 to <17 weeks) (GSED required; FCI optional) <sup>a</sup></span>"), -->
-<!--     rows = 1:4 -->
-<!--   ) %>% -->
-<!--   tab_row_group( -->
-<!--     label = html("<span style='font-size: 18px'>6 month visit (On time window (+2 weeks): 26 to <30 weeks) (GSED & FCI optional) <sup>b</sup></span>"), -->
-<!--     rows = 5:8 -->
-<!--   ) %>% -->
-<!-- tab_row_group( -->
-<!--     label = html("<span style='font-size: 18px'>12 month visit (On time window (+2 weeks): 52 to <56 weeks) (GSED required; FCI optional) <sup>c</sup></span>"), -->
-<!--     rows = 9:12 -->
-<!--   ) %>% -->
-<!--   row_group_order(groups = c("<span style='font-size: 18px'>3 month visit (On time window (+2 weeks): 13 to <17 weeks) (GSED required; FCI optional) <sup>a</sup></span>", -->
-<!--                              "<span style='font-size: 18px'>6 month visit (On time window (+2 weeks): 26 to <30 weeks) (GSED & FCI optional) <sup>b</sup></span>", -->
-<!--                              "<span style='font-size: 18px'>12 month visit (On time window (+2 weeks): 52 to <56 weeks) (GSED required; FCI optional) <sup>c</sup></span>" -->
-<!--                              ))  %>% -->
-<!-- tab_footnote( -->
-<!--   footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n passed late window with >=17 weeks gestation AND (has not closed out OR closed out with closeout date >=26wks).</span>") -->
-<!-- ) %>% -->
-<!--   tab_footnote( -->
-<!--   footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=30 weeks gestation AND (has not closed out OR closed out with closeout date >=52wks).</span>") -->
-<!-- ) %>% -->
-<!--   tab_footnote( -->
-<!--     footnote = md("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=56 weeks gestation OR closed out with closeout -->
-<!--   reason reported as: *1-year postpartum follow-up period has ended*.</span>") -->
-<!--   ) -->
+*Denominator:* Aim 3 enrolled livebirth passed on time window AND (has not
+closed out OR closed out with closeout date \> visit window). *For PNC52
+visits denominator is passed on time window for visit type = i AND has not
+closed out OR closed out with reason for closeout=1-year followup
+completed).*
+
+```{r}
+
+## REMIND TABLE
+gsed_aim3_tab <- gsed_aim3_data %>%
+  filter(!is.na(SITE)) %>% 
+  ## If India-SAS doesn't have data, add empty row here
+  # mutate(existing_sas = ifelse(SITE == "India-SAS", 1, 0)) %>%
+  # # ## Add empty rows for missing SITE values if the specific site doesn't exist
+  # complete(SITE = ifelse(existing_sas == 0, "India-SAS", SITE), fill = list(SITE = NA)) %>%
+  # ## If India-CMC doesn't have data, add empty row here
+  # mutate(existing_cmc = ifelse(SITE == "India-CMC", 1, 0)) %>%
+  # ## Add empty rows for missing SITE values if the specific site doesn't exist
+  # complete(SITE = ifelse(existing_cmc == 0, "India-CMC", SITE), fill = list(SITE = NA)) %>%
+  rowwise() %>%
+  group_by(SITE) %>%
+  summarise(
+    
+    ## OVERALL 
+    "Enrolled in ReMIND, n" =  paste0(
+      format(sum(REMIND_ENROLLMENT_STATUS ==1 & PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2)),
+
+    ## 3 MONTHS
+    "Denominator (3MO)" = paste0(
+      format(sum(VC_AIM3_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+
+    "GSED SF (3MO)" = paste0(
+      format(sum(VC_AIM3_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+
+    "GSED LF (3MO)" = paste0(
+      format(sum(VC_AIM3_LF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_LF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+
+    "FCI (3MO)" = paste0(
+      format(sum(VC_AIM3_FCI_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_FCI_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
 
 
-<!-- ``` -->
+    ## 6 MONTHS
+    "Denominator (6MO)" = paste0(
+      format(sum(VC_AIM3_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
 
-<!-- ```{r, out.width = '100%'} -->
-<!-- gsed_aim3_tab <- gsed_aim3_tab %>% gtsave("gsed_aim3_tab.png", expand = 10) -->
-<!-- knitr::include_graphics("gsed_aim3_tab.png") -->
-<!-- ``` -->
+    "GSED SF (6MO)" = paste0(
+      format(sum(VC_AIM3_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+
+    "GSED LF (6MO)" = paste0(
+      format(sum(VC_AIM3_LF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_LF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+
+    "FCI (6MO)" = paste0(
+      format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+
+    ## 12 MONTHS
+    "Denominator (12MO)" = paste0(
+      format(sum(VC_AIM3_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+    ),
+
+    "GSED SF (12MO)" = paste0(
+      format(sum(VC_AIM3_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+
+    "GSED LF (12MO)" = paste0(
+      format(sum(VC_AIM3_LF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_LF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")"),
+
+    "FCI (12MO)" = paste0(
+      format(sum(VC_AIM3_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+      " (",
+      format(round(sum(VC_AIM3_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+      ")")
+
+
+  ) %>%
+
+  t() %>% as.data.frame() %>%
+  `colnames<-`(c(.[1,])) %>%
+  slice(-1) %>%
+  add_column(
+    .before = 1,
+    "Total" = gsed_aim3_data %>%
+      filter(!is.na(SITE)) %>% 
+      plyr::summarise(
+
+  ## OVERALL 
+    "Enrolled in ReMIND, n" =  paste0(
+      format(sum(REMIND_ENROLLMENT_STATUS ==1 & PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2)),
+      
+        ## 3 MONTHS
+        "Denominator (3MO)" = paste0(
+          format(sum(VC_AIM3_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+        "GSED SF (3MO)" = paste0(
+          format(sum(VC_AIM3_SF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_SF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        "GSED LF (3MO)" = paste0(
+          format(sum(VC_AIM3_LF_3MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_LF_3MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        "FCI (3MO)" = paste0(
+          format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_3MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+
+        ## 6 MONTHS
+        "Denominator (6MO)" = paste0(
+          format(sum(VC_AIM3_6MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+        "GSED SF (6MO)" = paste0(
+          format(sum(VC_AIM3_SF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_SF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        "GSED LF (6MO)" = paste0(
+          format(sum(VC_AIM3_LF_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_LF_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        "FCI (6MO)" = paste0(
+          format(sum(VC_AIM3_FCI_6MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_FCI_6MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_6MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        ## 12 MONTHS
+        "Denominator (12MO)" = paste0(
+          format(sum(VC_AIM3_12MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
+        ),
+
+        "GSED SF (12MO)" = paste0(
+          format(sum(VC_AIM3_SF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_SF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        "GSED LF (12MO)" = paste0(
+          format(sum(VC_AIM3_LF_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_LF_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")"),
+
+        "FCI (12MO)" = paste0(
+          format(sum(VC_AIM3_FCI_12MO_NUM==1, na.rm = TRUE), nsmall = 0, digits = 2),
+          " (",
+          format(round(sum(VC_AIM3_FCI_12MO_NUM ==1, na.rm = TRUE)/sum(VC_AIM3_12MO_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
+          ")")
+
+      ) %>%
+      t() %>%
+      as.data.frame() %>%
+      `colnames<-`(c(.[1,])) %>% unlist()
+  )
+
+
+
+```
+
+```{r}
+
+gsed_aim3_tab_data <- gsed_aim3_tab %>%
+  `rownames<-` (c(
+    "Enrolled in ReMIND, n (%)^a^",
+    "Denominator, n",
+    "GSED SF",
+    "GSED LF",
+    "FCI",
+    "Denominator, n ",
+    "GSED SF ",
+    "GSED LF ",
+    "FCI ",
+    "Denominator, n  ",
+    "GSED SF  ",
+    "GSED LF  ",
+    "FCI  "
+  )
+  ) %>%
+  mutate_at(vars(everything()), ~ifelse(. == "0 (NaN)", "0 (0)", .))
+
+gsed_aim3_tab <- tb_theme1(gsed_aim3_tab_data) %>%
+  tab_header(
+    title = md("Table 22. ReMIND Assessment Completion")
+  ) %>%
+
+  tab_row_group(
+    label = html("<span style='font-size: 18px'>3 month visit (On time window (+2 weeks): 13 to <17 weeks) (GSED required; FCI optional) <sup>b</sup></span>"),
+    rows = 2:5
+  ) %>%
+  tab_row_group(
+    label = html("<span style='font-size: 18px'>6 month visit (On time window (+2 weeks): 26 to <30 weeks) (GSED & FCI optional) <sup>c</sup></span>"),
+    rows = 6:9
+  ) %>%
+tab_row_group(
+    label = html("<span style='font-size: 18px'>12 month visit (On time window (+2 weeks): 52 to <56 weeks) (GSED required; FCI optional) <sup>d</sup></span>"),
+    rows = 10:13
+  ) %>%
+  row_group_order(groups = c(NA,
+                             "<span style='font-size: 18px'>3 month visit (On time window (+2 weeks): 13 to <17 weeks) (GSED required; FCI optional) <sup>b</sup></span>",
+                             "<span style='font-size: 18px'>6 month visit (On time window (+2 weeks): 26 to <30 weeks) (GSED & FCI optional) <sup>c</sup></span>",
+                             "<span style='font-size: 18px'>12 month visit (On time window (+2 weeks): 52 to <56 weeks) (GSED required; FCI optional) <sup>d</sup></span>"
+                             ))  %>%
+tab_footnote(
+  footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n infants born to ReMAPP Aim 3 mothers. Pending status includes cases where consent is conducted at the 3 month visit, mother has not yet delivered, etc.</span>")
+) %>%
+tab_footnote(
+  footnote = html("<span style='font-size: 18px'><sup>b</sup> denominator is n passed late window with >=17 weeks AND (has not closed out OR closed out with closeout date >=26wks).</span>")
+) %>%
+  tab_footnote(
+  footnote = html("<span style='font-size: 18px'><sup>c</sup> denominator is n passed late window with >=30 weeks AND (has not closed out OR closed out with closeout date >=52wks).</span>")
+) %>%
+  tab_footnote(
+    footnote = md("<span style='font-size: 18px'><sup>d</sup> denominator is n passed late window with >=56 weeks OR closed out with closeout
+  reason reported as: *1-year postpartum follow-up period has ended*.</span>")
+  )
+
+
+```
+
+```{r, out.width = '100%'}
+gsed_aim3_tab <- gsed_aim3_tab %>% gtsave("gsed_aim3_tab.png", expand = 10)
+knitr::include_graphics("gsed_aim3_tab.png")
+```
