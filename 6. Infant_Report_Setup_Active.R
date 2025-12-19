@@ -2,7 +2,8 @@
 #### MONITORING REPORT SETUP -- INFANT ####
 #* Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #* Input: .RData files for each form (generated from 1. data import code) and infant outcomes (generated in code linked here: https://github.com/PRiSMA-Study/PRISMA-Public/blob/main/PRISMA-Infant-Constructed-Outcomes/Infant-Constructed-Variables.R)
-#* Last updated: 27 June 2025
+#* Last updated: 12 December 2025
+  # 12 December 2025: Update bili-ruler section
 
 
 ## load in data 
@@ -370,22 +371,19 @@ save(Inf_Heat_Maps_Pnc, file= paste0(path_to_save, "Inf_Heat_Maps_Pnc",".RData",
 #### BILIRULER #### 
 #**************************************************************************************
 
- 
 ###Set up dataset (infants_livebirths_combined)
-
 infants_livebirths <- inf_outcomes_full %>%
   filter(LIVEBIRTH==1) %>%
   #Add MNH11
   left_join(mnh11,  by = c("SITE", "MOMID", "PREGID","INFANTID")) %>%
-  left_join(InfData_Report %>%
-              select(SITE, MOMID, PREGID, INFANTID, M11_VISIT_COMPLETE_6), 
-            by = c("SITE", "MOMID", "PREGID","INFANTID")) %>% 
   #Add postnatal age (from Stacie's code)
   mutate(M11_VISIT_OBSSTTIM = replace(M11_VISIT_OBSSTTIM, M11_VISIT_OBSSTTIM %in% c("77:77", "99:99", "55:55:00"), NA), # replace default value time with NA 
          M11_VISIT_DATETIME = as.POSIXct(paste(M11_VISIT_OBSSTDAT, M11_VISIT_OBSSTTIM), format= "%Y-%m-%d %H:%M")) %>%  # assign time field type 
   # calculate age (hours and days) at MNH11 visit (if no default value visit date, then calculate)
   mutate(DELIVERY_DATETIME = as.POSIXct(DELIVERY_DATETIME,format="%Y-%m-%d %H:%M")) %>%
-  mutate(M11_AGE_AT_VISIT_DATETIME = floor(difftime(M11_VISIT_DATETIME,DELIVERY_DATETIME,units = "hours")))
+  mutate(M11_AGE_AT_VISIT_DATETIME = floor(difftime(M11_VISIT_DATETIME,DELIVERY_DATETIME,units = "hours"))) %>% 
+  left_join(InfData_Report %>% select(SITE, MOMID, PREGID, INFANTID, M11_VISIT_COMPLETE_6), by = c("SITE", "MOMID", "PREGID", "INFANTID"))
+  
 
 #Add PNC-0 
 mnh13_pnc0 <- mnh13 %>% filter(M13_TYPE_VISIT==7)
@@ -700,7 +698,7 @@ mnh36merged <- mnh36IPC %>%
 
 #Add mnh36 data to infants_livebirths_combined (all still wide version)
 
-InfData_BiliRuler <- infants_livebirths_combined %>%
+infants_combined_wide <- infants_livebirths_combined %>%
   full_join(mnh36merged,by=c("MOMID","PREGID","INFANTID","SITE")) %>%
   mutate(DOB = as.Date(DOB)) %>%
   mutate(M13_VISIT_OBSSTDAT_9 = as.Date(M13_VISIT_OBSSTDAT_9),
@@ -719,11 +717,81 @@ InfData_BiliRuler <- infants_livebirths_combined %>%
       SITE=="Pakistan" ~ as.Date(strptime("2024-10-24",format="%Y-%m-%d")),
       SITE=="Zambia" ~ as.Date(strptime("2024-11-04",format="%Y-%m-%d")), 
       TRUE ~ NA)
-  ) %>% 
-  select(SITE, DOB, M11_VISIT_COMPLETE_6, M11_VISIT_OBSSTDAT, STUDYSTARTDATE,
-         M36_VISIT_OBSSTDAT_6, contains("M36_TYPE_VISIT"),contains("M36_VISIT_OBSSTDAT"),
-         contains("M36_INF_VISIT_MNH36"), VC_PNC0_NUM_LATE, VC_PNC1_NUM_LATE, VC_PNC4_NUM_LATE,
-         VC_PNC6_NUM_LATE)
+  ) %>%
+  mutate(
+    STUDYENDDATE = case_when(
+      SITE=="Ghana" ~ NA,
+      SITE=="India-CMC" ~ as.Date(strptime("2026-12-01",format="%Y-%m-%d")),
+      SITE=="India-SAS" ~ as.Date(strptime("2025-10-22",format="%Y-%m-%d")),
+      SITE=="Kenya" ~ as.Date(strptime("2026-12-01",format="%Y-%m-%d")),
+      SITE=="Pakistan" ~ as.Date(strptime("2025-07-24",format="%Y-%m-%d")),
+      SITE=="Zambia" ~ as.Date(strptime("2026-12-01",format="%Y-%m-%d")), 
+      TRUE ~ NA))
 
-## export 
+
+
+biliruler_enroll <- function(site){
+  dataset_site <- infants_combined_wide %>%
+    filter(SITE==site) %>%
+    filter(((DOB+3 >= STUDYSTARTDATE) | 
+              (DELIVERY_DATETIME >= STUDYSTARTDATE)) & M11_VISIT_OBSSTDAT <= STUDYENDDATE) %>%
+    arrange(DOB) %>%
+    relocate(DOB,.after=INFANTID) %>%
+    relocate(M36_INF_VITAL_MNH36_6,.after=DOB) %>%
+    filter(is.na(M36_INF_VITAL_MNH36_6) | !is.na(M36_INF_VITAL_MNH36_6) | M36_INF_VITAL_MNH36_6 != 2) %>%
+    filter(M11_INF_VITAL_MNH11 != 2) 
+  
+  if (nrow(dataset_site) < 900){
+    dataset_site <- dataset_site %>% 
+      mutate(BILIRULER_ENROLL = 1)
+  } else {
+    dataset_site <- dataset_site[1:900,] %>%
+      mutate(BILIRULER_ENROLL = 1)
+  } 
+  
+  #mark all other infants as NOT in the bili-ruler substudy
+  dataset_site_other <- infants_combined_wide %>%
+    filter(SITE==site) %>%
+    filter(!(INFANTID %in% dataset_site$INFANTID)) %>%
+    mutate(BILIRULER_ENROLL = 0)
+  
+  #mark the 900 infants in the bili-ruler substudy
+  dataset_site <- infants_combined_wide %>% 
+    filter(INFANTID %in% dataset_site$INFANTID) %>%
+    mutate(BILIRULER_ENROLL = 1)
+  
+  dataset <- bind_rows(dataset_site, dataset_site_other)
+  
+  dataset <- dataset %>% 
+    filter(BILIRULER_ENROLL==1) %>%
+    relocate(DOB,.after=INFANTID) %>%
+    relocate(DELIVERY_DATETIME,.after=DOB) %>%
+    relocate(M36_INF_VITAL_MNH36_6,.after=DELIVERY_DATETIME)%>%
+    relocate(M36_INF_VITAL_MNH36_7,.after=DELIVERY_DATETIME)%>%
+    relocate(M36_INF_VITAL_MNH36_8,.after=DELIVERY_DATETIME) %>%
+    arrange(DOB,INFANTID)
+  
+  return(dataset)
+}
+
+#Make site datasets, merge them back together, so that they're now labeled with who is in the Bili-ruler substudy
+dataset_pak <- biliruler_enroll("Pakistan")
+dataset_zambia <- biliruler_enroll("Zambia")
+dataset_kenya <- biliruler_enroll("Kenya")
+dataset_indiasas <- biliruler_enroll("India-SAS")
+dataset_indiacmc <- biliruler_enroll("India-CMC")
+
+bilirulerdata_wide <- bind_rows(dataset_pak, dataset_zambia, dataset_kenya, dataset_indiasas, dataset_indiacmc)
+
+#mark infants_combined by enrolled or not
+infants_combined_wide <- infants_combined_wide %>%
+  mutate(
+    BILIRULER_ENROLL = case_when(
+      INFANTID %in% bilirulerdata_wide$INFANTID ~ 1,
+      TRUE ~ 0 ))
+
+
+InfData_BiliRuler = infants_combined_wide
 save(InfData_BiliRuler, file= paste0(path_to_save, "InfData_BiliRuler",".RData",sep = ""))
+
+
