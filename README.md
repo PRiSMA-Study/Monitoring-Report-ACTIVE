@@ -84,7 +84,7 @@ Data output: will update based on monitoring report updates and uploaed data by 
      - `Inf_Outcomes.csv`: 
          - Includes all relevent infant outcomes and can be created using code linked [here](https://github.com/PRiSMA-Study/PRISMA-Public/blob/main/PRISMA-Infant-Constructed-Outcomes/Infant-Constructed-Variables.R).
 
-6. `6. Maternal_Report_Setup.R` generates all the variables needed for the monitoring report. 
+6. `6. Infant_Report_Setup.R` generates all the infant variables needed for the monitoring report. 
    - input: `Maternal_Data_Merge_Wide`, `Infant_Data_Merge_Wide`
    - output:
      - `InfData_Wide.RData`: 
