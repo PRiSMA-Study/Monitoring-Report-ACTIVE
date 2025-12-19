@@ -1,7 +1,7 @@
 #*****************************************************************************
 #* Monitoring report GSED SF/LF/FCI
 #* Drafted: 4 September 2024, Stacie Loisate (Translating Nazia's Stata Code to R)
-#* Last updated: 27 June 2025
+#* Last updated: 25 November 2025
 
 #*****************************************************************************
 #*****************************************************************************
@@ -15,13 +15,14 @@ library(openxlsx)
 
 # UPDATE EACH RUN # 
 # set upload date 
-UploadDate = "2025-02-21"
+UploadDate = "2025-12-12"
 
 # path_to_tnt <- paste0("Z:/Outcome Data/", UploadDate, "/")
 path_to_data <- paste0("D:/Users/stacie.loisate/Documents/import/")
 path_to_save <- "D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"
 path_to_tnt <- "Z:/SynapseCSVs/"
-mat_enroll <- read_xlsx(paste0("Z:/Outcome Data/", UploadDate, "/", "MAT_ENROLL.xlsx"))
+
+mat_enroll <- read.csv(paste0("Z:/Outcome Data/", UploadDate, "/", "MAT_ENROLL.csv"))
 load(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/MatData_Pnc_Visits.RData"))
 load(paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/data/cleaned/", UploadDate, "/InfData_Wide_", UploadDate, ".RData"))
 mnh24 <- read_csv(paste0(path_to_data, UploadDate, "/", "mnh24_merged.csv"))
@@ -32,31 +33,45 @@ MatData_Pnc_Visits_to_merge <- MatData_Pnc_Visits %>%
   # generate variable for livebirth from MNH09 
   select(SITE, MOMID, PREGID, ENDPREG_DAYS, contains("_LATE")) %>% 
   filter(!is.na(ENDPREG_DAYS))
-
+  
 InfData_Wide_to_merge <- InfData_Wide %>% 
   select(SITE, MOMID, PREGID, INFANTID, M09_BIRTH_DSTERM,M09_DELIV_DSSTDAT, contains("_TYPE_VISIT_12"), contains("VISIT_COMPLETE_12")) %>% 
   mutate(DOB = ymd(parse_date_time(M09_DELIV_DSSTDAT, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))))
-
+  
 mnh24 <- mnh24 %>% select(SITE, MOMID, PREGID, INFANTID, M24_CLOSE_DSDECOD, M24_CLOSE_DSSTDAT)
 
+## read in aim 3 IDs -- this will be for the PRISMA & ReMAPP cohort tables 
+aim3_list <- list.files(path = "D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/ReMIND",
+                        pattern = '.xlsx', 
+                        full.names = TRUE)  
+
+aim3_output <- sapply(aim3_list, read_excel)
+aim3ids <- bind_rows(aim3_output)
+aim3ids <- aim3ids %>% filter(!is.na(SITE))
+
+# import final list for all sites 
+aim3_final_moms <- read.xlsx("Z:/ReMAPP_Aim3_IDs/Finalized Lists/Allsites_Mar_2025.xlsx") %>% mutate(AIM3 = 1)
+aim3_final_infants <- read.xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/ReMIND/remind-infantids_2025-12-16.xlsx") %>% mutate(AIM3 = 1)
+
+table(aim3_final_infants$REMIND_ENROLLMENT_STATUS_TEXT, aim3_final_infants$SITE)
 #*****************************************************************************
 #*****************************************************************************
 # PRISMA/ReMAPP Cohort - GSED SF: import data & data cleaning -----
 #*****************************************************************************
 #*****************************************************************************
 # Ghana
-mnh30_gha <- read.csv(paste0(path_to_tnt,"Ghana/", UploadDate, "/", "mnh30.csv"))
+mnh30_gha <- read.csv(paste0(path_to_data, UploadDate, "_gha/", "mnh30.csv"))
 
 colnames(mnh30_gha) = toupper(colnames(mnh30_gha))
 
 mnh30_gha <- mnh30_gha %>% 
   select(MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH30,TYPE_VISIT, CONFIRM_DATADOB) %>% 
   rename(CHILD_DOB = CONFIRM_DATADOB) %>% 
-  
+         
   ## convert to date class
   mutate(VISIT_OBSSTDAT = ymd(parse_date_time(VISIT_OBSSTDAT, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y"))),
          CHILD_DOB = ymd(parse_date_time(CHILD_DOB, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d", "%d-%b-%y")))
-  ) %>%
+         ) %>%
   ## calculate age in days at visit 
   mutate(AGEDAYS = as.numeric(VISIT_OBSSTDAT-CHILD_DOB)) %>% 
   ## generate site indicator variable 
@@ -64,8 +79,7 @@ mnh30_gha <- mnh30_gha %>%
   select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH30, TYPE_VISIT, CHILD_DOB, AGEDAYS)
 
 # Zambia (reporting d/m/yyyy)
-mnh30_zam <- read.csv(paste0(path_to_tnt,"Zambia/", UploadDate, "/", "mnh30.csv"))
-# mnh30_zam <- read.csv(paste0(path_to_tnt,"Zambia/", "2024-10-04", "/", "mnh30.csv"))
+mnh30_zam <- read.csv(paste0(path_to_data, UploadDate, "_zam/", "mnh30.csv"))
 
 colnames(mnh30_zam) = toupper(colnames(mnh30_zam))
 
@@ -79,31 +93,28 @@ mnh30_zam <- mnh30_zam %>%
   mutate(AGEDAYS = as.numeric(VISIT_OBSSTDAT-CHILD_DOB)) %>% 
   ## generate site indicator variable 
   mutate(SITE = "Zambia") %>% 
-  select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH30,  TYPE_VISIT, CHILD_DOB, AGEDAYS)
+  select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH30, TYPE_VISIT, CHILD_DOB, AGEDAYS)
+
+
 
 # Kenya -- all DATE_ASSESSMENT and CHILD_DOB are day month year
-mnh30_ken <- read.csv(paste0(path_to_tnt,"Kenya/", UploadDate, "/", "mnh30.csv"))
-# mnh30_ken <- read.csv(paste0(path_to_tnt,"Kenya/", "2024-12-12", "/", "mnh30.csv"))
+mnh30_ken <- read.csv(paste0(path_to_data, UploadDate, "_ke/", "MNH30.csv"))
 
 colnames(mnh30_ken) = toupper(colnames(mnh30_ken))
 
 mnh30_ken <- mnh30_ken %>% 
-  select(MOMID, PREGID, INFANTID, INF_VISIT_MNH30, TYPE_VISIT, STUDY_ID, GENDER, DATE_ASSESSMENT, CHILD_DOB, AGEDAYS) %>% 
+  select(MOMID, PREGID, INFANTID,VISIT_OBSSTDAT, INF_VISIT_MNH30, TYPE_VISIT, STUDY_ID, GENDER, CHILD_DOB, AGEDAYS) %>% 
   ## convert to date class
-  mutate(DATE_ASSESSMENT = as.Date(parse_date_time(DATE_ASSESSMENT, order = c("%d/%m/%Y %H:%M"))),
-         CHILD_DOB = as.Date(parse_date_time(CHILD_DOB, order = c("%d/%m/%Y %H:%M")))
-  ) %>% 
-  rename(VISIT_OBSSTDAT = DATE_ASSESSMENT
+  mutate(VISIT_OBSSTDAT = as.Date(parse_date_time(VISIT_OBSSTDAT, order = c("%m/%d/%y", "%d-%b-%y"))),
+         CHILD_DOB = as.Date(parse_date_time(CHILD_DOB, order = c("%m/%d/%Y %H:%M")))
   ) %>% 
   ## generate site indicator variable 
   mutate(SITE = "Kenya") %>% 
   select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH30,  TYPE_VISIT, CHILD_DOB, AGEDAYS)
 
 
-
 # Pakistan
-mnh30_pak <- read.csv(paste0(path_to_tnt,"Pakistan/", UploadDate, "/", "mnh30.csv"))
-# mnh30_pak <- read.csv(paste0("Z:/2025-01-04_pak", "/", "mnh30.csv"))
+mnh30_pak <- read.csv(paste0(path_to_data, UploadDate, "_pak/", "mnh30.csv"))
 
 colnames(mnh30_pak) = toupper(colnames(mnh30_pak))
 
@@ -119,18 +130,19 @@ mnh30_pak <- mnh30_pak %>%
   select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH30, TYPE_VISIT, CHILD_DOB, AGEDAYS)
 
 # India-SAS
-mnh30_sas <- read_csv(paste0(path_to_data, UploadDate, "_SAS", "/", "mnh30.csv"))
+mnh30_sas <- read.csv(paste0(path_to_data, UploadDate, "_sas/", "mnh30.csv"))
 
 colnames(mnh30_sas) = toupper(colnames(mnh30_sas))
 
+## rename momid
 mnh30_sas <- mnh30_sas %>% 
-  rename(VISIT_OBSSTDAT = DATE_ASSESSMENT) %>% 
+  # rename(VISIT_OBSSTDAT = DATE_ASSESSMENT) %>%
+  filter(!is.na(INF_VISIT_MNH30)) %>% 
   select(MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH30 , 
          TYPE_VISIT, STUDY_ID, GENDER, CHILD_DOB, AGEDAYS) %>% 
-  
-  
+
   ## convert to date class
-  mutate(VISIT_OBSSTDAT = as.Date(parse_date_time(VISIT_OBSSTDAT, order = c("%d/%m/%Y","%d-%m-%Y","%Y-%m-%d","%Y-%m-%d %H:%M:%S", "%d-%b-%y", "%b %d, %Y"))),
+  mutate(VISIT_OBSSTDAT = as.Date(parse_date_time(VISIT_OBSSTDAT, order = c("%d-%m-%Y","%Y-%m-%d","%Y-%m-%d %H:%M:%S", "%d-%b-%y", "%b %d, %Y"))),
          CHILD_DOB = as.Date(parse_date_time(CHILD_DOB, orders = c("%Y-%m-%d %H:%M:%S", "%d/%m/%Y %H:%M:%S",
                                                                    "%d-%m-%Y %H:%M:%S", "%d-%b-%y %H:%M:%S")))) %>% 
   ## generate site indicator variable 
@@ -138,7 +150,7 @@ mnh30_sas <- mnh30_sas %>%
   select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH30, TYPE_VISIT, CHILD_DOB, AGEDAYS)
 
 # India-CMC
-mnh30_cmc <- read_csv(paste0(path_to_data, UploadDate, "_cmc", "/", "mnh30.csv"))
+mnh30_cmc <- read.csv(paste0(path_to_data, UploadDate, "_cmc/", "mnh30.csv"))
 
 colnames(mnh30_cmc) = toupper(colnames(mnh30_cmc))
 
@@ -157,12 +169,16 @@ mnh30_cmc <- mnh30_cmc %>%
 #*****************************************************************************
 # GSED SF: Merge data & remove duplicates -----
 #*****************************************************************************
-mnh30_merged <- rbind(mnh30_gha,mnh30_cmc, mnh30_zam, mnh30_ken, mnh30_pak )  # mnh30_sas
+mnh30_merged <- rbind(mnh30_gha,mnh30_zam, mnh30_ken, mnh30_pak, mnh30_cmc, mnh30_sas)  #
 
-# # extract duplicate ids from main dataset
+# extract duplicate ids from main dataset
 mnh30_merged <- mnh30_merged %>%
   mutate(SF_TYPE_VISIT = TYPE_VISIT) %>% 
-  mutate(SF_VISIT_DATE = VISIT_OBSSTDAT)
+  mutate(SF_VISIT_DATE = VISIT_OBSSTDAT) %>% 
+  group_by(SITE, MOMID, PREGID, INFANTID, SF_TYPE_VISIT) %>% 
+  arrange(-desc(SF_VISIT_DATE)) %>%
+  slice(1)
+
 
 table(mnh30_merged$TYPE_VISIT, mnh30_merged$SITE)
 #*****************************************************************************
@@ -171,7 +187,8 @@ table(mnh30_merged$TYPE_VISIT, mnh30_merged$SITE)
 #*****************************************************************************
 #*****************************************************************************
 # Ghana
-mnh31_gha <- read.csv(paste0(path_to_tnt,"Ghana/", UploadDate, "/", "mnh31.csv"))
+mnh31_gha <- read.csv(paste0(path_to_data, UploadDate, "_gha/", "mnh31.csv"))
+
 colnames(mnh31_gha) = toupper(colnames(mnh31_gha))
 
 mnh31_gha <- mnh31_gha %>% 
@@ -189,24 +206,21 @@ mnh31_gha <- mnh31_gha %>%
   select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH31, TYPE_VISIT) # , CHILD_DOB, AGEDAYS
 
 # Zambia
-mnh31_zam <- read.csv(paste0(path_to_tnt,"Zambia/", UploadDate, "/", "mnh31.csv"))
+mnh31_zam <- read.csv(paste0(path_to_data, UploadDate, "_zam/", "mnh31.csv"))
 
 colnames(mnh31_zam) = toupper(colnames(mnh31_zam))
 
 mnh31_zam <- mnh31_zam %>% 
   select(MOMID, PREGID, INFANTID, VISIT_OBSSTDAT, INF_VISIT_MNH31, TYPE_VISIT) %>% # , STUDY_ID, GENDER, CHILD_DOB
   ## convert to date class
-  # mutate(VISIT_OBSSTDAT = ymd(parse_date_time(VISIT_OBSSTDAT, order = c("%Y-%m-%d")))) %>% 
   mutate(VISIT_OBSSTDAT = ymd(parse_date_time(VISIT_OBSSTDAT, order = c("%d/%m/%Y")))) %>% 
   
   ## generate site indicator variable 
   mutate(SITE = "Zambia") %>% 
-  select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH31,  TYPE_VISIT) # , CHILD_DOB, AGEDAYS
-
+  select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH31,  TYPE_VISIT) 
 
 # Kenya -- all DATE_ASSESSMENT are ub dd-mmm-yy
-mnh31_ken <- read.csv(paste0(path_to_tnt,"Kenya/", UploadDate, "/", "mnh31.csv"))
-# mnh31_ken <- read.csv(paste0(path_to_data,"2025-02-07_ke", "/", "mnh31.csv"))
+mnh31_ken <- read.csv(paste0(path_to_data, UploadDate, "_ke/", "mnh31.csv"))
 
 colnames(mnh31_ken) = toupper(colnames(mnh31_ken))
 
@@ -220,14 +234,15 @@ mnh31_ken <- mnh31_ken %>%
   select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH31,  TYPE_VISIT) # , CHILD_DOB, AGEDAYS
 
 # India-CMC
-mnh31_cmc <- read.csv(paste0(path_to_tnt,"India_CMC/", UploadDate, "/", "mnh31.csv"))
+mnh31_cmc <- read.csv(paste0(path_to_data, UploadDate, "_cmc/", "mnh31.csv"))
 
 colnames(mnh31_cmc) = toupper(colnames(mnh31_cmc))
 
 mnh31_cmc <- mnh31_cmc %>% 
   select(MOMID, PREGID, INFANTID, VISIT_OBSSTDAT, INF_VISIT_MNH31, TYPE_VISIT) %>% # , STUDY_ID, GENDER, DATE_ASSESSMENT, CHILD_DOB, AGEDAYS
   ## convert to date class
-  mutate(VISIT_OBSSTDAT = ymd(parse_date_time(VISIT_OBSSTDAT, order = c("%d-%m-%Y")))
+  mutate(VISIT_OBSSTDAT = ymd(parse_date_time(VISIT_OBSSTDAT, order = c("%d-%m-%Y"))) # c("%Y-%m-%d")
+         
   ) %>% 
   ## generate site indicator variable 
   mutate(SITE = "India-CMC") %>% 
@@ -235,7 +250,7 @@ mnh31_cmc <- mnh31_cmc %>%
 
 
 # India-SAS
-mnh31_sas <- read.csv(paste0(path_to_tnt,"India_SAS/", UploadDate, "/", "mnh31.csv"))
+mnh31_sas <- read.csv(paste0(path_to_data, UploadDate, "_sas/", "mnh31.csv"))
 
 colnames(mnh31_sas) = toupper(colnames(mnh31_sas))
 
@@ -251,22 +266,25 @@ mnh31_sas <- mnh31_sas %>%
 #*****************************************************************************
 # FCI: merge data & remove duplicates -----
 #*****************************************************************************
-mnh31_merged <- rbind(mnh31_gha, mnh31_zam, mnh31_ken,mnh31_cmc, mnh31_sas)
+mnh31_merged <- rbind(mnh31_gha, mnh31_zam, mnh31_ken ,mnh31_cmc, mnh31_sas) # mnh31_sas
 
 # extract duplicate ids from main dataset
 mnh31_merged <- mnh31_merged %>% 
   mutate(FCI_TYPE_VISIT = TYPE_VISIT) %>% 
-  mutate(FCI_VISIT_DATE = VISIT_OBSSTDAT)
+  mutate(FCI_VISIT_DATE = VISIT_OBSSTDAT) %>% 
+  group_by(SITE, MOMID, PREGID, INFANTID, FCI_TYPE_VISIT) %>% 
+  arrange(-desc(FCI_VISIT_DATE)) %>%
+  slice(1)
 
 #*****************************************************************************
 # PRISMA/ReMAPP Cohort Data processing for monitoring report tables -----
 
-## Date expansion launch for GSED SF @ 12 months
-# Ghana: 22-May-2024
-# Kenya: 29-May-2024
-# Pakistan: 30-Jan-2024
-# Zambia: 20-Mar-2024
-# SAS: unclear 
+  ## Date expansion launch for GSED SF @ 12 months
+    # Ghana: 22-May-2024
+    # Kenya: 29-May-2024
+    # Pakistan: 30-Jan-2024
+    # Zambia: 20-Mar-2024
+    # SAS: unclear 
 
 #*****************************************************************************
 inf_date_sf <- InfData_Wide_to_merge %>% 
@@ -277,6 +295,7 @@ inf_date_sf <- InfData_Wide_to_merge %>%
   group_by(SITE, MOMID, PREGID, INFANTID) %>% 
   arrange(-desc(DOB)) %>%
   slice(1)
+
 
 ## remove duplicates in closeout form 
 mnh24 <- mnh24 %>% 
@@ -322,8 +341,8 @@ gsed_sf_wide <- inf_date_sf %>%
   mutate(PASS_3MO = case_when(ymd(UploadDate) > ONTIME_3MO ~ 1, TRUE ~ 0),
          PASS_6MO = case_when(ymd(UploadDate) > ONTIME_6MO ~ 1, TRUE ~ 0),
   ) %>% 
-  ## merge in closeout form 
-  left_join(mnh24 %>% select(SITE, MOMID, PREGID, INFANTID, M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD) %>%  filter(INFANTID != "Z3-025-1136-B"), by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% ## duplicate in infant closeout (remove id)
+## merge in closeout form 
+left_join(mnh24 %>% select(SITE, MOMID, PREGID, INFANTID, M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD) %>%  filter(INFANTID != "Z3-025-1136-B"), by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% ## duplicate in infant closeout (remove id)
   # generate numerator and denominators for 3mo window (both short form and long form have the same denominator)
   mutate(VC_GSED_3MO_DENOM_SF = case_when(PASS_3MO == 1  & 
                                             (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_3MO) ~ 1, TRUE ~ 0 ),
@@ -341,6 +360,7 @@ gsed_sf_wide <- inf_date_sf %>%
          VC_GSED_SF_6MO_NUM = case_when(INF_VISIT_MNH30_11 %in% c(1,2,3) & SF_TYPE_VISIT_11 == 11 & VC_GSED_6MO_DENOM_SF ==1 ~ 1, TRUE ~ 0 ),
          VC_GSED_SF_12MO_NUM = case_when(INF_VISIT_MNH30_12 %in% c(1,2,3) & SF_TYPE_VISIT_12 == 12 & VC_GSED_12MO_DENOM_SF ==1 ~ 1, TRUE ~ 0 )
   ) 
+
 
 
 gsed_fci_wide <- inf_date_sf %>% 
@@ -368,16 +388,26 @@ gsed_fci_wide <- inf_date_sf %>%
   mutate(START_3MO = DOB + 91) %>% # 13 weeks
   mutate(START_6MO = DOB + 182) %>% # 26 weeks
   mutate(START_12MO = DOB + 364) %>% # 52 weeks
+  ## calculate late windows for 3mo, 6mo, and 12mo visit
+  # mutate(LATE_3MO = DOB + 181) %>% # 25 weeks 6 days
+  # mutate(LATE_6MO = DOB + 363) %>% # 51 weeks 6 days
+  # mutate(LATE_12MO = DOB + 454) %>% # 64 weeks
+  # mutate(PASS_3MO = case_when(ymd(UploadDate) > LATE_3MO ~ 1, TRUE ~ 0),
+  #        PASS_6MO = case_when(ymd(UploadDate) > LATE_6MO ~ 1, TRUE ~ 0),
+  # ) %>% 
   ## calculate on time windows for 3mo, 6mo, and 12mo visit
   mutate(ONTIME_3MO = DOB + 125) %>% # 15 weeks 6 days
   mutate(ONTIME_6MO = DOB + 216) %>% # 28 weeks 6 days
   mutate(ONTIME_12MO = DOB + 398) %>% # 54 weeks 6 days
+  
+  # select(SITE, MOMID, PREGID, INFANTID, contains("START"), contains("LATE")) %>% 
+  # distinct() %>% 
   mutate(PASS_3MO = case_when(ymd(UploadDate) > ONTIME_3MO ~ 1, TRUE ~ 0),
          PASS_6MO = case_when(ymd(UploadDate) > ONTIME_6MO ~ 1, TRUE ~ 0),
   ) %>% 
   
-  ## merge in closeout form 
-  left_join(mnh24 %>% select(SITE, MOMID, PREGID, INFANTID, M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD) %>%  filter(INFANTID != "Z3-025-1136-B"), by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% ## duplicate in infant closeout (remove id)
+## merge in closeout form 
+left_join(mnh24 %>% select(SITE, MOMID, PREGID, INFANTID, M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD) %>%  filter(INFANTID != "Z3-025-1136-B"), by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% ## duplicate in infant closeout (remove id)
   # generate numerator and denominators for 3mo window (both short form and long form have the same denominator)
   mutate(VC_GSED_3MO_DENOM_FCI = case_when(PASS_3MO == 1  & 
                                              (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_3MO) ~ 1, TRUE ~ 0 ),
@@ -429,14 +459,14 @@ gsed_prisma_data_out <- gsed_sf_wide %>%
 
 
 save(gsed_prisma_data_out, file= paste0(path_to_save, "gsed_prisma_data_out",".RData",sep = ""))
+
 #*****************************************************************************
 #*****************************************************************************
 #* GSED LONG FORM
 #*****************************************************************************
 #*****************************************************************************
-
 # Ghana
-mnh32_gha <- read_csv(paste0(path_to_data, UploadDate, "_gha", "/", "mnh32.csv"))
+mnh32_gha <- read.csv(paste0(path_to_data, UploadDate, "_gha/", "mnh32.csv"))
 
 colnames(mnh32_gha) = toupper(colnames(mnh32_gha))
 
@@ -455,8 +485,8 @@ mnh32_gha <- mnh32_gha %>%
   select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH32, TYPE_VISIT, CHILD_DOB, AGEDAYS)
 
 # Zambia (reporting m/d/yyyy)
-mnh32_zam <- read_csv(paste0(path_to_data, UploadDate, "_zam", "/", "mnh32.csv"))
-# mnh32_zam <- read_csv(paste0(path_to_data, "2024-10-04", "_zam", "/", "mnh32.csv"))
+mnh32_zam <- read.csv(paste0(path_to_data, UploadDate, "_zam/", "mnh32.csv"))
+
 colnames(mnh32_zam) = toupper(colnames(mnh32_zam))
 
 mnh32_zam <- mnh32_zam %>% 
@@ -472,14 +502,14 @@ mnh32_zam <- mnh32_zam %>%
 
 
 # Kenya DATE_ASSESSMENT and CHILD_DOB are in d m yyyy format
-mnh32_ken <- read_csv(paste0(path_to_data, UploadDate, "_ke", "/", "mnh32.csv"))
+mnh32_ken <- read.csv(paste0(path_to_data, UploadDate, "_ke/", "mnh32.csv"))
 
 colnames(mnh32_ken) = toupper(colnames(mnh32_ken))
 
 mnh32_ken <- mnh32_ken %>% 
-  select(MOMID, PREGID, INFANTID, INF_VISIT_MNH32, TYPE_VISIT, GENDER, DATE_ASSESSMENT, CHILD_DOB, AGEDAYS) %>% 
+  select(MOMID, PREGID, INFANTID, INF_VISIT_MNH32, TYPE_VISIT, GENDER, VISIT_OBSSTDAT, CHILD_DOB, AGEDAYS) %>% 
   ## convert to date class
-  mutate(VISIT_OBSSTDAT = as.Date(parse_date_time(DATE_ASSESSMENT, order = c("%m/%d/%Y %H:%M"))), # c("%d/%m/%Y %H:%M"))
+  mutate(VISIT_OBSSTDAT = as.Date(parse_date_time(VISIT_OBSSTDAT, order = c("%d/%m/%Y"))), # c("%m/%d/%Y %H:%M"))
          CHILD_DOB = ymd(parse_date_time(CHILD_DOB, order = c("%d/%m/%Y %H:%M")))
   ) %>% 
   ## generate site indicator variable 
@@ -489,8 +519,8 @@ mnh32_ken <- mnh32_ken %>%
 
 
 # Pakistan
-mnh32_pak <- read_csv(paste0(path_to_data, UploadDate, "_pak", "/", "mnh32.csv"))
-# mnh32_pak <- read_csv(paste0("Z:/2025-01-04_pak", "/", "mnh32.csv"))
+mnh32_pak <- read.csv(paste0(path_to_data, UploadDate, "_pak/", "mnh32.csv"))
+
 
 colnames(mnh32_pak) = toupper(colnames(mnh32_pak))
 
@@ -506,7 +536,7 @@ mnh32_pak <- mnh32_pak %>%
   select(SITE, MOMID, PREGID, INFANTID, VISIT_OBSSTDAT,INF_VISIT_MNH32, TYPE_VISIT, CHILD_DOB, AGEDAYS)
 
 # cmc
-mnh32_cmc <- read_csv(paste0(path_to_data, UploadDate, "_cmc", "/", "mnh32.csv"))
+mnh32_cmc <- read.csv(paste0(path_to_data, UploadDate, "_cmc/", "mnh32.csv"))
 
 colnames(mnh32_cmc) = toupper(colnames(mnh32_cmc))
 
@@ -526,14 +556,17 @@ mnh32_cmc <- mnh32_cmc %>%
 #*****************************************************************************
 mnh32_merged <- rbind(mnh32_gha,mnh32_cmc, mnh32_zam, mnh32_ken,mnh32_pak)
 
-
 # rename variables to make merging easier
 mnh32_merged <- mnh32_merged %>% 
   mutate(LF_TYPE_VISIT = TYPE_VISIT) %>% 
   mutate(LF_VISIT_DATE = VISIT_OBSSTDAT) %>% 
   ## remove NA visit types 
-  filter(!is.na(LF_TYPE_VISIT))
+  filter(!is.na(LF_TYPE_VISIT)) %>% 
+  group_by(SITE, MOMID, PREGID, INFANTID, LF_TYPE_VISIT) %>% 
+  arrange(-desc(LF_VISIT_DATE)) %>%
+  slice(1)
 
+table(mnh32_merged$LF_TYPE_VISIT, mnh32_merged$SITE)
 #*****************************************************************************
 # ReMIND Cohort Data processing for monitoring report tables -----
 
@@ -544,7 +577,8 @@ mnh32_merged <- mnh32_merged %>%
 # Zambia: 20-Mar-2024
 #*****************************************************************************
 inf_date <- InfData_Wide_to_merge %>%
-  right_join(aim3ids, by= c("SITE", "MOMID", "PREGID", "INFANTID")) %>%
+  # right_join(aim3ids, by= c("SITE", "MOMID", "PREGID", "INFANTID")) %>%
+  right_join(aim3_final_infants, by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% 
   select(-M09_DELIV_DSSTDAT) %>%
   # only include sitest that we have data for
   filter(SITE %in% c("Pakistan", "Kenya", "Ghana", "Zambia", "India-CMC")) %>%
@@ -554,14 +588,26 @@ inf_date <- InfData_Wide_to_merge %>%
   slice(1)
 
 ## extract aim 3 IDs
-remind_merged_enrolled <- aim3ids %>% 
+remind_merged_enrolled <- aim3_final_infants %>% 
   left_join(mat_enroll %>% select(SITE, MOMID, PREGID, ENROLL), by = c("SITE","MOMID", "PREGID")) %>% 
+  ## only include those who we have valid enrollment information for mom
+  # filter(ENROLL == 1) %>% 
+  # # only include those who are confirmed enrolled in
+  # mutate(REMIND_ENROLL = 1) %>% 
+  ## remove infantid from here -- will merge in infantid data from mnh09 (in inf_date)
   ungroup() %>% 
+  # select(-INFANTID) %>% 
+  ## some duplicates exists -- only want unique PREGID, MOMID pairs 
+  # distinct(SITE, MOMID, PREGID, INFANTID) %>% 
   left_join(InfData_Wide_to_merge %>% select(SITE, MOMID, PREGID, INFANTID, DOB), by = c("SITE", "MOMID", "PREGID", "INFANTID"))
 
 gsed_sf_wide_remind <- remind_merged_enrolled %>% 
+  # filter for livebirths 
+  # filter(M09_BIRTH_DSTERM==1) %>% 
   ## merge in infant date (birth outcome)
   left_join(mnh30_merged, by = c("SITE", "MOMID", "PREGID", "INFANTID"))  %>% 
+  # right_join(remind_merged_enrolled, by = c("SITE", "MOMID", "PREGID"))  %>% 
+  # group_by(SITE, MOMID, PREGID,INFANTID,  TYPE_VISIT) 
   mutate(SF_TYPE_VISIT = as.numeric(SF_TYPE_VISIT)) %>% 
   group_by(SITE, MOMID, PREGID, INFANTID, SF_TYPE_VISIT) %>%
   # address duplicates (if exists, take the first instance)
@@ -586,27 +632,38 @@ gsed_sf_wide_remind <- remind_merged_enrolled %>%
   mutate(LATE_6MO = DOB + 363) %>% # 51 weeks 6 days
   mutate(LATE_12MO = DOB + 454) %>% # 64 weeks
   ## calculate on time windows for 3mo, 6mo, and 12mo visit
-  mutate(ONTIME_3MO = DOB + 125) %>% # 17 weeks 6 days
-  mutate(ONTIME_6MO = DOB + 216) %>% # 30 weeks 6 days
-  mutate(ONTIME_12MO = DOB + 398) %>% # 56 weeks 6 days
+  # mutate(ONTIME_3MO = DOB + 125) %>% # 17 weeks 6 days
+  # mutate(ONTIME_6MO = DOB + 216) %>% # 30 weeks 6 days
+  # mutate(ONTIME_12MO = DOB + 398) %>% # 56 weeks 6 days
+  # on time windows without the +2 weeks 
+  mutate(ONTIME_3MO = DOB + 111) %>% # 15 weeks 6 days
+  mutate(ONTIME_6MO = DOB + 202) %>% # 28 weeks 6 days
+  mutate(ONTIME_12MO = DOB + 330) %>% # 54 weeks 6 days
+  
+  # select(SITE, MOMID, PREGID, INFANTID, contains("START"), contains("LATE")) %>% 
+  # distinct() %>% 
   mutate(PASS_3MO = case_when(ymd(UploadDate) > ONTIME_3MO ~ 1, TRUE ~ 0),
          PASS_6MO = case_when(ymd(UploadDate) > ONTIME_6MO ~ 1, TRUE ~ 0),
   ) %>% 
-  ## merge in closeout form 
-  left_join(mnh24 %>% select(SITE, MOMID, PREGID, INFANTID, M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD) %>%  filter(INFANTID != "Z3-025-1136-B"), by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% ## duplicate in infant closeout (remove id)
+## merge in closeout form 
+left_join(mnh24 %>% select(SITE, MOMID, PREGID, INFANTID, M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD) %>%  filter(INFANTID != "Z3-025-1136-B"), by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% ## duplicate in infant closeout (remove id)
   # generate numerator and denominators for 3mo window (both short form and long form have the same denominator)
   mutate(VC_AIM3_3MO_DENOM_SF = case_when((PASS_3MO == 1  & REMIND_ENROLLMENT_STATUS == 1 & 
-                                             (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_3MO) )
+                                            (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_3MO) )
+                                       ##   | (INF_VISIT_MNH30_14 %in% c(1,2,3) & SF_TYPE_VISIT_14 == 14)  ## or completed the form
                                           ~ 1, TRUE ~ 0 ),
          
          VC_AIM3_6MO_DENOM_SF = case_when((PASS_6MO == 1 & REMIND_ENROLLMENT_STATUS == 1 &  
-                                             (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_6MO) )
-
+                                            (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_6MO) )
+                                       ##   | (INF_VISIT_MNH30_11 %in% c(1,2,3) & SF_TYPE_VISIT_11 == 11)  ## or completed the form
+                                          
                                           ~ 1, TRUE ~ 0 ),
          
          VC_AIM3_12MO_DENOM_SF = case_when( REMIND_ENROLLMENT_STATUS == 1 & ((ymd(UploadDate) > ONTIME_12MO |
-                                                                                (M24_CLOSE_DSDECOD==1)) )
-                                            ~ 1, TRUE ~ 0 ),
+                                              (M24_CLOSE_DSDECOD==1)) )
+                                        ##   | (INF_VISIT_MNH30_12 %in% c(1,2,3) & SF_TYPE_VISIT_12 == 12)  ## or completed the form
+                                           
+                                           ~ 1, TRUE ~ 0 ),
          
          
   )  %>% 
@@ -616,9 +673,21 @@ gsed_sf_wide_remind <- remind_merged_enrolled %>%
          VC_AIM3_SF_12MO_NUM = case_when(REMIND_ENROLLMENT_STATUS == 1 & INF_VISIT_MNH30_12 %in% c(1,2,3) & SF_TYPE_VISIT_12 == 12 & VC_AIM3_12MO_DENOM_SF ==1 ~ 1, TRUE ~ 0 )
   ) 
 
+table(aim3ids$SITE)
+table(gsed_sf_wide_remind$SITE)
+
+table(gsed_sf_wide_remind$VC_AIM3_SF_3MO_NUM, gsed_sf_wide_remind$SITE)
+
+table(gsed_sf_wide_remind$VC_AIM3_SF_6MO_NUM, gsed_sf_wide_remind$SITE)
+table(gsed_sf_wide_remind$VC_AIM3_SF_12MO_NUM, gsed_sf_wide_remind$SITE)
+
 gsed_lf_wide_remind <- remind_merged_enrolled %>% 
+  # filter for livebirths 
+  # filter(M09_BIRTH_DSTERM==1)  %>% 
   ## merge in infant date (birth outcome)
   left_join(mnh32_merged, by = c("SITE", "MOMID", "PREGID", "INFANTID"))  %>% 
+  # right_join(remind_merged_enrolled, by = c("SITE", "MOMID", "PREGID"))  %>% 
+  # mutate(LF_TYPE_VISIT = as.numeric(LF_TYPE_VISIT)) %>% 
   group_by(SITE, MOMID, PREGID, INFANTID, LF_TYPE_VISIT) %>%
   # address duplicates (if exists, take the first instance)
   arrange(-desc(VISIT_OBSSTDAT)) %>% 
@@ -642,39 +711,49 @@ gsed_lf_wide_remind <- remind_merged_enrolled %>%
   mutate(LATE_6MO = DOB + 363) %>% # 51 weeks 6 days
   mutate(LATE_12MO = DOB + 454) %>% # 64 weeks
   ## calculate on time windows for 3mo, 6mo, and 12mo visit
-  mutate(ONTIME_3MO = DOB + 125) %>% # 17 weeks 6 days
-  mutate(ONTIME_6MO = DOB + 216) %>% # 30 weeks 6 days
-  mutate(ONTIME_12MO = DOB + 398) %>% # 56 weeks 6 days
+  # mutate(ONTIME_3MO = DOB + 125) %>% # 17 weeks 6 days
+  # mutate(ONTIME_6MO = DOB + 216) %>% # 30 weeks 6 days
+  # mutate(ONTIME_12MO = DOB + 398) %>% # 56 weeks 6 days
+  # on time windows without the +2 weeks 
+  mutate(ONTIME_3MO = DOB + 111) %>% # 15 weeks 6 days
+  mutate(ONTIME_6MO = DOB + 202) %>% # 28 weeks 6 days
+  mutate(ONTIME_12MO = DOB + 330) %>% # 54 weeks 6 days
+  
+  # select(SITE, MOMID, PREGID, INFANTID, contains("START"), contains("LATE")) %>% 
+  # distinct() %>% 
   mutate(PASS_3MO = case_when(ymd(UploadDate) > ONTIME_3MO ~ 1, TRUE ~ 0),
          PASS_6MO = case_when(ymd(UploadDate) > ONTIME_6MO ~ 1, TRUE ~ 0),
   ) %>% 
-  
-  ## merge in closeout form 
-  left_join(mnh24 %>% select(SITE, MOMID, PREGID, INFANTID, M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD) %>%  filter(INFANTID != "Z3-025-1136-B"), by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% ## duplicate in infant closeout (remove id)
+
+## merge in closeout form 
+left_join(mnh24 %>% select(SITE, MOMID, PREGID, INFANTID, M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD) %>%  filter(INFANTID != "Z3-025-1136-B"), by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% ## duplicate in infant closeout (remove id)
   # generate numerator and denominators for 3mo window (both short form and long form have the same denominator)
   mutate(VC_AIM3_3MO_DENOM_LF = case_when((PASS_3MO == 1  & REMIND_ENROLLMENT_STATUS == 1 & 
-                                             (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_3MO) )
-                                          ~ 1, TRUE ~ 0 ),
+                                            (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_3MO) )
+                                      ##      | (INF_VISIT_MNH32_14 %in% c(1,2,3) & LF_TYPE_VISIT_14 == 14)  ## or completed the form
+                                            
+                                            ~ 1, TRUE ~ 0 ),
          
          VC_AIM3_6MO_DENOM_LF = case_when(PASS_6MO == 1 & REMIND_ENROLLMENT_STATUS == 1 & 
                                             (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_6MO) ~ 1, TRUE ~ 0 ),
          
          VC_AIM3_12MO_DENOM_LF = case_when(REMIND_ENROLLMENT_STATUS == 1 & (ymd(UploadDate) > ONTIME_12MO |
-                                                                              (M24_CLOSE_DSDECOD==1)) ~ 1, TRUE ~ 0 ),
+                                              (M24_CLOSE_DSDECOD==1)) ~ 1, TRUE ~ 0 ),
          
          
   )  %>% 
   
-  mutate(VC_AIM3_LF_3MO_NUM = case_when(REMIND_ENROLLMENT_STATUS == 1 & INF_VISIT_MNH32_14 %in% c(1,2,3) & LF_TYPE_VISIT_14 == 14 & VC_AIM3_3MO_DENOM_LF ==1 ~ 1, TRUE ~ 0 ), 
-  ) %>% 
-  # since there are no six or twelve month visits, code as 0
-  mutate(VC_AIM3_LF_6MO_NUM = 0,
-         VC_AIM3_LF_12MO_NUM = 0)
-
+  mutate(VC_AIM3_LF_3MO_NUM = case_when(REMIND_ENROLLMENT_STATUS == 1 & INF_VISIT_MNH32_14 %in% c(1,2,3) & LF_TYPE_VISIT_14 == 14 & VC_AIM3_3MO_DENOM_LF ==1 ~ 1, TRUE ~ 0), 
+         VC_AIM3_LF_6MO_NUM = case_when(REMIND_ENROLLMENT_STATUS == 1 & INF_VISIT_MNH32_11 %in% c(1,2,3) & LF_TYPE_VISIT_11 == 11 & VC_AIM3_6MO_DENOM_LF ==1 ~ 1, TRUE ~ 0),
+         VC_AIM3_LF_12MO_NUM = case_when(REMIND_ENROLLMENT_STATUS == 1 & INF_VISIT_MNH32_12 %in% c(1,2,3) & LF_TYPE_VISIT_12 == 12 & VC_AIM3_12MO_DENOM_LF ==1 ~ 1, TRUE ~ 0)
+  )
 
 gsed_fci_wide_remind <- remind_merged_enrolled %>% 
+  # filter for live births 
+  # filter(M09_BIRTH_DSTERM==1) %>% 
   ## merge in infant date (birth outcome)
   left_join(mnh31_merged, by = c("SITE", "MOMID", "PREGID", "INFANTID"))  %>% 
+  # right_join(remind_merged_enrolled, by = c("SITE", "MOMID", "PREGID"))  %>% 
   mutate(FCI_TYPE_VISIT = as.numeric(FCI_TYPE_VISIT)) %>% 
   # address duplicates (if exists, take the first instance)
   group_by(SITE, MOMID, PREGID, INFANTID, FCI_TYPE_VISIT) %>%
@@ -700,9 +779,15 @@ gsed_fci_wide_remind <- remind_merged_enrolled %>%
   mutate(LATE_6MO = DOB + 363) %>% # 51 weeks 6 days
   mutate(LATE_12MO = DOB + 454) %>% # 64 weeks
   ## calculate on time windows for 3mo, 6mo, and 12mo visit
-  mutate(ONTIME_3MO = DOB + 125) %>% # 17 weeks 6 days
-  mutate(ONTIME_6MO = DOB + 216) %>% # 30 weeks 6 days
-  mutate(ONTIME_12MO = DOB + 398) %>% # 56 weeks 6 days
+  # mutate(ONTIME_3MO = DOB + 125) %>% # 17 weeks 6 days
+  # mutate(ONTIME_6MO = DOB + 216) %>% # 30 weeks 6 days
+  # mutate(ONTIME_12MO = DOB + 398) %>% # 56 weeks 6 days
+  # on time windows without the +2 weeks 
+  mutate(ONTIME_3MO = DOB + 111) %>% # 15 weeks 6 days
+  mutate(ONTIME_6MO = DOB + 202) %>% # 28 weeks 6 days
+  mutate(ONTIME_12MO = DOB + 330) %>% # 54 weeks 6 days
+  # select(SITE, MOMID, PREGID, INFANTID, contains("START"), contains("LATE")) %>% 
+  # distinct() %>% 
   mutate(PASS_3MO = case_when(ymd(UploadDate) > ONTIME_3MO ~ 1, TRUE ~ 0),
          PASS_6MO = case_when(ymd(UploadDate) > ONTIME_6MO ~ 1, TRUE ~ 0),
   ) %>% 
@@ -710,15 +795,21 @@ gsed_fci_wide_remind <- remind_merged_enrolled %>%
   left_join(mnh24 %>% select(SITE, MOMID, PREGID, INFANTID, M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD) %>%  filter(INFANTID != "Z3-025-1136-B"), by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% ## duplicate in infant closeout (remove id)
   # generate numerator and denominators for 3mo window (both short form and long form have the same denominator)
   mutate(VC_AIM3_3MO_DENOM_FCI = case_when((PASS_3MO == 1  & REMIND_ENROLLMENT_STATUS == 1 & 
-                                              (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_3MO))
+                                             (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_3MO))
+                                       ##    | (INF_VISIT_MNH31_14 %in% c(1,2,3) & FCI_TYPE_VISIT_14 == 14)  ## or completed the form
+                                           
                                            ~ 1, TRUE ~ 0 ),
          
          VC_AIM3_6MO_DENOM_FCI = case_when((PASS_6MO == 1 & REMIND_ENROLLMENT_STATUS == 1 & 
-                                              (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_6MO))
+                                             (is.na(M24_CLOSE_DSSTDAT) | M24_CLOSE_DSSTDAT > ONTIME_6MO))
+                                      ##     | (INF_VISIT_MNH31_11 %in% c(1,2,3) & FCI_TYPE_VISIT_11 == 11)  ## or completed the form
+                                           
                                            ~ 1, TRUE ~ 0 ),
          
          VC_AIM3_12MO_DENOM_FCI = case_when(REMIND_ENROLLMENT_STATUS == 1 & ((ymd(UploadDate) > ONTIME_12MO |
-                                                                                (M24_CLOSE_DSDECOD==1)))
+                                               (M24_CLOSE_DSDECOD==1)))
+                                       ##     | (INF_VISIT_MNH31_12 %in% c(1,2,3) & FCI_TYPE_VISIT_12 == 12)  ## or completed the form
+                                            
                                             ~ 1, TRUE ~ 0 ),
          
          
@@ -738,12 +829,12 @@ gsed_aim3_data <- gsed_sf_wide_remind %>%
          INF_VISIT_MNH30_14, INF_VISIT_MNH30_11, INF_VISIT_MNH30_12, contains("VISIT_DATE")
   ) %>% 
   full_join(gsed_fci_wide_remind %>% select(SITE, MOMID, PREGID, INFANTID, contains("DENOM"), contains("NUM"), 
-                                            INF_VISIT_MNH31_14, INF_VISIT_MNH31_11, INF_VISIT_MNH31_12, contains("VISIT_DATE")),
+                                     INF_VISIT_MNH31_14, INF_VISIT_MNH31_11, INF_VISIT_MNH31_12, contains("VISIT_DATE")),
             
             by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% 
   
   full_join(gsed_lf_wide_remind %>% select(SITE, MOMID, PREGID, INFANTID, contains("DENOM"), contains("NUM"), 
-                                           contains("INF_VISIT_MNH32"), contains("VISIT_DATE")),
+                                            contains("INF_VISIT_MNH32"), contains("VISIT_DATE")),
             
             by = c("SITE", "MOMID", "PREGID", "INFANTID")) %>% 
   
@@ -769,7 +860,7 @@ gsed_aim3_data <- gsed_sf_wide_remind %>%
                                        (SITE =="Zambia" &  START_12MO >= ymd("2024-03-30")) ~ 1, 
                                      TRUE ~ 0
   )) %>% 
-  
+
   mutate(VC_AIM3_3MO_DENOM = case_when(REMIND_ENROLLMENT_STATUS == 1  & (VC_AIM3_3MO_DENOM_SF==1 | VC_AIM3_3MO_DENOM_FCI==1 | VC_AIM3_3MO_DENOM_LF==1) & EXPANSION_3MO==1 ~ 1, TRUE ~ 0),
          VC_AIM3_6MO_DENOM = case_when(REMIND_ENROLLMENT_STATUS == 1  & (VC_AIM3_6MO_DENOM_SF==1 | VC_AIM3_6MO_DENOM_FCI==1 | VC_AIM3_6MO_DENOM_LF==1) & EXPANSION_6MO==1 ~ 1, TRUE ~ 0), 
          VC_AIM3_12MO_DENOM = case_when(REMIND_ENROLLMENT_STATUS == 1  & (VC_AIM3_12MO_DENOM_SF==1 | VC_AIM3_12MO_DENOM_FCI==1  | VC_AIM3_12MO_DENOM_LF==1) & EXPANSION_12MO==1~ 1, TRUE ~ 0),
@@ -779,14 +870,6 @@ gsed_aim3_data <- gsed_sf_wide_remind %>%
   mutate(MOM_REMAPP_AIM3_ENROLL= row_number()) %>% 
   ungroup()
 
-table(gsed_aim3_data$REMAPP_AIM3_ENROLL, gsed_aim3_data$SITE)
-table(gsed_aim3_data$TEST, gsed_aim3_data$SITE)
-table(aim3_final_moms$AIM3, aim3_final_moms$SITE)
+save(gsed_aim3_data, file= paste0(
+  path_to_save, "gsed_aim3_data",".RData",sep = ""))
 
-table(gsed_aim3_data$VC_AIM3_LF_3MO_NUM, gsed_aim3_data$SITE)
-table(gsed_aim3_data$VC_AIM3_LF_6MO_NUM, gsed_aim3_data$SITE)
-table(gsed_aim3_data$VC_AIM3_LF_12MO_NUM, gsed_aim3_data$SITE)
-
-
-
-save(gsed_aim3_data, file= paste0(path_to_save, "gsed_aim3_data",".RData",sep = ""))
