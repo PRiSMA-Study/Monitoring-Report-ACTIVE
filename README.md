@@ -1,9 +1,14 @@
 ## PRISMA & ReMAPP Monitoring Report
-#### Last Updated: 27 June 2025
+#### **Last Updated: 12 December 2025**
+- Updated bili-ruler table (table 17)
+- Incorporated true missingness in healthy cohort eligibility table (Table 19 & Figure 8)
+- Incorporated Kenya G6PD new variable in healthy cohort eligibility table (Table 19 & Figure 8)
+##### 27 June 2025 updates:
 - Added ReMIND enrollment and study status tables (Tables 21 & 22)
 - Added bili-ruler table (table 17)
-- (25 March 2025) Added G6PD and updated hemoglobinopathies logic for healthy cohort (Table 19 & Figure 8)
-
+- Added G6PD and updated hemoglobinopathies logic for healthy cohort (Table 19 & Figure 8)
+##### 27 March 2025 updates:
+- Added G6PD and updated hemoglobinopathies logic for healthy cohort (Table 19 & Figure 8)
 
 ### Overview
 
