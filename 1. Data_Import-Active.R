@@ -56,10 +56,12 @@ data_dict$`Variable Name` <- toupper(data_dict$`Variable Name`)
 # first need to make subfolder with upload date
 merged_dir <- paste0("~/Monitoring Report/data/merged", sep = "")
 cleaned_dir <- paste0("~/Monitoring Report/data/cleaned", sep = "")
+stacked_dir <- paste0("~/Monitoring Report/data/stacked", sep = "")
+
 date_dir <- UploadDate
 dir.create(file.path(merged_dir, date_dir), showWarnings = FALSE)
 dir.create(file.path(cleaned_dir, date_dir), showWarnings = FALSE)
-
+dir.create(file.path(stacked_dir, date_dir), showWarnings = FALSE)
 #*****************************************************************************
 #*Will need to set directory and read data for each country 
 #*****************************************************************************
