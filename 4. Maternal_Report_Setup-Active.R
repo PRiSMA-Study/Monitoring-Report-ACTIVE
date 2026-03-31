@@ -1493,22 +1493,22 @@ df_maternal <- MatData_Report_out %>%
 
 ## 18.2 merge in true missing data (site reported) ----
 ## pull df of IDs that are "true missing"
-pak_c9_smoke_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
+pak_c9_smoke_response <- read_xlsx("Z:/ReMAPP Healthy Cohort/Healthy_Cohort_Missingness_Responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
                          sheet = "C9") %>% 
   mutate(c9_smoke_true_missing = case_when(c9_true_missing ==1 ~ 1, TRUE ~ 0)) %>% 
   select(MOMID, PREGID, c9_smoke_true_missing)
 
-pak_c19_hemo_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
+pak_c19_hemo_response <- read_xlsx("Z:/ReMAPP Healthy Cohort/Healthy_Cohort_Missingness_Responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
                           sheet = "C19") %>% 
   mutate(c19_hemo_true_missing = case_when(c19_true_missing ==1 ~ 1, TRUE ~ 0)) %>% 
   select(MOMID, PREGID, c19_hemo_true_missing)
 
-pak_c20_g6pd_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
+pak_c20_g6pd_response <- read_xlsx("Z:/ReMAPP Healthy Cohort/Healthy_Cohort_Missingness_Responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
                           sheet = "C20") %>% 
   mutate(c20_g6pd_true_missing = case_when(c20_true_missing ==1 ~ 1, TRUE ~ 0)) %>% 
   select(MOMID, PREGID, c20_g6pd_true_missing)
 
-cmc_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2026-01-23-CMC_ALL-Pending-Healthy-Cohort_response.xlsx") %>% 
+cmc_response <- read_xlsx("Z:/ReMAPP Healthy Cohort/Healthy_Cohort_Missingness_Responses/2026-01-23-CMC_ALL-Pending-Healthy-Cohort_response.xlsx") %>% 
   select(MOMID, PREGID, contains("true_missing"))
 
 true_missing_ids <- df_maternal %>%
@@ -2049,31 +2049,31 @@ save(df_eli_long, file= paste0(path_to_save, "df_eli_long",".RData",sep = ""))
 
 ### Pull data query subsets of missing/pending criteria (and HAVE any ineligible)
 ## look at responses 
-# pak_healthy_cohort <- df_eli %>% 
+# pak_healthy_cohort <- df_eli %>%
 #   # filter(SITE == "Pakistan") %>%
 #   select(SITE, MOMID, PREGID, C1:C20)
 # 
-# c8_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
-#                          sheet = "C8") 
-# c9_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
+# c8_response <- read_xlsx("Z:/ReMAPP Healthy Cohort/Healthy_Cohort_Missingness_Responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
+#                          sheet = "C8")
+# c9_response <- read_xlsx("Z:/ReMAPP Healthy Cohort/Healthy_Cohort_Missingness_Responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
 #                          sheet = "C9")
-# c19_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
+# c19_response <- read_xlsx("Z:/ReMAPP Healthy Cohort/Healthy_Cohort_Missingness_Responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
 #                           sheet = "C19")
-# c20_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
+# c20_response <- read_xlsx("Z:/ReMAPP Healthy Cohort/Healthy_Cohort_Missingness_Responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
 #                           sheet = "C20")
 # 
-# pak_healthy_cohort_filter <- pak_healthy_cohort %>% 
-#   left_join(c8_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C8_comment = Comments), by = c("PREGID")) %>% 
-#   left_join(c9_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C9_comment = Comments), by = c("PREGID")) %>% 
-#   left_join(c19_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C19_comment = Comments), by = c("PREGID")) %>% 
-#   left_join(c20_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C20_comment = Comments), by = c("PREGID")) %>% 
+# pak_healthy_cohort_filter <- pak_healthy_cohort %>%
+#   left_join(c8_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C8_comment = Comments), by = c("PREGID")) %>%
+#   left_join(c9_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C9_comment = Comments), by = c("PREGID")) %>%
+#   left_join(c19_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C19_comment = Comments), by = c("PREGID")) %>%
+#   left_join(c20_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C20_comment = Comments), by = c("PREGID")) %>%
 #   mutate(C8 = case_when(c8_true_missing ==1 ~ "True Missing", TRUE ~ C8),
 #          C9 = case_when(c9_true_missing ==1 ~ "True Missing", TRUE ~ C9),
 #          C19 = case_when(c19_true_missing ==1 ~ "True Missing", TRUE ~ C19),
 #          C20 = case_when(c20_true_missing ==1 ~ "True Missing", TRUE ~ C20)
-#   ) %>% 
+#   ) %>%
 #   select(SITE, MOMID, PREGID, C1:C20)
-# 
+# # 
 # df_healthy_long <- pak_healthy_cohort_filter %>%
 #   pivot_longer(
 #     cols = C1:C20,
@@ -2085,7 +2085,7 @@ save(df_eli_long, file= paste0(path_to_save, "df_eli_long",".RData",sep = ""))
 #   group_by(SITE, MOMID, PREGID) %>%
 #   mutate(SUM_INELGIGIBLE = sum(Value == "Ineligible")) %>%
 #   mutate(SUM_PENDING = sum(Value == "Pending")) %>%
-#   filter(SUM_PENDING > 0) 
+#   filter(SUM_PENDING > 0)
 # 
 # table(criteria_queries_ids$Value)
 # 
@@ -2095,8 +2095,8 @@ save(df_eli_long, file= paste0(path_to_save, "df_eli_long",".RData",sep = ""))
 #   arrange(across(C1:C20, desc)) %>%
 #   relocate(C1:C20, .after = PREGID) %>%
 #   relocate(SITE, .before = MOMID) %>%
-#   select(SITE, MOMID, PREGID, C1:C20) %>% 
-#   left_join(sum_pending, by = c("SITE", "PREGID", "MOMID")) %>% 
+#   select(SITE, MOMID, PREGID, C1:C20) %>%
+#   left_join(sum_pending, by = c("SITE", "PREGID", "MOMID")) %>%
 #   relocate(SUM_PENDING, .after = "PREGID")
 # 
 # vec_names <- c("India-SAS", "Ghana","India-CMC", "Kenya", "Pakistan",  "Zambia")
@@ -2105,10 +2105,10 @@ save(df_eli_long, file= paste0(path_to_save, "df_eli_long",".RData",sep = ""))
 # for (i in seq_along(vec_names)) {
 #   site_name <- vec_names[i]  # Get site name
 #   print(site_name)
-#   
+# 
 #   criteria_queries_export[[as.character(site_name)]] <- criteria_queries %>%
 #     filter(SITE == site_name)
-#   
+# 
 # }
 # 
 # library(writexl)
@@ -2116,16 +2116,16 @@ save(df_eli_long, file= paste0(path_to_save, "df_eli_long",".RData",sep = ""))
 # for (site_name in names(criteria_queries_export)) {
 #   # Get the corresponding dataset
 #   dataset <- criteria_queries_export[[site_name]]
-#   
+# 
 #   # Define the file name based on the site name
 #   file_name <- paste0(UploadDate, "-", site_name, "_ALL-Pending-Healthy-Cohort", ".xlsx")
-#   
+# 
 #   # Write the dataset to the Excel file
 #   write_xlsx(dataset, path = paste0("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/", file_name))
-#   
+# 
 #   # Optional: Print message to confirm export
 #   print(paste0("Exported ", file_name))
 #   print(paste0(site_name, " missing = ", dim(criteria_queries_export[[site_name]])[1]))
-#   
+# 
 # }
-
+# 
