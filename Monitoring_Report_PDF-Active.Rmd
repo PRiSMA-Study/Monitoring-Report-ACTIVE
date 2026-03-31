@@ -1,5 +1,5 @@
 ---
-title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2025-12-16)"
+title: "<span style='font-size: 18px'> <span style='text-align: center'> PRISMA & ReMAPP Monitoring Report (Issued: 2026-03-24)"
 output:
   pdf_document:
     toc: no
@@ -19,7 +19,7 @@ knitr::opts_chunk$set(out.width = "100%", fig.align = "center")
 
 options(chromote.chrome_args = c("--headless=new"))
 
-## last updated: 6 May 2025
+## last updated: March 2026
 
 library(tidyverse) 
 library(knitr) 
@@ -38,19 +38,20 @@ library(chromote)
 library(readxl)
 
 
-UploadDate = "2025-12-12" 
+UploadDate = "2026-03-20" 
 
-mat_enroll <- read_xlsx(paste0("Z:/Outcome Data/", UploadDate, "/MAT_ENROLL.xlsx"))
+mat_enroll <- read.csv(paste0("~/import/MAT_ENROLL.csv"))
 remapp_ids <- mat_enroll %>% filter(REMAPP_ENROLL == 1)
 
 setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
+# load(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/MatData_Screen_Enroll.RData"))
 
 ## import all rda files 
 rda_files = list.files(pattern="*.RData")
-# rda_files <- list.files(pattern = "\\.RData$")
 walk(rda_files, ~ load(.x, .GlobalEnv))
 rm(MatData_Report)
 rm(df_criteria)
+
 
 
 #table format
@@ -158,22 +159,29 @@ study to establish global hemoglobin thresholds for maternal anemia
 
 **Versions:**
 
-**Date issued:** 2025-12-16
+**Date issued:** 2026-03-24
 
-**Included data last updated in Synapse:** 2025-12-12
+**Included data last updated in Synapse:** 2026-03-20
 
 **Last enrollment date:**
 
 -   Kenya: 2025-06-30
--   Pakistan: 2025-12-05
+-   Pakistan: 2026-03-13
 -   Ghana: 2025-04-22
 -   Zambia: 2025-03-20
--   India CMC: 2025-11-28
+-   India CMC: 2026-03-06
 -   India SAS: 2025-03-04
 
 ```{r, results='hide' }
 
 #check last day of screening and enrollment
+# lastscreen <- MatData_Screen_Enroll %>%
+#   filter(PRESCREEN == 1) %>%
+#   select(M00_SCRN_OBSSTDAT, M02_SCRN_OBSSTDAT, SITE) %>%
+#   group_by(SITE) %>%
+#   mutate(last_screen = max((M00_SCRN_OBSSTDAT), na.rm = TRUE)) %>% 
+#   ungroup()
+
 lastenroll <- MatData_Screen_Enroll %>%
   mutate(M02_SCRN_OBSSTDAT = ymd(M02_SCRN_OBSSTDAT)) %>%
   filter(M02_SCRN_OBSSTDAT  <= UploadDate) %>%
@@ -183,11 +191,9 @@ lastenroll <- MatData_Screen_Enroll %>%
   mutate(last_enroll = max((M02_SCRN_OBSSTDAT ), na.rm = TRUE)) %>%
   ungroup()
 
-
-# table(lastscreen$last_screen, lastscreen$SITE)
+## input date of last enrollment above under "Last enrollment date:"
 table(lastenroll$last_enroll, lastenroll$SITE)
 
-##new 
 date_last_enrll_pak <- lastenroll %>% filter(SITE == "Pakistan") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_ke <- lastenroll %>% filter(SITE == "Kenya") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_ga <- lastenroll %>% filter(SITE == "Ghana") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
@@ -195,8 +201,6 @@ date_last_enrll_za <- lastenroll %>% filter(SITE == "Zambia") %>% select(last_en
 date_last_enrll_cmc <- lastenroll %>% filter(SITE == "India-CMC") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 date_last_enrll_sas <- lastenroll %>% filter(SITE == "India-SAS") %>% select(last_enroll) %>%  unique() %>% mutate(last_enroll = last_enroll-7) %>% pull()
 
-
-# rm(lastscreen)
 rm(lastenroll)
 
 gc()
@@ -209,107 +213,99 @@ gc()
 
 ## **1. PRISMA**
 
-### Table 1: Most recent one week pre-screened and enrolled in PRISMA
+<!-- ### Table 1: Most recent one week pre-screened and enrolled in PRISMA -->
 
-*Value:* Provides a snapshot of weekly pre-screening and enrollment
-progress.
+<!-- *Value:* Provides a snapshot of weekly pre-screening and enrollment -->
+<!-- progress. -->
 
-```{r}
-## Prescreening and enrollment in the most recent one week 
-# denominator: a = n all pre-screened 
-MatData_Screen_Enroll$date_last_enrll_pak = date_last_enrll_pak
-MatData_Screen_Enroll$date_last_enrll_ke = date_last_enrll_ke
-MatData_Screen_Enroll$date_last_enrll_ga = date_last_enrll_ga
-MatData_Screen_Enroll$date_last_enrll_za = date_last_enrll_za
-MatData_Screen_Enroll$date_last_enrll_cmc = date_last_enrll_cmc
-MatData_Screen_Enroll$date_last_enrll_sas = date_last_enrll_sas
-
-
-tb_prescreen_enroll <- MatData_Screen_Enroll %>% 
-  filter(
-    SITE == "Pakistan" & (M00_SCRN_OBSSTDAT > date_last_enrll_pak) |
-    SITE == "Kenya" & (M00_SCRN_OBSSTDAT > date_last_enrll_ke) | 
-    SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
-    SITE == "Zambia" & (M00_SCRN_OBSSTDAT > date_last_enrll_za) | 
-    SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc) |
-    SITE == "India-SAS" & (M00_SCRN_OBSSTDAT > date_last_enrll_sas)
-  ) %>% 
-  group_by(SITE) %>% 
-  summarise("Pre-screened, n" = sum(PRESCREEN == 1, na.rm=TRUE),
-            "Eligible based on pre-screen, n(%) <sup>a</sup>" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE), 
-                                        " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Screened, n" = sum(SCREEN == 1),
-            "Enrolled, n(%) <sup>b</sup>" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
-                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
-) %>% 
-  t() %>% as.data.frame() %>% 
-  `colnames<-`(c(.[1,])) %>% 
-  slice(-1) %>% 
-  add_column(
-    .before = 1,
-    "Total" = MatData_Screen_Enroll %>% 
-  filter(
-    SITE == "Pakistan" & (M00_SCRN_OBSSTDAT > date_last_enrll_pak) |
-    SITE == "Kenya" & (M00_SCRN_OBSSTDAT > date_last_enrll_ke) | 
-    SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) |
-    SITE == "Zambia" & (M00_SCRN_OBSSTDAT > date_last_enrll_za) |
-    SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc) |
-    SITE == "India-SAS" & (M00_SCRN_OBSSTDAT > date_last_enrll_sas)
-
-  ) %>% 
-  plyr::summarise("Pre-screened, n" = sum(PRESCREEN == 1, na.rm=TRUE),
-            "Eligible based on pre-screen, n(%) <sup>a</sup>" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE), 
-                                        " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"),
-            "Screened, n" = sum(SCREEN == 1, na.rm=TRUE),
-            "Enrolled, n(%) <sup>b</sup>" = paste0(sum(ENROLL == 1, na.rm=TRUE), 
-                                        " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")")
-
-) %>% 
-      t() %>% unlist()
-  ) 
-
-tb_prescreen_enroll <- tb_prescreen_enroll %>% 
-  mutate_all(funs(str_replace(., "NaN", "0"))) %>% 
-  mutate_all(funs(str_replace(., "NA", "0")))
-             
-
-# 
-```
-
-```{r}
-#generate table by input data.frame and customize as needed. 
-#example: tb_theme1(dataframe)
-
-tb_prescreen_enroll <- replace_all_sas(tb_prescreen_enroll)
-
-prisma_tab1 <- tb_theme1(tb_prescreen_enroll) %>% 
-  tab_header(
-    title = md("**PRISMA Table 1**")
-  ) %>%
-tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>a</sup> Denominator is n pre-screened (MNH00 completed).</span>")
-) %>%   
-  tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>b</sup> Denominator is n screened (MNH02 completed).</span>")
-)
-
-```
-
-```{r, out.width = '100%'}
+<!-- ```{r} -->
+<!-- ## Prescreening and enrollment in the most recent one week  -->
+<!-- # denominator: a = n all pre-screened  -->
+<!-- MatData_Screen_Enroll$date_last_enrll_pak = date_last_enrll_pak -->
+<!-- MatData_Screen_Enroll$date_last_enrll_ke = date_last_enrll_ke -->
+<!-- MatData_Screen_Enroll$date_last_enrll_ga = date_last_enrll_ga -->
+<!-- MatData_Screen_Enroll$date_last_enrll_za = date_last_enrll_za -->
+<!-- MatData_Screen_Enroll$date_last_enrll_cmc = date_last_enrll_cmc -->
+<!-- MatData_Screen_Enroll$date_last_enrll_sas = date_last_enrll_sas -->
 
 
-prisma_tab1 <- prisma_tab1 %>% gtsave("prisma_tab1.png", expand = 10)
-knitr::include_graphics("prisma_tab1.png")
+<!-- tb_prescreen_enroll <- MatData_Screen_Enroll %>%  -->
+<!--   filter( -->
+<!--     SITE == "Pakistan" & (M00_SCRN_OBSSTDAT > date_last_enrll_pak) | -->
+<!--     SITE == "Kenya" & (M00_SCRN_OBSSTDAT > date_last_enrll_ke) |  -->
+<!--     SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) | -->
+<!--     SITE == "Zambia" & (M00_SCRN_OBSSTDAT > date_last_enrll_za) |  -->
+<!--     SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc) | -->
+<!--     SITE == "India-SAS" & (M00_SCRN_OBSSTDAT > date_last_enrll_sas) -->
+<!--   ) %>%  -->
+<!--   group_by(SITE) %>%  -->
+<!--   summarise("Pre-screened, n" = sum(PRESCREEN == 1, na.rm=TRUE), -->
+<!--             "Eligible based on pre-screen, n(%) <sup>a</sup>" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE),  -->
+<!--                                         " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"), -->
+<!--             "Screened, n" = sum(SCREEN == 1), -->
+<!--             "Enrolled, n(%) <sup>b</sup>" = paste0(sum(ENROLL == 1, na.rm=TRUE),  -->
+<!--                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")") -->
+<!-- ) %>%  -->
+<!--   t() %>% as.data.frame() %>%  -->
+<!--   `colnames<-`(c(.[1,])) %>%  -->
+<!--   slice(-1) %>%  -->
+<!--   add_column( -->
+<!--     .before = 1, -->
+<!--     "Total" = MatData_Screen_Enroll %>%  -->
+<!--   filter( -->
+<!--     SITE == "Pakistan" & (M00_SCRN_OBSSTDAT > date_last_enrll_pak) | -->
+<!--     SITE == "Kenya" & (M00_SCRN_OBSSTDAT > date_last_enrll_ke) |  -->
+<!--     SITE == "Ghana" & (M00_SCRN_OBSSTDAT > date_last_enrll_ga) | -->
+<!--     SITE == "Zambia" & (M00_SCRN_OBSSTDAT > date_last_enrll_za) | -->
+<!--     SITE == "India-CMC" & (M00_SCRN_OBSSTDAT > date_last_enrll_cmc) | -->
+<!--     SITE == "India-SAS" & (M00_SCRN_OBSSTDAT > date_last_enrll_sas) -->
 
-# webshot2::webshot("prisma_tab1.html", "prisma_tab1.png")
+<!--   ) %>%  -->
+<!--   plyr::summarise("Pre-screened, n" = sum(PRESCREEN == 1, na.rm=TRUE), -->
+<!--             "Eligible based on pre-screen, n(%) <sup>a</sup>" = paste0(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE),  -->
+<!--                                         " (", format(sum(PRESCR_ELIGIBLE == 1, na.rm=TRUE)/sum(PRESCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")"), -->
+<!--             "Screened, n" = sum(SCREEN == 1, na.rm=TRUE), -->
+<!--             "Enrolled, n(%) <sup>b</sup>" = paste0(sum(ENROLL == 1, na.rm=TRUE),  -->
+<!--                                         " (", format(sum(ENROLL == 1, na.rm=TRUE)/sum(SCREEN_DENOM == 1, na.rm=TRUE)*100, digits = 2, nsmall=0), ")") -->
+
+<!-- ) %>%  -->
+<!--       t() %>% unlist() -->
+<!--   )  -->
+<!-- tb_prescreen_enroll <- tb_prescreen_enroll %>%  -->
+<!--   mutate_all(funs(str_replace(., "NaN", "0"))) %>%  -->
+<!--   mutate_all(funs(str_replace(., "NA", "0"))) -->
+<!-- #  -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- #generate table by input data.frame and customize as needed.  -->
+<!-- #example: tb_theme1(dataframe) -->
+
+<!-- tb_prescreen_enroll <- replace_all_sas(tb_prescreen_enroll) -->
+
+<!-- prisma_tab1 <- tb_theme1(tb_prescreen_enroll) %>%  -->
+<!--   tab_header( -->
+<!--     title = md("**PRISMA Table 1**") -->
+<!--   ) %>% -->
+<!-- tab_footnote( -->
+<!--     footnote = html("<span style='font-size: 18px'><sup>a</sup> Denominator is n pre-screened (MNH00 completed).</span>") -->
+<!-- ) %>%    -->
+<!--   tab_footnote( -->
+<!--     footnote = html("<span style='font-size: 18px'><sup>b</sup> Denominator is n screened (MNH02 completed).</span>") -->
+<!-- ) -->
+<!-- ``` -->
+<!-- ```{r, out.width = '100%'} -->
+
+
+<!-- prisma_tab1 <- prisma_tab1 %>% gtsave("prisma_tab1.png", expand = 10) -->
+<!-- knitr::include_graphics("prisma_tab1.png") -->
+
+<!-- # webshot2::webshot("prisma_tab1.html", "prisma_tab1.png") -->
 
 
 
-```
+<!-- ``` -->
 
-\newpage
-
-### Table 2: Cumulative pre-screened for PRISMA
+### Table 1: Cumulative pre-screened for PRISMA
 
 *Value:* Distribution of total pre-screened since the launch of the
 harmonized PRISMA protocol. If ineligible based on pre-screening,
@@ -377,7 +373,7 @@ tb_prescreen_all <- replace_all_sas(tb_prescreen_all)
 
 prisma_tab2 <- tb_theme1(tb_prescreen_all) %>% 
   tab_header(
-    title = md("**PRISMA Table 2**")
+    title = md("**PRISMA Table 1**")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>Pre-screening</span>"),
@@ -419,8 +415,7 @@ ineligible in pre-screening are listed below. Each row should sum to
 ```{r, echo=FALSE}
 ### STACKED BAR CHART
 total_bysite_pre <- MatData_Screen_Enroll %>%
-     # filter(SITE != "India-SAS") %>%
-  filter(PRESCREEN == 1 & PRESCREEN_DENOM == 1 & PRESCR_ELIGIBLE==0) %>% #  & SITE != "India-SAS"
+  filter(PRESCREEN == 1 & PRESCREEN_DENOM == 1 & PRESCR_ELIGIBLE==0) %>% 
   select(SITE, PRESCR_PREGSIGN, PRESCR_GA25, PRESCR_AGE, PRESCR_CATCHAREA, PRESCR_OTHER,CONSENT_PRESCREEN) %>%
   rename( "No clinical signs of pregnancy" = PRESCR_PREGSIGN,
           "Gestational age >=25 weeks" = PRESCR_GA25,
@@ -439,7 +434,7 @@ total_bysite_pre <- MatData_Screen_Enroll %>%
 
 total_allsites_pre <- MatData_Screen_Enroll %>%
   # filter(SITE != "India-SAS") %>%
-  filter(PRESCREEN == 1 & PRESCREEN_DENOM == 1 & PRESCR_ELIGIBLE==0) %>% #  & SITE != "India-SAS")
+  filter(PRESCREEN == 1 & PRESCREEN_DENOM == 1 & PRESCR_ELIGIBLE==0) %>% 
   select(SITE, PRESCR_PREGSIGN, PRESCR_GA25, PRESCR_AGE, PRESCR_CATCHAREA, PRESCR_OTHER,CONSENT_PRESCREEN) %>%
   rename( "No clinical signs of pregnancy" = PRESCR_PREGSIGN,
           "Gestational age >=25 weeks" = PRESCR_GA25,
@@ -509,7 +504,7 @@ geom_text(aes(label = n_ineligible, x = SITE, y = n_pct+0.25),
 
 \newpage
 
-### Table 3: Cumulative enrolled in PRISMA
+### Table 2: Cumulative enrolled in PRISMA
 
 *Value:* Distribution of cumulative enrollment and study progress
 distributions since the start of relaunch. If ineligible, distributions
@@ -596,7 +591,7 @@ tb_enroll <- replace_all_sas(tb_enroll)
 
 prisma_tab3 <- tb_theme1(tb_enroll) %>% 
   tab_header(
-    title = md("**PRISMA Table 3**")
+    title = md("**PRISMA Table 2**")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>Enrollment</span>"),
@@ -649,14 +644,6 @@ total_bysite <- MatData_Screen_Enroll %>%
   filter(SCREEN == 1 & SCREEN_DENOM == 1 & is.na(ENROLL)) %>%
     filter(SCRNID != "") %>%
   select(SITE,SCRN_RETURN, AGE, GA20, CATCHAREA, CATCHREMAIN, SCRN_CONSENT) %>%
-  #   left_join(mnh02_ke %>% mutate(SCRNID = as.character(SCRNID)) %>%
-  #             select(SCRNID, SCRN_RETURN) %>%
-  #             rename(NEW_SCRN_RETURN = SCRN_RETURN),
-  #           by = c("SCRNID")) %>%
-  # mutate(SCRN_RETURN = case_when(SITE == "Kenya" ~ NEW_SCRN_RETURN, TRUE ~ SCRN_RETURN)) %>%
-  # select(-SCRNID, -NEW_SCRN_RETURN) %>%
-  # mutate(CONSENT = case_when(SCRN_RETURN !=0 & AGE != 0 & GA20!=0 &
-  #                             CATCHAREA !=0  & CATCHREMAIN!=0 & CONSENT==0 ~ 0, TRUE ~ 99)) %>%
   rename( "Did not return for screening" = SCRN_RETURN,
           "Did not meet age requirement" = AGE,
           "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = GA20,
@@ -680,11 +667,6 @@ total_allsites <- MatData_Screen_Enroll %>%
    # filter(SITE != "India-SAS") %>%
   filter(SCREEN == 1 & SCREEN_DENOM == 1 & is.na(ENROLL)) %>%
   select(SITE,SCRN_RETURN, AGE, GA20, CATCHAREA, CATCHREMAIN, SCRN_CONSENT) %>%
-  #   left_join(mnh02_ke %>% mutate(SCRNID = as.character(SCRNID)) %>%
-  #             select(SCRNID, SCRN_RETURN) %>%
-  #             rename(NEW_SCRN_RETURN = SCRN_RETURN),
-  #           by = c("SCRNID")) %>%
-  # mutate(SCRN_RETURN = case_when(SITE == "Kenya" ~ NEW_SCRN_RETURN, TRUE ~ SCRN_RETURN)) %>%
   rename( "Did not return for screening" = SCRN_RETURN,
           "Did not meet age requirement" = AGE,
           "Non-viable intrauterine pregnancy >=20 weeks gestation (confirmed via ultrasound)" = GA20,
@@ -1356,19 +1338,12 @@ enroll_cum_SAS %>%
 #   xlab("Month") +
 #   ylab("Number of participants enrolled") +
 #   ggtitle("India-SAS") 
-  # geom_rect(aes(xmin = midpoint$midpoint_2023 - days(2), xmax = midpoint$midpoint_2023 + days(5), ymin = max_y - (max_y * 0.1) - 0.1, ymax = max_y), fill = "grey", color = NA, alpha = 0.5) +
-  # annotate("text", x = midpoint$midpoint_2023, y = max_y-(max_y*.075), label = "2023", vjust = 0, hjust = 0) +
-  # # annotate("text", x = midpoint$midpoint_2024-3, y = max_y-(max_y*.075), label = "2024", vjust = 0, hjust = 0) 
-  # geom_rect(aes(xmin = midpoint$midpoint_2024 - days(5), xmax = midpoint$midpoint_2024 + days(2), ymin = max_y - (max_y * 0.1) - 0.1, ymax = max_y), fill = "grey", color = NA, alpha = 0.5) +
-  # # annotate("text", x = midpoint$midpoint_2024-3, y = max_y-(max_y*.075), label = "2024", vjust = 0, hjust = 0) 
-  # geom_text(aes(x = midpoint$midpoint_2024 - days(3), y = max_y - (max_y * 0.075), label = "2024"), vjust = 0, hjust = 0, color = "black", size = 4)
-
 
 ```
 
 \newpage
 
-### Table 4: Overview of PRISMA participant study status
+### Table 3: Overview of PRISMA participant study status
 
 *Value:* Distribution of current status among enrolled women. Each
 column should sum to 100%.
@@ -1436,7 +1411,7 @@ tb_status <- replace_all_sas(tb_status)
 
 prisma_tab4 <- tb_theme1(tb_status) %>% 
   tab_header(
-    title = md("**PRISMA Table 4**")
+    title = md("**PRISMA Table 3**")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>Participant study status, n(%)<sup>a</sup></span>"),
@@ -1457,7 +1432,7 @@ knitr::include_graphics("prisma_tab4.png")
 
 \newpage
 
-### Table 5: ANC and PNC visit completion for PRISMA
+### Table 4: ANC and PNC visit completion for PRISMA
 
 *Value:* Are forms completed for each visit? A visit is considered
 complete if the data reports the visit was conducted in person or by
@@ -1782,7 +1757,7 @@ table5_pnc <- table5[c(11:22),]
 
 prisma_tab5_1 <- tb_theme1(table5_anc) %>% 
   tab_header(
-    title = md("**PRISMA Table 5**"), 
+    title = md("**PRISMA Table 4**"), 
     subtitle = md("*Continued on next page*")
   ) %>%
   tab_row_group(
@@ -1823,7 +1798,7 @@ tab_footnote(
  
 prisma_tab5_2 <- tb_theme1(table5_pnc) %>% 
   tab_header(
-    title = md("**PRISMA Table 5**"),
+    title = md("**PRISMA Table 4**"),
     subtitle = md("*Continued*")
   ) %>%
   tab_row_group(
@@ -1886,7 +1861,7 @@ gc()
 
 \newpage
 
-### Table 6: ANC protocol compliance for PRISMA
+### Table 5: ANC protocol compliance for PRISMA
 
 *Value:* Among women successfully contacted during the ANC period,
 percent who had all expected visit forms completed. A visit is
@@ -2057,13 +2032,6 @@ ANC20 <- Prot_Compliance_Anc %>%
     "Denominator" = paste0(
         format(sum(PC_ANC20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
-        
-    # "MNH01 Ultrasound (optional)" = paste0(
-    #     format(sum(M01_VISIT_COMPLETE_2 == 1 & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-    #     " (",
-    #     format(round(sum(M01_VISIT_COMPLETE_2 == 1 & ANC20_PASS_LATE == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-    #     ")"),
-    
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(M04_VISIT_COMPLETE_2 == 1 & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
@@ -2107,13 +2075,6 @@ ANC20 <- Prot_Compliance_Anc %>%
       "Denominator" = paste0(
         format(sum(PC_ANC20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
-          
-      # "MNH01 Ultrasound (optional)" = paste0(
-      #   format(sum(M01_VISIT_COMPLETE_2 == 1 & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(M01_VISIT_COMPLETE_2 == 1 & ANC20_PASS_LATE == 1, na.rm = TRUE)/sum(PC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
-    
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(M04_VISIT_COMPLETE_2 == 1 & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
@@ -2156,13 +2117,6 @@ ANC28 <- Prot_Compliance_Anc %>%
       "Denominator" = paste0(
         format(sum(PC_ANC28_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
-        
-       # "MNH01 Ultrasound (optional)" = paste0(
-       #  format(sum(M01_VISIT_COMPLETE_3 == 1 & ANC28_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(M01_VISIT_COMPLETE_3 == 1 & ANC28_PASS_LATE == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")"),
-
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(M04_VISIT_COMPLETE_3 == 1 & ANC28_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
@@ -2202,13 +2156,6 @@ ANC28 <- Prot_Compliance_Anc %>%
       "Denominator" = paste0(
         format(sum(PC_ANC28_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
-
-       # "MNH01 Ultrasound (optional)" = paste0(
-       #  format(sum(M01_VISIT_COMPLETE_3 == 1 & ANC28_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(M01_VISIT_COMPLETE_3 == 1 & ANC28_PASS_LATE == 1, na.rm = TRUE)/sum(PC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")"),
-
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(M04_VISIT_COMPLETE_3 == 1 & ANC28_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
@@ -2355,13 +2302,6 @@ ANC36 <- Prot_Compliance_Anc %>%
        "Denominator" = paste0(
         format(sum(PC_ANC36_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
-  
-       # "MNH01 Ultrasound (optional)" = paste0(
-       #  format(sum(M01_VISIT_COMPLETE_5 == 1 & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(M01_VISIT_COMPLETE_5 == 1 & ANC36_PASS_LATE == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")"),
-
 
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(M04_VISIT_COMPLETE_5 == 1 & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -2403,11 +2343,6 @@ ANC36 <- Prot_Compliance_Anc %>%
         format(sum(PC_ANC36_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ),
           
-       # "MNH01 Ultrasound (optional)" = paste0(
-       #  format(sum(M01_VISIT_COMPLETE_5 == 1 & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(M01_VISIT_COMPLETE_5 == 1 & ANC36_PASS_LATE == 1, na.rm = TRUE)/sum(PC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")"),
 
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(M04_VISIT_COMPLETE_5 == 1 & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -2511,7 +2446,7 @@ table6_2 <- prot_compliance_anc[c(1,17:35),]
 ## PART 1
 prisma_tab6_1 <- tb_theme1(table6_1) %>% 
   tab_header(
-    title = md("**PRISMA Table 6** *(continued on next page)*")
+    title = md("**PRISMA Table 5** *(continued on next page)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>Enrollment visit, n(%)<sup>a</sup> [Target window: <20wks]</span>"),
@@ -2547,7 +2482,7 @@ tab_footnote(
 ## PART 2
 prisma_tab6_2 <- tb_theme1(table6_2) %>% 
   tab_header(
-    title = md("**PRISMA Table 6** *(continued)*")
+    title = md("**PRISMA Table 5** *(continued)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>ANC-28 visit, n(%)<sup>c</sup> [Target window: 26 to 30wks]</span>"),
@@ -2606,7 +2541,7 @@ knitr::include_graphics("prisma_tab6_2.png")
 
 \newpage
 
-### Table 7: ANC form completion for PRISMA
+### Table 6: ANC form completion for PRISMA
 
 *Value:* Among women who have passed the late ANC window period, percent
 with forms completed regardless of visit status. A form is considered
@@ -2779,12 +2714,6 @@ ANC20 <- Form_Completion_Anc %>%
     "Denominator" = paste0(
         format(sum(FC_ANC20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ), 
-      
-    # "MNH01 Ultrasound (optional)" = paste0(
-    #     format(sum(!is.na(M01_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-    #     " (",
-    #     format(round(sum(!is.na(M01_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-    #     ")"),
     
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(!is.na(M04_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -2815,18 +2744,6 @@ ANC20 <- Form_Completion_Anc %>%
         " (",
         format(round(sum(!is.na(M08_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
-
-      # "MNH25 Maternal Depression" = paste0(
-      #   format(sum(!is.na(M25_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M25_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")")
-
-       # "MNH26 Maternal Fatigue" = paste0(
-       #  format(sum(!is.na(M26_VISIT_COMPLETE_2)  & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(!is.na(M26_VISIT_COMPLETE_2)  & ANC20_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")")
     
     ) %>%
     t() %>% 
@@ -2842,12 +2759,6 @@ ANC20 <- Form_Completion_Anc %>%
     "Denominator" = paste0(
         format(sum(FC_ANC20_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ), 
-    
-      # "MNH01 Ultrasound (optional)" = paste0(
-      #   format(sum(!is.na(M01_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M01_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
     
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(!is.na(M04_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -2879,17 +2790,6 @@ ANC20 <- Form_Completion_Anc %>%
         format(round(sum(!is.na(M08_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
 
-      # "MNH25 Maternal Depression" = paste0(
-      #   format(sum(!is.na(M25_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M25_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")")
-
-       # "MNH26 Maternal Fatigue" = paste0(
-       #  format(sum(!is.na(M26_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(!is.na(M26_VISIT_COMPLETE_2) & ANC20_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC20_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")")
     ) %>%
         
         t() %>% as.data.frame() %>% unlist() 
@@ -2904,12 +2804,6 @@ ANC28 <- Form_Completion_Anc %>%
     "Denominator" = paste0(
         format(sum(FC_ANC28_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ), 
-    
-       # "MNH01 Ultrasound (optional)" = paste0(
-       #  format(sum(!is.na(M01_VISIT_COMPLETE_3) & ANC28_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(!is.na(M01_VISIT_COMPLETE_3) & ANC28_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")"),
 
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(!is.na(M04_VISIT_COMPLETE_3) & ANC28_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -2950,12 +2844,6 @@ ANC28 <- Form_Completion_Anc %>%
     "Denominator" = paste0(
         format(sum(FC_ANC28_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ), 
-
-       # "MNH01 Ultrasound (optional)" = paste0(
-       #  format(sum(!is.na(M01_VISIT_COMPLETE_3) & ANC28_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(!is.na(M01_VISIT_COMPLETE_3) & ANC28_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC28_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")"),
 
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(!is.na(M04_VISIT_COMPLETE_3) & ANC28_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -3036,18 +2924,7 @@ ANC32 <- Form_Completion_Anc %>%
         " (",
         format(round(sum(!is.na(M08_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
-      
-      # "MNH25 Maternal Lab" = paste0(
-      #   format(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")")
-      
-      # "MNH26 Maternal Fatigue" = paste0(
-      #   format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")")
+
    ) %>%
 
   t() %>% as.data.frame() %>% 
@@ -3097,17 +2974,7 @@ ANC32 <- Form_Completion_Anc %>%
         " (",
         format(round(sum(!is.na(M08_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")")
-      # "MNH25 Maternal Lab" = paste0(
-      #   format(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M25_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")")
-      
-      # "MNH26 Maternal Fatigue" = paste0(
-      #   format(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M26_VISIT_COMPLETE_4) & ANC32_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC32_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")")
+
     ) %>%
 
         t() %>% 
@@ -3124,14 +2991,6 @@ ANC36 <- Form_Completion_Anc %>%
     "Denominator" = paste0(
         format(sum(FC_ANC36_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ), 
-      
-       # "MNH01 Ultrasound (optional)" = paste0(
-       #  format(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")"),
-
-
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(!is.na(M04_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
@@ -3171,13 +3030,7 @@ ANC36 <- Form_Completion_Anc %>%
     "Denominator" = paste0(
         format(sum(FC_ANC36_DENOM==1, na.rm = TRUE), nsmall = 0, digits = 2)
         ), 
-          
-       # "MNH01 Ultrasound (optional)" = paste0(
-       #  format(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-       #  " (",
-       #  format(round(sum(!is.na(M01_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE)/sum(FC_ANC36_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-       #  ")"),
-       # 
+
       "MNH04 ANC Clinical Status" = paste0(
         format(sum(!is.na(M04_VISIT_COMPLETE_5) & ANC36_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
@@ -3284,7 +3137,7 @@ table7_2 <- form_completion_anc[c(1,17:35),]
 ## PART 1
 prisma_tab7_1 <- tb_theme1(table7_1) %>% 
   tab_header(
-    title = md("**PRISMA Table 7** *(continued on next page)*")
+    title = md("**PRISMA Table 6** *(continued on next page)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>Enrollment visit, n(%)<sup>a</sup> [Target window: <20wks]</span>"),
@@ -3320,7 +3173,7 @@ tab_footnote(
 ## PART 2
 prisma_tab7_2 <- tb_theme1(table7_2) %>% 
   tab_header(
-    title = md("**PRISMA Table 7** *(continued)*")
+    title = md("**PRISMA Table 6** *(continued)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>ANC-28 visit, n(%)<sup>c</sup> [Target window: 26 to 30wks]</span>"),
@@ -3378,7 +3231,7 @@ knitr::include_graphics("prisma_tab7_2.png")
 
 \newpage
 
-### Table 8: IPC visit completion and PRISMA protocol compliance for IPC
+### Table 7: IPC visit completion and PRISMA protocol compliance for IPC
 
 *Value:* Among women successfully contacted during the IPC period,
 percent who have expected visit forms completed. A visit is considered
@@ -3553,7 +3406,7 @@ table8 <- replace_all_sas(table8)
 ## table 8
 prisma_tab8 <- tb_theme1(table8) %>% 
   tab_header(
-    title = md("**PRISMA Table 8**")
+    title = md("**PRISMA Table 7**")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>IPC Visit Completion<sup>a,b</sup></span>"),
@@ -3609,7 +3462,7 @@ knitr::include_graphics("prisma_tab8.png")
 *Value:* Gestational age of participants who have passed the target IPC
 window and do not have any IPC forms.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, out.width="60%", out.height="30%", fig.show='hold', fig.align='left'}
 
 figure2 <- MatData_Ipc_Visits_Mat %>%
   # filter(SITE != "India-SAS") %>% 
@@ -3634,7 +3487,7 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
         legend.position="bottom",
         legend.title = element_blank(),
         panel.grid.minor = element_blank(),
-        strip.text = element_text(size = 7) 
+        strip.text = element_text(size = 14) 
         ) +
   scale_x_continuous(breaks = seq(294, 560, by = 14),
                      label = as.character(seq(42, 80, by = 2)),
@@ -3643,33 +3496,6 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
   xlab("Estimated Gestational Age") +
   ylab("Number of participants")
 
-
-# pak_subset <-figure2 %>% filter(SITE == "Pakistan") %>% 
-#   mutate(AGE_AT_UPLOAD_WKS = AGE_AT_UPLOAD_DAYS %/% 7) 
-# 
-# data_dictionary <- data.frame("varname" = names(pak_subset),
-#                               "definition" = c("site", 
-#                                                "momid",
-#                                                "pregnancy id",
-#                                                "date of birth; if this is NA then no DOB has been reported for this participant.",
-#                                                "estimated date of conception. calculated using teh date of enrollment ultrasound and gestational age at enrollment (PREG_START_DATE = ultrasound date - GA at ultrasound).",
-#                                                "binary variable for close out. if a particpant has a closeout form, this will be a 1; if no closeout form, this will be a 0.",
-#                                                "date of closeout from closeout form.",
-#                                                "date of most recent upload.",
-#                                                "estimated age in days at time of recent upload. calculated by taking upload date - estimated conception date.",
-#                                                "estimated age in weeks at time of recent upload. calculated by taking upload date - estimated conception date."))
-# path = paste0("D:/Users/stacie.loisate/Documents/Analysis/pak_momids_over42wks.xlsx")
-# # path = paste("output/",UploadDate, "_intergrowth_bw_ga_outrange_report", ".xlsx", sep = "")
-# header_st <- createStyle(textDecoration = "Bold")
-# 
-# list_of_datasets <- list("Dictionary" = data_dictionary, "Report" = pak_subset)
-# 
-# write.xlsx(list_of_datasets, file = path,
-#            headerStyle = createStyle(textDecoration = "Bold"))
-# 
-
-
-# min(figure2$AGE_AT_UPLOAD_DAYS)
 ```
 
 ```{r, results = "hide"}
@@ -3678,7 +3504,7 @@ ggplot(data = figure2, aes(x = AGE_AT_UPLOAD_DAYS)) +
 
 \newpage
 
-### Table 9: PNC protocol compliance for PRISMA maternal forms
+### Table 8: PNC protocol compliance for PRISMA maternal forms
 
 *Value:* Among women with PNC visits marked as complete, percent that
 have all expected visit forms completed. A visit is considered
@@ -3992,19 +3818,6 @@ PNC26 <- Prot_Compliance_Pnc %>%
         " (",
         format(round(sum(M06_VISIT_COMPLETE_11 == 1& PC_PNC26_DENOM == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
-
-      # "MNH07 Maternal Specimen Collection" = paste0(
-      #   format(sum(M07_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(M07_VISIT_COMPLETE_11 == 1& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
-      # 
-      # "MNH08 Maternal Lab" = paste0(
-      #   format(sum(M08_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(M08_VISIT_COMPLETE_11 == 1& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
-
       "MNH12 Maternal PNC Clinical Status" = paste0(
         format(sum(M12_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
@@ -4033,18 +3846,6 @@ PNC26 <- Prot_Compliance_Pnc %>%
         " (",
         format(round(sum(M06_VISIT_COMPLETE_11 == 1& PC_PNC26_DENOM == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
-
-      # "MNH07 Maternal Specimen Collection" = paste0(
-      #   format(sum(M07_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(M07_VISIT_COMPLETE_11 == 1& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
-      # 
-      # "MNH08 Maternal Lab" = paste0(
-      #   format(sum(M08_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(M08_VISIT_COMPLETE_11 == 1& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(PC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
         format(sum(M12_VISIT_COMPLETE_11 == 1 & PC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -4182,7 +3983,7 @@ table9_2 <- prot_compliance_pnc[c(1,11:25),]
 ## PART 1
 prisma_tab9_1 <- tb_theme1(table9_1) %>% 
   tab_header(
-    title = md("**PRISMA Table 9** *(continued on next page)*")
+    title = md("**PRISMA Table 8** *(continued on next page)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-0 visit, n(%)<sup>b</sup> [Target window: 3 to 5 days]</span>"),
@@ -4236,7 +4037,7 @@ tab_footnote(
 ## PART 2
 prisma_tab9_2 <- tb_theme1(table9_2) %>% 
   tab_header(
-    title = md("**PRISMA Table 9** *(continued)*")
+    title = md("**PRISMA Table 8** *(continued)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-6 visit, n(%)<sup>e</sup> [Target window: 6 to 12 wks]</span>"),
@@ -4308,7 +4109,7 @@ gc()
 
 \newpage
 
-### Table 10: PNC visit maternal form completion for PRISMA
+### Table 9: PNC visit maternal form completion for PRISMA
 
 *Value:* Among women who have passed the late PNC window period, percent
 with forms completed regardless of visit status. A form is considered
@@ -4628,18 +4429,6 @@ PNC26 <- Form_Completion_Pnc %>%
         format(round(sum(!is.na(M06_VISIT_COMPLETE_11)& FC_PNC26_DENOM == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
 
-      # "MNH07 Maternal Specimen Collection" = paste0(
-      #   format(sum(!is.na(M07_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M07_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
-      # 
-      # "MNH08 Maternal Lab" = paste0(
-      #   format(sum(!is.na(M08_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M08_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
-
       "MNH12 Maternal PNC Clinical Status" = paste0(
         format(sum(!is.na(M12_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
         " (",
@@ -4671,18 +4460,6 @@ PNC26 <- Form_Completion_Pnc %>%
         " (",
         format(round(sum(!is.na(M06_VISIT_COMPLETE_11)& FC_PNC26_DENOM == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
         ")"),
-
-      # "MNH07 Maternal Specimen Collection" = paste0(
-      #   format(sum(!is.na(M07_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M07_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
-      # 
-      # "MNH08 Maternal Lab" = paste0(
-      #   format(sum(!is.na(M08_VISIT_COMPLETE_11) & PNC26_PASS_LATE == 1, na.rm = TRUE), nsmall = 0, digits = 2),
-      #   " (",
-      #   format(round(sum(!is.na(M08_VISIT_COMPLETE_11)& PNC26_PASS_LATE == 1, na.rm = TRUE)/sum(FC_PNC26_DENOM==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-      #   ")"),
 
       "MNH12 Maternal PNC Clinical Status" = paste0(
         format(sum(!is.na(M12_VISIT_COMPLETE_11) & FC_PNC26_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2),
@@ -4824,7 +4601,7 @@ table10_2 <- form_completion_pnc[c(1,11:25),]
 ## PART 1
 prisma_tab10_1 <- tb_theme1(table10_1) %>% 
   tab_header(
-    title = md("**PRISMA Table 10** *(continued on next page)*")
+    title = md("**PRISMA Table 9** *(continued on next page)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-0 visit, n(%)<sup>b</sup> [Target window: 3 to 5 days]</span>"),
@@ -4878,7 +4655,7 @@ tab_footnote(
 ## PART 2
 prisma_tab10_2 <- tb_theme1(table10_2) %>% 
   tab_header(
-    title = md("**PRISMA Table 10** *(continued)*")
+    title = md("**PRISMA Table 9** *(continued)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-6 visit, n(%)<sup>e</sup> [Target window: 6 to 12wks]</span>"),
@@ -4942,7 +4719,7 @@ knitr::include_graphics("prisma_tab10_2.png")
 
 \newpage
 
-### Table 11: Protocol compliance for PRISMA depression assessment
+### Table 10: Protocol compliance for PRISMA depression assessment
 
 *Value:* Among women successfully contacted during the ANC or PNC period
 who have passed the expected visit window, percent that have MNH25
@@ -5061,7 +4838,7 @@ prisma_table11 <- replace_all_sas(prisma_table11)
 ## table 8
 prisma_table11 <- tb_theme1(prisma_table11) %>% 
   tab_header(
-    title = md("**PRISMA Table 11**")
+    title = md("**PRISMA Table 10**")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>Depression assessment (MNH25)</span>"),
@@ -5216,7 +4993,6 @@ ANC20_PCT <- Heat_Maps_Anc %>%
                        breaks = c(seq(0, 90, by = 10), Inf),
                        include.lowest = TRUE,
                        labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100"))) #%>% 
-  # mutate(PCT_BIN = case_when(FORM %in% c("MNH01", "MNH02", "MNH03") ~ "Form not required", TRUE ~ PCT_BIN))
 
 
 ANC28_PCT <- Heat_Maps_Anc %>% 
@@ -5260,8 +5036,6 @@ ANC28_PCT <- Heat_Maps_Anc %>%
                        breaks = c(seq(0, 90, by = 10), Inf),
                        include.lowest = TRUE,
                        labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100"))) #%>% 
-  # mutate(PCT_BIN = case_when(FORM %in% c("MNH01", "MNH02", "MNH03") ~ "Form not required", TRUE ~ PCT_BIN))
-
 
 
 ANC32_PCT <- Heat_Maps_Anc %>% 
@@ -5311,7 +5085,6 @@ ANC32_PCT <- Heat_Maps_Anc %>%
                        breaks = c(seq(0, 90, by = 10), Inf),
                        include.lowest = TRUE,
                        labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100")))# %>% 
-  # mutate(PCT_BIN = case_when(FORM %in% c("MNH02", "MNH03") ~ "Form not required", TRUE ~ PCT_BIN))
 
 
 
@@ -5357,7 +5130,6 @@ ANC36_PCT <- Heat_Maps_Anc %>%
                        breaks = c(seq(0, 90, by = 10), Inf),
                        include.lowest = TRUE,
                        labels = c(paste(seq(0, 80, by = 10), seq(9, 90, by = 10), sep = "-"), "90-100"))) # %>% 
-  # mutate(PCT_BIN = case_when(FORM %in% c("MNH01", "MNH02", "MNH03") ~ "Form not required", TRUE ~ PCT_BIN))
 
 heat_map_data_anc <- bind_rows(ENROLLMENT_PCT, ANC20_PCT, ANC28_PCT, ANC32_PCT, ANC36_PCT)
 
@@ -5384,12 +5156,10 @@ heat_map_data_anc$PCT_BIN <- factor(heat_map_data_anc$PCT_BIN, levels = c("Form 
 # set levels for visits
 heat_map_data_anc$VISIT <- factor(heat_map_data_anc$VISIT, levels = c("Enrollment", "ANC20", "ANC28", "ANC32", "ANC36"))
 
-# heat_map_data_anc <- heat_map_data_anc %>% filter(SITE != "India-SAS")
-
 out <- heat_map_data_anc %>%
   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
   ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
-  geom_tile(color = "grey40", show.legend = TRUE)  + # ,size = 0.2, height = 2, width = 0.9) +  # width = 0.9, 
+  geom_tile(color = "grey40", show.legend = TRUE)  +
   facet_grid(rows = vars(VISIT)) +
   scale_fill_manual(values = custom_palette,
                     labels = str_wrap(c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
@@ -5406,44 +5176,9 @@ out <- heat_map_data_anc %>%
         axis.text.y = element_text(size = 8, colour = "black", hjust=1),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
-        # panel.spacing = unit(1, "lines"),  # More space between facets
-        # strip.text.y = element_text(size = 8, margin = margin(t = 11, b = 10)),  # Space for facet labels
-        # legend.margin = margin(grid::unit(0, "cm")),
-        # legend.key.width = grid::unit(0.5, "cm"),
-        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        # plot.margin = margin(t = 5, r = 10, b = 10, l = 10),
-        # plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)
-        
+        plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold")
         ) + 
   coord_fixed(ratio = 0.175, expand = TRUE)  # Adjust the ratio to make the tiles shorter 0.35
-
-
-  # scale_fill_manual(values = custom_palette,
-  #                   labels = c("Form not required", "0-9%", "10-19%", "20-29%", "30-39%", "40-49%",
-  #                              "50-59%", "60-69%", "70-79%", "80-89%", "90-100%"),
-  #                   drop = FALSE) +
-  # labs(fill = str_wrap("Percent Complete", width = 8)) +
-  # xlab("Expected forms") +
-  # ylab("Study site") + 
-  # guides(fill = guide_legend(reverse = TRUE, nrow = 2)) +
-  # theme_minimal() +
-  # theme(legend.position = "bottom",
-  #       axis.text.x = element_text(size = 8), # , angle = 90
-  #       axis.title.x = element_text(colour = "black", size = 10, margin = margin(t = 20, r = 20, b = 0, l = 0)),
-  #       axis.text.y = element_text(size = 8, colour = "black", hjust=1),
-  #       legend.text = element_text(size = 8),
-  #       axis.title.y = element_blank(),
-  #       # panel.spacing = unit(1, "lines"),  # More space between facets
-  #       # strip.text.y = element_text(size = 8, margin = margin(t = 11, b = 10)),  # Space for facet labels
-  #       # legend.margin = margin(grid::unit(0, "cm")),
-  #       # legend.key.width = grid::unit(0.5, "cm"),
-  #       plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-  #       # plot.margin = margin(t = 5, r = 10, b = 10, l = 10),
-  #       # plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)
-  #       
-  #       ) + 
-  # coord_fixed(ratio = 0.175, expand = TRUE)  # Adjust the ratio to make the tiles shorter 0.35
-
 
 ```
 
@@ -5626,15 +5361,6 @@ PNC26_PCT <- Heat_Maps_Pnc %>%
       "MNH06" = paste0(
         format(round(sum(M06_VISIT_COMPLETE_11 == 1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
                nsmall = 0, digits = 2)),
-# 
-#       "MNH07" = paste0(
-#         format(round(sum(M07_VISIT_COMPLETE_11 == 1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
-#                nsmall = 0, digits = 2)),
-# 
-#       "MNH08" = paste0(
-#         format(round(sum(M08_VISIT_COMPLETE_11 == 1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
-#                nsmall = 0, digits = 2)),
-# 
       "MNH12" = paste0(
         format(round(sum(M12_VISIT_COMPLETE_11 == 1 & HM_PNC26_DENOM_LATE==1, na.rm = TRUE)/sum(HM_PNC26_DENOM_LATE==1, na.rm = TRUE)*100, 2),
                nsmall = 0, digits = 2))
@@ -5712,15 +5438,6 @@ heat_map_data_pnc <- heat_map_data_pnc %>%
                                          "50-59", "60-69", "70-79", "80-89", "90-100")),
     VISIT = factor(VISIT, levels = c("PNC0", "PNC1", "PNC4", "PNC6", "PNC26", "PNC52"))
   )
-
-# heat_map_data_pnc <- heat_map_data_pnc %>% filter(!is.na(PCT_BIN))
-# # set levels for percent bins
-# heat_map_data_pnc$PCT_BIN <- factor(heat_map_data_pnc$PCT_BIN, levels = c("Form not required", "0-9", "10-19", "20-29", "30-39", "40-49",
-#                                "50-59", "60-69", "70-79", "80-89", "90-100"))
-# # set levels for visits
-# heat_map_data_pnc$VISIT <- factor(heat_map_data_pnc$VISIT, levels = c("PNC0", "PNC1", "PNC4", "PNC6", "PNC26", "PNC52"))
-
-# heat_map_data_pnc <- heat_map_data_pnc %>%   filter(SITE != "India-SAS")
 out <- heat_map_data_pnc %>% 
   mutate(SITE = factor(SITE, levels = rev(levels(factor(SITE))))) %>%  # Reverse the order of levels
   ggplot(aes(x = FORM, y = SITE, fill = PCT_BIN)) +
@@ -5741,14 +5458,7 @@ out <- heat_map_data_pnc %>%
         axis.text.y = element_text(size = 8, colour = "black", hjust=1),
         legend.text = element_text(size = 8),
         axis.title.y = element_blank(),
-        # panel.spacing = unit(1, "lines"),  # More space between facets
-        # strip.text.y = element_text(size = 8, margin = margin(t = 11, b = 10)),  # Space for facet labels
-        # legend.margin = margin(grid::unit(0, "cm")),
-        # legend.key.width = grid::unit(0.5, "cm"),
         plot.title = element_text(colour = "black", hjust = 0,  size = 10, face = "bold"),
-        # plot.margin = margin(t = 5, r = 10, b = 10, l = 10),
-        # plot.caption = element_text(hjust = 0, size = 8, margin = margin(t = 10), vjust = 0)
-        
         ) + 
   coord_fixed(ratio = 0.175, expand = TRUE)  # Adjust the ratio to make the tiles shorter 0.35
 
@@ -5763,7 +5473,7 @@ out
 
 \newpage
 
-### Table 12: Infant PNC visit completion for PRISMA
+### Table 11: Infant PNC visit completion for PRISMA
 
 *Value:* Among liveborn infants with PNC visits, are forms completed for
 each visit? A visit is considered complete if the data reports the visit
@@ -5951,7 +5661,7 @@ inf_visit_complete <- replace_all_sas(inf_visit_complete)
 
 inf_visit_complete_tab <- tb_theme1(inf_visit_complete) %>% 
   tab_header(
-    title = md("**PRISMA Table 12**")
+    title = md("**PRISMA Table 11**")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC visits (late visit window)</span>"),
@@ -5999,7 +5709,7 @@ knitr::include_graphics("inf_visit_complete_tab.png")
 
 \newpage
 
-### Table 13: Infant PNC protocol compliance for PRISMA
+### Table 12: Infant PNC protocol compliance for PRISMA
 
 *Value:* Among liveborn infants with PNC visits marked as complete,
 percent that have all expected visit forms completed. A visit is
@@ -6501,7 +6211,7 @@ table13_2 <- inf_prot_compliance_pnc[c(1,10:25),]
 ## PART 1
 prisma_tab13_1 <- tb_theme1(table13_1) %>% 
   tab_header(
-    title = md("**PRISMA Table 13** *(continued on next page)*")
+    title = md("**PRISMA Table 12** *(continued on next page)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-0 visit, n(%)<sup>a</sup> [Target window: 3 to 5 days]</span>"),
@@ -6547,7 +6257,7 @@ prisma_tab13_1 <- tb_theme1(table13_1) %>%
 ## PART 2
 prisma_tab13_2 <- tb_theme1(table13_2) %>% 
   tab_header(
-    title = md("**PRISMA Table 13** *(continued)*")
+    title = md("**PRISMA Table 12** *(continued)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-4 visit, n(%)<sup>c</sup> [Target window: 28 to 35 days]</span>"),
@@ -6623,7 +6333,7 @@ knitr::include_graphics("prisma_tab13_2.png")
 
 \newpage
 
-### Table 14: Infant PNC form completion for PRISMA
+### Table 13: Infant PNC form completion for PRISMA
 
 *Value:* Among liveborn infants who have passed the late PNC window
 period, percent with forms completed regardless of visit status. A form
@@ -7128,7 +6838,7 @@ table14_2 <- inf_form_comp_pnc[c(1,10:25),]
 ## PART 1
 prisma_tab14_1 <- tb_theme1(table14_1) %>% 
   tab_header(
-    title = md("**PRISMA Table 14** *(continued on next page)*")
+    title = md("**PRISMA Table 13** *(continued on next page)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-0 visit, n(%)<sup>a</sup> [Target window: 3 to 5 days]</span>"),
@@ -7175,7 +6885,7 @@ prisma_tab14_1 <- tb_theme1(table14_1) %>%
 ## PART 2
 prisma_tab14_2 <- tb_theme1(table14_2) %>% 
   tab_header(
-    title = md("**PRISMA Table 14** *(continued)*")
+    title = md("**PRISMA Table 13** *(continued)*")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>PNC-4 visit, n(%)<sup>c</sup> [Target window: 28 to 35 days]</span>"),
@@ -7529,67 +7239,63 @@ out
 
 \newpage
 
-### Table 15. Summary of PRISMA infant outcomes.
+<!-- REMOVE FOR NOW, BUT CAN ADD BACK IN AS NEEDED ### Table 14 Summary of PRISMA infant outcomes. -->
 
-**Denominator:** All livebirths unless otherwise specified. All missing
-is excluded.
+<!-- **Denominator:** All livebirths unless otherwise specified. All missing -->
+<!-- is excluded. -->
 
-<!-- *For more detailed output, please refer to the infant outcomes report.* -->
+<!-- ```{r} -->
 
-```{r}
+<!-- ## this data is generated in the infant outcomes report code linked here in github: https://github.com/PRiSMA-Study/PRISMA-Public/blob/main/PRISMA-Infant-Constructed-Outcomes/Infant-Constructed-Variables.R -->
 
-## this data is generated in the infant outcomes report code linked here in github: https://github.com/PRiSMA-Study/PRISMA-Public/blob/main/PRISMA-Infant-Constructed-Outcomes/Infant-Constructed-Variables.R
+<!-- infantoutcomes_summary <- infantoutcomes_summary %>% -->
+<!--    mutate_at(vars(everything()), ~ifelse(. == "0 (NaN)", "-(-)", .)) %>%  -->
+<!--    mutate_at(vars(everything()), ~ifelse(. == "0 (0)", "-(-)", .)) %>%  -->
+<!--   mutate_at(vars(everything()), ~ifelse(. == "- (-)", "-(-)", .))  -->
 
-infantoutcomes_summary <- infantoutcomes_summary %>%
-  # mutate(`India-SAS` = "-(-)") %>% 
-  # relocate(`India-SAS`, .after = `India-CMC`) %>% 
-   mutate_at(vars(everything()), ~ifelse(. == "0 (NaN)", "-(-)", .)) %>% 
-   mutate_at(vars(everything()), ~ifelse(. == "0 (0)", "-(-)", .)) %>% 
-  mutate_at(vars(everything()), ~ifelse(. == "- (-)", "-(-)", .)) 
+<!-- infantoutcomes_output <- tb_theme1(infantoutcomes_summary) %>%  -->
+<!--   tab_header( -->
+<!--     title = md("**PRISMA Table 14**") -->
+<!--   )  %>%  -->
 
-infantoutcomes_output <- tb_theme1(infantoutcomes_summary) %>% 
-  tab_header(
-    title = md("**PRISMA Table 15**")
-  )  %>% 
-
-  tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>a</sup> Total deliveries include all livebirths and stillbirths.</span>")
- ) %>% 
-tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>b</sup> Denominator is all livebirths with MNH09 and MNH11 filled out AND have passed the risk period with a visit OR died within the risk period (risk period: age = 28days).</span>")
- ) %>% 
-  tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>c</sup> Denominator is all livebirths with MNH09 and MNH11 filled out AND have passed the risk period (risk period: 365days past birth).</span>")
- ) %>% 
-  tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>d</sup> Denominator is all livebirths and stillbirths.</span>")
- ) %>% 
-  tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>e</sup> Denominator is all infants with a fetal loss reported in MNH04 `(PRG_DSDECOD)` or birth outcome in MNH09 `(BIRTH_DSTERM_INF1)`.</span>")
- ) %>% 
-  tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>f</sup> 
-All infants with a TcB measurement taken at <14 weeks of life.</span>")
- ) %>% 
-  tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>g</sup> 
-All infants with a jaundice assessment at <14 weeks of life.</span>")
- ) %>% 
-  tab_footnote(
-    footnote = html("<span style='font-size: 18px'><sup>h</sup> Denominator is all livebirths aged 0-59 days.</span>")
- ) 
+<!--   tab_footnote( -->
+<!--     footnote = html("<span style='font-size: 18px'><sup>a</sup> Total deliveries include all livebirths and stillbirths.</span>") -->
+<!--  ) %>%  -->
+<!-- tab_footnote( -->
+<!--     footnote = html("<span style='font-size: 18px'><sup>b</sup> Denominator is all livebirths with MNH09 and MNH11 filled out AND have passed the risk period with a visit OR died within the risk period (risk period: age = 28days).</span>") -->
+<!--  ) %>%  -->
+<!--   tab_footnote( -->
+<!--     footnote = html("<span style='font-size: 18px'><sup>c</sup> Denominator is all livebirths with MNH09 and MNH11 filled out AND have passed the risk period (risk period: 365days past birth).</span>") -->
+<!--  ) %>%  -->
+<!--   tab_footnote( -->
+<!--     footnote = html("<span style='font-size: 18px'><sup>d</sup> Denominator is all livebirths and stillbirths.</span>") -->
+<!--  ) %>%  -->
+<!--   tab_footnote( -->
+<!--     footnote = html("<span style='font-size: 18px'><sup>e</sup> Denominator is all infants with a fetal loss reported in MNH04 `(PRG_DSDECOD)` or birth outcome in MNH09 `(BIRTH_DSTERM_INF1)`.</span>") -->
+<!--  ) %>%  -->
+<!--   tab_footnote( -->
+<!--     footnote = html("<span style='font-size: 18px'><sup>f</sup>  -->
+<!-- All infants with a TcB measurement taken at <14 weeks of life.</span>") -->
+<!--  ) %>%  -->
+<!--   tab_footnote( -->
+<!--     footnote = html("<span style='font-size: 18px'><sup>g</sup>  -->
+<!-- All infants with a jaundice assessment at <14 weeks of life.</span>") -->
+<!--  ) %>%  -->
+<!--   tab_footnote( -->
+<!--     footnote = html("<span style='font-size: 18px'><sup>h</sup> Denominator is all livebirths aged 0-59 days.</span>") -->
+<!--  )  -->
 
 
-```
+<!-- ``` -->
 
-```{r, out.width = '100%'}
-infantoutcomes_output <- infantoutcomes_output %>% gtsave("infantoutcomes_output.png", expand = 10)
-knitr::include_graphics("infantoutcomes_output.png")
-```
+<!-- ```{r, out.width = '100%'} -->
+<!-- infantoutcomes_output <- infantoutcomes_output %>% gtsave("infantoutcomes_output.png", expand = 10) -->
+<!-- knitr::include_graphics("infantoutcomes_output.png") -->
+<!-- ``` -->
 
-\newpage
+<!-- \newpage -->
 
-### Table 16. GSED and FCI in PRISMA/ReMAPP Cohort
+### Table 14 GSED and FCI in PRISMA/ReMAPP Cohort
 
 *Value:* Are forms completed for each visit? A visit is considered
 complete if the data reports the visit was conducted in person or by
@@ -7606,63 +7312,6 @@ closed out OR closed out with reason for closeout=1-year followup
 completed).*
 
 ```{r}
-# zambia_subset_6MO_sf <-  gsed_prisma_data_out %>% filter(SITE == "Zambia") %>% 
-#   select(-contains("3MO"), -contains("12MO")) %>% 
-#   filter((VC_GSED_SF_6MO_NUM==0 & VC_GSED_6MO_DENOM==1)) %>% 
-#   mutate(INF_VISIT_MNH30_6MO = INF_VISIT_MNH30_11,
-#          SF_VISIT_DATE_6MO = SF_VISIT_DATE_11
-#          ) %>% 
-#   select(SITE, MOMID, PREGID, INFANTID, VC_GSED_SF_6MO_NUM, VC_GSED_6MO_DENOM, INF_VISIT_MNH30_6MO, SF_VISIT_DATE_6MO, PASS_6MO)
-# 
-# zambia_subset_6MO_fci <-  gsed_prisma_data_out %>% filter(SITE == "Zambia") %>% 
-#   select(-contains("3MO"), -contains("12MO")) %>% 
-#   filter((VC_GSED_FCI_6MO_NUM ==0& VC_GSED_6MO_DENOM==1)) %>% 
-#   mutate(INF_VISIT_MNH31_6MO = INF_VISIT_MNH31_11,
-#          FCI_VISIT_DATE_6MO = FCI_VISIT_DATE_11,
-#          ) %>% 
-#   select(SITE, MOMID, PREGID, INFANTID, VC_GSED_FCI_6MO_NUM,
-#          VC_GSED_6MO_DENOM_FCI, INF_VISIT_MNH31_6MO, FCI_VISIT_DATE_6MO, PASS_6MO)
-# 
-# zambia_subset_12MO_sf <-  gsed_prisma_data_out %>% filter(SITE == "Zambia") %>% 
-#   select(-contains("3MO"), -contains("6MO")) %>% 
-#   filter((VC_GSED_SF_12MO_NUM==0 & VC_GSED_12MO_DENOM==1)) %>% 
-#   mutate(INF_VISIT_MNH30_12MO = INF_VISIT_MNH30_12,
-#          SF_VISIT_DATE_12MO = SF_VISIT_DATE_12
-#          ) %>% 
-#   select(SITE, MOMID, PREGID, INFANTID, VC_GSED_SF_12MO_NUM, VC_GSED_12MO_DENOM, INF_VISIT_MNH30_12MO, SF_VISIT_DATE_12MO, ONTIME_12MO) %>% 
-#   left_join(mnh24 %>% select(INFANTID, M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD), by = c("SITE", "INFANTID"))
-# 
-# zambia_subset_12MO_fci <-  gsed_prisma_data_out %>% filter(SITE == "Zambia") %>% 
-#   select(-contains("3MO"), -contains("6MO")) %>% 
-#   filter((VC_GSED_FCI_12MO_NUM ==0& VC_GSED_12MO_DENOM==1)) %>% 
-#   mutate(INF_VISIT_MNH31_12MO = INF_VISIT_MNH31_12,
-#          FCI_VISIT_DATE_12MO = FCI_VISIT_DATE_12,
-#          ) %>% 
-#   select(SITE, MOMID, PREGID, INFANTID, VC_GSED_FCI_12MO_NUM,
-#          VC_GSED_12MO_DENOM_FCI, INF_VISIT_MNH31_12MO, FCI_VISIT_DATE_12MO, ONTIME_12MO) %>% 
-#   left_join(mnh24 %>% select(INFANTID, M24_CLOSE_DSSTDAT, M24_CLOSE_DSDECOD), by = c("SITE", "INFANTID"))
-# 
-# 
-# xl_lst <- list()
-# 
-# if(exists("zambia_subset_6MO_sf")== TRUE) {
-#   xl_lst[['6MO SF missing']] <- zambia_subset_6MO_sf
-# }
-# 
-# if(exists("zambia_subset_12MO_sf")== TRUE) {
-#   xl_lst[['12MO SF missing']] <- zambia_subset_6MO_sf
-# }
-# 
-# if(exists("zambia_subset_6MO_fci")== TRUE) {
-#   xl_lst[['6MO FCI missing']] <- zambia_subset_6MO_fci
-# }
-# 
-# if(exists("zambia_subset_12MO_fci")== TRUE) {
-#   xl_lst[['12MO FCI missing']] <- zambia_subset_6MO_fci
-# }
-# 
-# write.xlsx(xl_lst, file = paste0("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/zambia-gsed-2025-08-08", ".xlsx"))
-
 
 gsed_sf <- gsed_prisma_data_out %>% 
   ## If India-SAS doesn't have data, add empty row here 
@@ -7832,7 +7481,7 @@ gsed_sf_tab_data <- replace_all_sas(gsed_sf_tab_data)
 
 gsed_sf_tab <- tb_theme1(gsed_sf_tab_data) %>%
   tab_header(
-    title = md("Table 16. GSED and FCI in PRISMA/ReMAPP Cohort")
+    title = md("Table 14 GSED and FCI in PRISMA/ReMAPP Cohort")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>3 month visit (On time window (+2 weeks): 13 to <17 weeks) (GSED & FCI optional) <sup>a</sup></span>"),
@@ -8215,7 +7864,7 @@ knitr::include_graphics("gsed_sf_tab.png")
 
 \newpage
 
-### Table 17: Bili-ruler (MNH36) Visit and Form Completion
+### Table 15: Bili-ruler (MNH36) Visit and Form Completion
 
 *Value:* Among liveborn infants who were due for an IPC visit after the
 Bili-ruler study start date, percent that have Bili-ruler form (MNH36)
@@ -8778,7 +8427,7 @@ table17 <- bind_rows(table17_1,table17_2)
 
 table17_tab <- tb_theme1(table17) %>% 
   tab_header(
-    title = md("**Table 17: Bili-ruler Form and Visit Completion**")
+    title = md("**Table 15: Bili-ruler Form and Visit Completion**")
   ) %>%
   tab_row_group(
     label=html("<span style='font-size: 18px'>Overall</span>"),
@@ -8811,49 +8460,6 @@ table17_tab <- tb_theme1(table17) %>%
       ),
     locations = cells_row_groups())
 
-# table17 <- bind_rows(table17_1,table17_2)
-# 
-# table17 <- replace_all_sas(table17)
-# 
-# table17_tab <- tb_theme1(table17) %>% 
-#   tab_header(
-#     title = md("**Table 17: Bili-ruler Form and Visit Completion**")
-#   ) %>%
-#   tab_row_group(
-#     label=html("<span style='font-size: 18px'>Overall</span>"),
-#     rows = 1:4
-#   ) %>%
-#   tab_row_group(
-#     label=html("<span style='font-size: 18px'>IPC visit</span>"),
-#     rows = 5:7
-#   ) %>%
-#   tab_row_group(
-#     label = html("<span style='font-size: 18px'>PNC-0 visit [Target window: 3 to 5 days]</span>"),
-#     rows = 8:10
-#   ) %>%
-#   tab_row_group(
-#     label = html("<span style='font-size: 18px'>PNC-1 visit [Target window: 7 to 14 days]</span>"),
-#     rows = 11:13
-#   ) %>%
-#   tab_row_group(
-#     label = html("<span style='font-size: 18px'>PNC-4 and PNC-6 visit (Referral information at only one of these visits is needed) [Target window: 28-35 days / 6-12 weeks; Referral information only]</span>"),
-#     rows = 14:17
-#     ) %>%
-#   gt::row_group_order(groups = c( "<span style='font-size: 18px'>Overall</span>",
-#                                   "<span style='font-size: 18px'>IPC visit</span>",
-#                                   "<span style='font-size: 18px'>PNC-0 visit [Target window: 3 to 5 days]</span>",
-#                                   "<span style='font-size: 18px'>PNC-1 visit [Target window: 7 to 14 days]</span>",
-#                                   "<span style='font-size: 18px'>PNC-4 and PNC-6 visit (Referral information at only one of these visits is needed) [Target window: 28-35 days / 6-12 weeks; Referral information only]</span>")) %>%
-#   tab_style(
-#     style = list(
-#       cell_text(weight = "bold")
-#       ),
-#     locations = cells_row_groups()) %>% 
-#   tab_footnote(
-#     footnote = html("<span style='font-size: 18px'><sup>a</sup> Infant is DUE for IPC visit after Bili-ruler study start date (DOB+3 > Study start date) OR Infant HAS a COMPLETED IPC visit after Bili-ruler study start date (there was a large gap between DOB and IPC visit, and the IPC visit occurs after the Bili-ruler start date) OR If IPC visit is missing (both MNH11 and MNH36 at IPC), then PNC0 was completed after Bili-ruler start date (IPC visit was possibly combined with PNC-0 visit).</span>")) %>% 
-#     tab_footnote(
-#     footnote = html("<span style='font-size: 18px'><sup>b</sup> All criteria in (a) are met AND, For IPC Visits, Visit was completed after Bili-ruler study start date OR For PNC-X visits, Visit was complete (VC_PNCX_NUM_LATE==1).</span>")) 
-
 ```
 
 ```{r}
@@ -8866,7 +8472,7 @@ knitr::include_graphics("table17_tab.png")
 
 ## **2. ReMAPP Study Monitoring Report**
 
-### Table 18: Protocol compliance for ReMAPP fatigue assessment
+### Table 16: Protocol compliance for ReMAPP fatigue assessment
 
 *Value:* Percent of fatigue assessments (MNH26) completed among women
 expected for visits in the ANC and PNC periods, regardless of visit
@@ -8990,7 +8596,7 @@ remapp_table1 <- replace_all_sas(remapp_table1)
 ## table 8
 remapp_table1 <- tb_theme1(remapp_table1) %>% 
   tab_header(
-    title = md("**Table 18**")
+    title = md("**Table 16**")
   ) %>%
   tab_row_group(
     label = html("<span style='font-size: 18px'>Fatigue assessments (MNH26)</span>"),
@@ -9041,7 +8647,7 @@ knitr::include_graphics("remapp_table1.png")
 
 \newpage
 
-### Table 19: Participant eligibility for the ReMAPP healthy cohort
+### Table 17: Participant eligibility for the ReMAPP healthy cohort
 
 *Value:* This table will be updated as lab measurements are updated and
 reported. Those who are unknown may move into eligible or ineligible
@@ -9108,7 +8714,7 @@ remapp_table2 <- replace_all_sas(remapp_table2)
 ## ReMAPP table 2
 remapp_table2 <- tb_theme1(remapp_table2) %>% 
   tab_header(
-    title = md("**Table 19**")
+    title = md("**Table 17**")
   ) %>%
 tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>a</sup> a participant is considered eligible regardless of gestational age at enrollment (GA at enrollment <14 weeks criteria excluded).</span>")
@@ -9139,7 +8745,6 @@ performed yet or result pending).
 plot_criteria <- df_eli_long 
 
 plot_criteria %>%
-  # filter(SITE != "India-SAS") %>% 
   ggplot(aes(y = reorder(Variable, desc(Variable)), fill = Value)) + 
   geom_bar(alpha = 0.9, aes(x = (..count..)/sum(..count..)), position = position_fill(reverse = TRUE)) +
   scale_x_continuous(labels=percent) +
@@ -9195,7 +8800,7 @@ plot_criteria %>%
 
 \newpage
 
-### Table 20: Protocol compliance for ReMAPP hemoglobin measurements by CBC
+### Table 18: Protocol compliance for ReMAPP hemoglobin measurements by CBC
 
 *Value:* Protocol compliance for CBC hemoglobin measurements at required
 ReMAPP study visits, regardless of visit completion status.
@@ -9286,7 +8891,7 @@ remapp_table3 <- replace_all_sas(remapp_table3)
 ## ReMAPP Table 3
 remapp_table3 <- tb_theme1(remapp_table3) %>% 
   tab_header(
-    title = md("**Table 20**")
+    title = md("**Table 18**")
   ) %>%
 tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>a</sup> denominator is n completed MNH08 with visit type=Enroll OR passed late window with >19 weeks gestation AND (has not delivered or delivered with gestational age > late visit window) AND (has not closed out or closed out with closeout date > late visit window).</span>")
@@ -9302,10 +8907,7 @@ tab_footnote(
 ) %>% 
   tab_footnote(
     footnote = html("<span style='font-size: 18px'><sup>e</sup> denominator is n completed  MNH08 with visit type=PNC-6 OR missed late window with >12 weeks postpartum AND (has not closed out or closed out with closeout date > late visit window).</span>")
-) # %>% 
-#   tab_footnote(
-#     footnote = html("<span style='font-size: 18px'><sup>Note:</sup> all denominators include participants who withdrew, were lost to follow up or investigator terminated participation. Only 1-year follow up completed, 42-day follow up completed, and maternal death are excluded.</span>")
-# ) 
+) 
 
 
 
@@ -9318,7 +8920,7 @@ knitr::include_graphics("remapp_table3.png")
 
 \newpage
 
-### Table 21. ReMIND Study Status
+### Table 19 ReMIND Study Status
 
 *Value:* Distribution of birth outcomes and ReMIND enrollment status
 among babies born to ReMAPP Aim 3 mothers. Enrollment is defined as
@@ -9329,14 +8931,6 @@ livebirth and mother consented to ReMIND.
 ## REMIND TABLE
 gsed_aim3_tab_summary <- gsed_aim3_data %>%
   filter(!is.na(SITE)) %>% 
-  ## If India-SAS doesn't have data, add empty row here
-  # mutate(existing_sas = ifelse(SITE == "India-SAS", 1, 0)) %>%
-  # # ## Add empty rows for missing SITE values if the specific site doesn't exist
-  # complete(SITE = ifelse(existing_sas == 0, "India-SAS", SITE), fill = list(SITE = NA)) %>%
-  # ## If India-CMC doesn't have data, add empty row here
-  # mutate(existing_cmc = ifelse(SITE == "India-CMC", 1, 0)) %>%
-  # ## Add empty rows for missing SITE values if the specific site doesn't exist
-  # complete(SITE = ifelse(existing_cmc == 0, "India-CMC", SITE), fill = list(SITE = NA)) %>%
   rowwise() %>%
   group_by(SITE) %>%
   summarise(
@@ -9489,9 +9083,6 @@ gsed_aim3_tab_summary <- gsed_aim3_data %>%
       `colnames<-`(c(.[1,])) %>% unlist()
   )
 
-
-# gsed_aim3_tab_summary[c(12), c("India-CMC", "Zambia")] = "n/a (-)"
-
 ```
 
 ```{r}
@@ -9503,7 +9094,7 @@ gsed_aim3_tab_summary_labels <- replace_all_sas(gsed_aim3_tab_summary_labels)
 
 gsed_aim3_summary_tab <- tb_theme1(gsed_aim3_tab_summary_labels) %>%
   tab_header(
-    title = md("Table 21. ReMIND Study Status")
+    title = md("Table 19 ReMIND Study Status")
   ) %>%
 
   tab_row_group(
@@ -9544,7 +9135,7 @@ knitr::include_graphics("gsed_aim3_summary_tab.png")
 
 \newpage
 
-### Table 22. ReMIND Assessment Completion
+### Table 20 ReMIND Assessment Completion
 
 *Value:* Are forms completed for each visit? A visit is considered
 complete if the data reports the visit was conducted in person or by
@@ -9567,14 +9158,6 @@ followup completed).*
 ## REMIND TABLE
 gsed_aim3_tab <- gsed_aim3_data %>%
   filter(!is.na(SITE)) %>% 
-  ## If India-SAS doesn't have data, add empty row here
-  # mutate(existing_sas = ifelse(SITE == "India-SAS", 1, 0)) %>%
-  # # ## Add empty rows for missing SITE values if the specific site doesn't exist
-  # complete(SITE = ifelse(existing_sas == 0, "India-SAS", SITE), fill = list(SITE = NA)) %>%
-  # ## If India-CMC doesn't have data, add empty row here
-  # mutate(existing_cmc = ifelse(SITE == "India-CMC", 1, 0)) %>%
-  # ## Add empty rows for missing SITE values if the specific site doesn't exist
-  # complete(SITE = ifelse(existing_cmc == 0, "India-CMC", SITE), fill = list(SITE = NA)) %>%
   rowwise() %>%
   group_by(SITE) %>%
   summarise(
@@ -9582,31 +9165,6 @@ gsed_aim3_tab <- gsed_aim3_data %>%
     ## OVERALL 
     "Enrolled in ReMIND, n" =  paste0(
       format(sum(REMIND_ENROLLMENT_STATUS ==1 & PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2)),
-      
-    #  "Livebirths, n" =  paste0(
-    #   format(sum(PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
-    #   " (",
-    #   format(round(sum(PREG_OUTCOME =="Livebirth", na.rm = TRUE)/sum(REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-    #   ")"),
-    # 
-    # "Enrolled in ReMIND, n" =  paste0(
-    #   format(sum(REMIND_ENROLLMENT_STATUS ==1, na.rm = TRUE), nsmall = 0, digits = 2),
-    #   " (",
-    #   format(round(sum(REMIND_ENROLLMENT_STATUS ==1, na.rm = TRUE)/sum(REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-    #   ")"),
-    # 
-    # "Not enrolled in ReMIND, n" =  paste0(
-    #   format(sum(REMIND_ENROLLMENT_STATUS ==0, na.rm = TRUE), nsmall = 0, digits = 2),
-    #   " (",
-    #   format(round(sum(REMIND_ENROLLMENT_STATUS ==0, na.rm = TRUE)/sum(REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-    #   ")"),
-    # 
-    #   "Pending ReMIND enrollment status, n" =  paste0(
-    #   format(sum(REMIND_ENROLLMENT_STATUS ==55 & PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
-    #   " (",
-    #   format(round(sum(REMIND_ENROLLMENT_STATUS ==55 & PREG_OUTCOME =="Livebirth", na.rm = TRUE)/sum(REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-    #   ")"),
-    # 
     ## 3 MONTHS
     "Denominator (3MO)" = paste0(
       format(sum(VC_AIM3_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
@@ -9690,31 +9248,6 @@ gsed_aim3_tab <- gsed_aim3_data %>%
   ## OVERALL 
     "Enrolled in ReMIND, n" =  paste0(
       format(sum(REMIND_ENROLLMENT_STATUS ==1 & PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2)),
-      
-    #  "Livebirths, n" =  paste0(
-    #   format(sum(PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
-    #   " (",
-    #   format(round(sum(PREG_OUTCOME =="Livebirth", na.rm = TRUE)/sum(REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-    #   ")"),
-    # 
-    # "Enrolled in ReMIND, n" =  paste0(
-    #   format(sum(REMIND_ENROLLMENT_STATUS ==1 & PREG_OUTCOME =="Livebirth", na.rm = TRUE), nsmall = 0, digits = 2),
-    #   " (",
-    #   format(round(sum(REMIND_ENROLLMENT_STATUS ==1 & PREG_OUTCOME =="Livebirth", na.rm = TRUE)/sum(REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-    #   ")"),
-    # 
-    #     "Not enrolled in ReMIND, n" =  paste0(
-    #   format(sum(REMIND_ENROLLMENT_STATUS ==0, na.rm = TRUE), nsmall = 0, digits = 2),
-    #   " (",
-    #   format(round(sum(REMIND_ENROLLMENT_STATUS ==0, na.rm = TRUE)/sum(REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-    #   ")"),
-    # 
-    #   "Pending ReMIND enrollment status, n" =  paste0(
-    #   format(sum(REMIND_ENROLLMENT_STATUS ==55, na.rm = TRUE), nsmall = 0, digits = 2),
-    #   " (",
-    #   format(round(sum(REMIND_ENROLLMENT_STATUS ==55, na.rm = TRUE)/sum(REMAPP_AIM3_ENROLL==1, na.rm = TRUE)*100, 2), nsmall = 0, digits = 2),
-    #   ")"),
-    # 
         ## 3 MONTHS
         "Denominator (3MO)" = paste0(
           format(sum(VC_AIM3_3MO_DENOM == 1, na.rm = TRUE), nsmall = 0, digits = 2)
@@ -9820,9 +9353,8 @@ gsed_aim3_tab_data <- replace_all_sas(gsed_aim3_tab_data)
 
 gsed_aim3_tab <- tb_theme1(gsed_aim3_tab_data) %>%
   tab_header(
-    title = md("Table 22. ReMIND Assessment Completion")
+    title = md("Table 20. ReMIND Assessment Completion")
   ) %>%
-
   tab_row_group(
     label = html("<span style='font-size: 18px'>3 month visit (On time window: 13 to <=15 weeks) (GSED required; FCI optional) <sup>b</sup></span>"),
     rows = 2:5
@@ -9853,7 +9385,6 @@ tab_footnote(
     footnote = md("<span style='font-size: 18px'><sup>d</sup> denominator is n passed late window with >54 weeks OR closed out with closeout
   reason reported as: *1-year postpartum follow-up period has ended*.</span>")
   )
-
 
 
 ```
