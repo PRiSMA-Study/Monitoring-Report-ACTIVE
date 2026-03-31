@@ -1,5 +1,10 @@
 ## PRISMA & ReMAPP Monitoring Report
-#### **Last Updated: 12 December 2025**
+
+#### **Last Updated: 31 March 2026**
+- Removed infant outcomes summary table
+- Removed "Most recent one week pre-screened and enrolled in PRISMA" table
+  
+#### 12 December 2025 updates:
 - Updated bili-ruler table (table 17)
 - Incorporated true missingness in healthy cohort eligibility table (Table 19 & Figure 8)
 - Incorporated Kenya G6PD new variable in healthy cohort eligibility table (Table 19 & Figure 8)
