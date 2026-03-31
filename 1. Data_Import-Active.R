@@ -2,7 +2,7 @@
 #*Function: Read in raw data and merged all sites data by form 
 #*Input: Raw .csvs for each site 
 #*Output: .RData file for each form that is merged for all sites 
-#* Last updated: 25 October 2024 (new date formatting)
+#* Last updated: 30 March 2026 (cleaning up code)
 
 ## STEPS ## 
 #*1. Import data from each site 
@@ -19,11 +19,9 @@
 #* 4. Extract missing varnames from site data (by form)
 
 ## LINES TO UPDATE EACH RUN: 
-# LINE 44 - set upload date
-# LINE 48 - set vector of all sites with data in that upload 
-
+#  upload date
 #*****************************************************************************
-## UPDATE ALL DATE CODES
+## Data import ----
 # rm(list = ls())
 library(tidyverse)
 library(readr)
@@ -36,7 +34,7 @@ library(readxl)
 
 # UPDATE EACH RUN # 
 # set upload date 
-UploadDate = "2024-10-18"
+UploadDate = "2026-03-20"
 
 # UPDATE EACH RUN # 
 # create vector of all sites with data in the upload 
@@ -46,8 +44,8 @@ site_vec <- c("Pakistan", "Kenya", "Ghana", "Zambia", "India-CMC", "India-SAS")
 path_to_save = paste0("~/Monitoring Report/data/merged/", UploadDate, "/")
 
 ## import data dictionary -- this will be used to pull field types for each variable  
-data_dict <- read_excel("~/PRiSMAv2Data/SL-PRISMA-Data-Queries-GW/R/PRISMA-MNH-Data-Dictionary-Repository-V.2.6-SEP092024_queries.xlsx",
-                        sheet = "Data Dictionary")
+data_dict <-read_excel("~/PRiSMAv2Data/PRISMA-Data-Queries-GW/R/PRISMA-MNH-Data-Dictionary-Repository-V.2.7-25OCT2024_queries.xlsx",
+                       sheet = "Data Dictionary")
 
 data_dict <- data_dict %>% 
   select(Form,`Variable Name`, `Field Type (Date, Time, Number, Text)`) %>% 
@@ -61,29 +59,29 @@ cleaned_dir <- paste0("~/Monitoring Report/data/cleaned", sep = "")
 date_dir <- UploadDate
 dir.create(file.path(merged_dir, date_dir), showWarnings = FALSE)
 dir.create(file.path(cleaned_dir, date_dir), showWarnings = FALSE)
-#*****************************************************************************
-# #*Will need to set directory and read data for each country 
-#*****************************************************************************
-# set working directory to network drive
-site = "Pakistan"
-# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
-setwd(paste("~/","import","/",UploadDate,"_pak", sep = ""))
 
-## import raw .CSVs in wide format
+#*****************************************************************************
+#*Will need to set directory and read data for each country 
+#*****************************************************************************
+### Pakistan -----
+
+# set working directory to network drive 
+site = "Pakistan"
+setwd(paste0("~/import/", UploadDate, "_pak"))
+
+## import raw .CSVs in wide format 
 temp = list.files(pattern="*.csv")
 myfiles = lapply(temp, read.csv)
 
-#  ## make sure all column names are uppercase
+#  ## make sure all column names are uppercase 
 myfiles <- lapply(myfiles, function (x){
   upper <- toupper(names(x))
   setnames(x, upper)
 })
 
-## convert to individual dataframes
+## convert to individual dataframes 
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
-
-
 
 ## Pakistan ids
 mnh02_ids <- mnh02_Pakistan  %>% select(SCRNID, MOMID, PREGID) %>% 
@@ -100,23 +98,29 @@ rm(mnh02_ids)
 rm(mnh01_enroll)
 rm(mnh01_all_visits)
 
+gc()
+
 #************************Kenya************************
+### Kenya -----
 
 site = "Kenya"
-setwd(paste0("~/import/", UploadDate, "_ke"))
-# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
 
-## import raw .CSVs in wide format
+# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+setwd(paste0("~/import/", UploadDate, "_ke"))
+
+## import raw .CSVs in wide format 
 temp = list.files(pattern="*.csv")
+temp  <- tolower(temp)
 myfiles = lapply(temp, read.csv)
 
-#  ## make sure all column names are uppercase
+#  ## make sure all column names are uppercase 
 myfiles <- lapply(myfiles, function (x){
   upper <- toupper(names(x))
   setnames(x, upper)
 })
 
-## convert to individual dataframes
+
+## convert to individual dataframes 
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
@@ -130,17 +134,32 @@ mnh01_enroll <- mnh01_Kenya %>% filter(TYPE_VISIT == 1)  %>% select(-MOMID, -PRE
 mnh01_all_visits <- mnh01_Kenya %>% filter(TYPE_VISIT != 1) # extract site-specific from merged data 
 mnh01_Kenya  <- bind_rows(mnh01_enroll, mnh01_all_visits) # rebind data 
 
-# view(mnh01_enroll[c("SCRNID", "MOMID", "PREGID")])
 
 rm(mnh02_ids)
 rm(mnh01_enroll)
 rm(mnh01_all_visits)
 
+## adjust for kenya date reporting in mnh00
+data_dict_m00 <- data_dict %>% filter(Form == "MNH00") %>% select(`Variable Name`, FieldType)
+m00_dd_date <- data_dict_m00 %>% filter(FieldType == "Date") %>% pull(`Variable Name`) 
+date_cols <- colnames(mnh00_Kenya) %in% m00_dd_date
+
+mnh00_Kenya[date_cols] <- lapply(mnh00_Kenya[date_cols], function(col) {
+  suppressWarnings({
+    parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
+    parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+    # parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+    parsed_dates <- ymd(parsed_dates)
+    return(parsed_dates)
+  })
+})
 
 #************************Zambia************************
+### Zambia -----
+
 site = "Zambia"
-# setwd(paste("~/","import","/",UploadDate,"_zam", sep = ""))
-setwd(paste("~/","import","/","2024-10-04","_zam", sep = ""))
+# setwd(paste("Z:/SynapseCSVs/",site,"/",UploadDate, sep = ""))
+setwd(paste0("~/import/", UploadDate, "_zam"))
 
 ## import raw .CSVs in wide format
 temp = list.files(pattern="*.csv")
@@ -156,7 +175,12 @@ myfiles <- lapply(myfiles, function (x){
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
+
 ## Zambia ids
+mnh00_Zambia <- mnh00_Zambia %>% 
+  mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
+         PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID))
+
 mnh02_ids <- mnh02_Zambia  %>% select(SCRNID, MOMID, PREGID) %>% 
   mutate(MOMID = ifelse(str_detect(MOMID, "Z"), MOMID, NA),
          PREGID = ifelse(str_detect(PREGID, "Z"), PREGID, NA))
@@ -174,21 +198,30 @@ rm(mnh02_ids)
 rm(mnh01_enroll)
 rm(mnh01_all_visits)
 
-#************************Ghana************************
-site = "Ghana"
-setwd(paste("~/","import","/",UploadDate,"_gha", sep = ""))
+## fix zambia dates for 9/5 data upload
+# mnh08_Zambia <- mnh08_Zambia %>% 
+#   mutate(LBSTDAT =  parse_date_time(LBSTDAT, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%d-%m-%Y %H:%M")),
+#          LBSTDAT = as.Date(LBSTDAT, "ymd"),
+#          LBSTDAT = as.character(LBSTDAT))
 
-## import raw .CSVs in wide format
+
+#************************Ghana************************
+### Ghana -----
+
+site = "Ghana"
+setwd(paste0("~/import/", UploadDate, "_gha"))
+
+## import raw .CSVs in wide format 
 temp = list.files(pattern="*.csv")
 myfiles = lapply(temp, read.csv)
 
-#  ## make sure all column names are uppercase
+#  ## make sure all column names are uppercase 
 myfiles <- lapply(myfiles, function (x){
   upper <- toupper(names(x))
   setnames(x, upper)
 })
 
-## convert to individual dataframes
+## convert to individual dataframes 
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
@@ -199,21 +232,20 @@ mnh01_enroll <- mnh01_Ghana %>% filter(TYPE_VISIT == 1)  %>% select(-MOMID, -PRE
 mnh01_all_visits <- mnh01_Ghana %>% filter(TYPE_VISIT != 1) # extract site-specific from merged data 
 mnh01_Ghana <- bind_rows(mnh01_enroll, mnh01_all_visits) # rebind data 
 
-# view(mnh01_enroll[c("SCRNID", "MOMID", "PREGID")])
-
 rm(mnh02_ids)
 rm(mnh01_enroll)
 rm(mnh01_all_visits)
-
 #************************India-CMC************************
-site = "India_CMC"
-setwd(paste("~/","import","/",UploadDate,"_cmc", sep = ""))
+### India CMC -----
 
-## import raw .CSVs in wide format
+site = "India_CMC"
+setwd(paste0("~/import/", UploadDate, "_cmc"))
+
+## import raw .CSVs in wide format 
 temp = list.files(pattern="*.csv")
 myfiles = lapply(temp, read.csv)
 
-#  ## make sure all column names are uppercase
+#  ## make sure all column names are uppercase 
 myfiles <- lapply(myfiles, function (x){
   upper <- toupper(names(x))
   setnames(x, upper)
@@ -221,7 +253,7 @@ myfiles <- lapply(myfiles, function (x){
 
 site = "India-CMC"
 
-## convert to individual dataframes
+## convert to individual dataframes 
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
@@ -235,21 +267,23 @@ mnh01_all_visits <- `mnh01_India-CMC` %>% filter(TYPE_VISIT != 1) # extract site
 `mnh01_India-CMC` <- bind_rows(mnh01_enroll, mnh01_all_visits) # rebind data 
 
 
-# view(mnh01_enroll[c("SCRNID", "MOMID", "PREGID")])
 
 rm(mnh02_ids)
 rm(mnh01_enroll)
 rm(mnh01_all_visits)
 
 #************************India-SAS************************
+### India SAS -----
+
 site = "India_SAS"
-setwd(paste("~/","import","/",UploadDate,"_sas", sep = ""))
-# 
-## import raw .CSVs in wide format
+
+setwd(paste0("~/import/", UploadDate, "_sas"))
+
+## import raw .CSVs in wide format 
 temp = list.files(pattern="*.csv")
 myfiles = lapply(temp, read.csv)
 
-#  ## make sure all column names are uppercase
+#  ## make sure all column names are uppercase 
 myfiles <- lapply(myfiles, function (x){
   upper <- toupper(names(x))
   setnames(x, upper)
@@ -257,50 +291,32 @@ myfiles <- lapply(myfiles, function (x){
 
 site = "India-SAS"
 
-## convert to individual dataframes
+## convert to individual dataframes 
 names(myfiles) <- gsub(".csv", paste("_",site, sep = ""), temp)
 list2env(myfiles, globalenv())
 
-# replace empty momid and pregid with NA
 ## SAS ids
 mnh02_ids <- `mnh02_India-SAS`  %>% select(SCRNID, MOMID, PREGID)  %>% 
   mutate(MOMID = ifelse(str_detect(MOMID, "n/a"), NA, MOMID),
          PREGID = ifelse(str_detect(PREGID, "n/a"), NA, PREGID)) ## export mnh02 ids
-mnh01_enroll <- `mnh01_India-SAS` %>% filter(TYPE_VISIT == 1)  %>% select(-MOMID, -PREGID) %>%  # pull site-specific data & merge mnh01 and mnh02 by scrnid to get momid/pregid in mnh01
+mnh01_enroll <- `mnh01_India-SAS` %>% filter(TYPE_VISIT == 1) %>% select(-MOMID, -PREGID) %>%  # pull site-specific data & merge mnh01 and mnh02 by scrnid to get momid/pregid in mnh01
   left_join(mnh02_ids, by = c("SCRNID"))
 mnh01_all_visits <- `mnh01_India-SAS` %>% filter(TYPE_VISIT != 1) # extract site-specific from merged data 
 `mnh01_India-SAS` <- bind_rows(mnh01_enroll, mnh01_all_visits) # rebind data 
 
 
-# view(mnh01_enroll[c("SCRNID", "MOMID", "PREGID")])
-
 rm(mnh02_ids)
 rm(mnh01_enroll)
 rm(mnh01_all_visits)
-
 #*************************************************
-#* Merge all data by form and site 
+# Merge all data by form and site 
 #*************************************************
-# Remove lists made in the stacked data
-# List all objects in the global environment
-objects <- ls()
-# 
-# # Identify data frames that match the pattern
-data_frames_to_delete_1 <- objects[grep("m0", objects)]
-data_frames_to_delete_2 <- objects[grep("m2", objects)]
-
-# 
-# # Remove identified data frames
-rm(list = data_frames_to_delete_1)
-rm(list = data_frames_to_delete_2)
-
-
-
 # List of data frames
 form_names <- ls(pattern = "^mnh\\d+$")
+
 forms_list <- mget(form_names)
 
-# List of columns to check for duplicates in each form
+### Check for duplicates in each form ----
 duplicate_columns <- list(
   mnh00 = c("SITE", "SCRNID", "SCRN_OBSSTDAT"),
   mnh01 = c("SITE", "SCRNID", "MOMID", "PREGID", "TYPE_VISIT","US_OHOSTDAT"),
@@ -392,9 +408,10 @@ for (form_name in names(forms_list)) {
   }
 }
 
+# Merge all data by form and site ---- 
 
 #******M00
-
+### MNH00 ----
 # Compile all site MNH00 data into list  
 for (x in site_vec) {
   if (exists(paste("mnh00_", x, sep = ""))==TRUE){
@@ -435,8 +452,8 @@ if (exists("m00") == TRUE) {
       # Suppress warnings during date parsing
       suppressWarnings({
         parsed_dates <- parse_date_time(col, order = c("%d/%m/%Y", "%d-%m-%Y", "%Y-%m-%d", "%d-%b-%y", "%d-%m-%y", "%Y-%m-%d %H:%M:%S"))
-        parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
-        parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
+        # parsed_dates <- gsub("2007-07-07", ymd("1907-07-07"), parsed_dates, fixed = TRUE)
+        # parsed_dates <- gsub("2005-05-05", ymd("1905-05-05"), parsed_dates, fixed = TRUE)
         parsed_dates <- ymd(parsed_dates)
         return(parsed_dates)
       })
@@ -502,6 +519,8 @@ if (exists("m00") == TRUE) {
 }
 
 #******M01
+### MNH01 ----
+
 # Compile all site MNH00 data into list  
 for (x in site_vec) {
   if (exists(paste("mnh01_", x, sep = ""))==TRUE){
@@ -607,6 +626,7 @@ if (exists("m01") == TRUE) {
 }
 
 #******M02 
+### MNH02 ----
 
 # Compile all site MNH02 data into list 
 for (x in site_vec) {
@@ -714,6 +734,7 @@ if (exists("m02") == TRUE) {
 
 
 #******M03 
+### MNH03 ----
 
 # get list of all the MNH03 forms 
 for (x in site_vec) {
@@ -818,6 +839,7 @@ if (exists("m03") == TRUE) {
 }
 
 #******M04 
+### MNH04 ----
 
 # get list of all the MNH04 forms 
 for (x in site_vec) {
@@ -917,6 +939,7 @@ if (exists("m04") == TRUE) {
 }
 
 #******M05 
+### MNH05 ----
 
 # get list of all the MNH05 forms 
 for (x in site_vec) {
@@ -1017,6 +1040,7 @@ if (exists("m05") == TRUE) {
 
 
 #******M06 
+### MNH06 ----
 
 # get list of all the MNH06 forms 
 for (x in site_vec) {
@@ -1117,6 +1141,7 @@ if (exists("m06") == TRUE) {
 }
 
 #******M07 
+### MNH07 ----
 
 # get list of all the MNH07 forms 
 for (x in site_vec) {
@@ -1223,6 +1248,7 @@ if (exists("m07") == TRUE) {
 }
 
 #******M08 
+### MNH08 ----
 
 # get list of all the MNH08 forms 
 for (x in site_vec) {
@@ -1329,6 +1355,8 @@ if (exists("m08") == TRUE) {
 }
 
 #******M09 
+### MNH09 ----
+
 # get list of all the MNH09 forms 
 for (x in site_vec) {
   if (exists(paste("mnh09_", x, sep = ""))==TRUE){
@@ -1427,6 +1455,7 @@ if (exists("m09") == TRUE) {
 }
 
 #******M10 
+### MNH10 ----
 
 # get list of all the MNH10 forms 
 for (x in site_vec) {
@@ -1531,6 +1560,7 @@ if (exists("m10") == TRUE) {
 }
 
 #******M11 
+### MNH11 ----
 
 # get list of all the MNH11 forms 
 
@@ -1633,6 +1663,7 @@ if (exists("m11") == TRUE) {
 }
 
 #******M12 
+### MNH12 ----
 
 # get list of all the MNH12 forms 
 for (x in site_vec) {
@@ -1740,6 +1771,8 @@ if (exists("m12") == TRUE) {
 }
 
 #******M13
+### MNH13 ----
+
 #* INFANT FORM - INFANTID
 
 # get list of all the MNH13 forms
@@ -1846,6 +1879,7 @@ if (exists("m13") == TRUE) {
 
 
 #******M14
+### MNH14 ----
 #* INFANT FORM - INFANTID
 
 # get list of all the MNH14 forms
@@ -1950,6 +1984,8 @@ if (exists("m14") == TRUE) {
 }
 
 #******M15
+### MNH15 ----
+
 #* INFANT FORM - INFANTID
 
 # get list of all the MNH15 forms
@@ -2055,6 +2091,7 @@ if (exists("m15") == TRUE) {
 }
 
 #******M16
+### MNH16 ----
 
 # get list of all the MNH16 forms 
 for (x in site_vec) {
@@ -2154,6 +2191,7 @@ if (exists("m16") == TRUE) {
 }
 
 #******M17
+### MNH17 ----
 
 # get list of all the MNH17 forms 
 for (x in site_vec) {
@@ -2255,6 +2293,7 @@ if (exists("m17") == TRUE) {
 
 
 #******M18
+### MNH18 ----
 
 # get list of all the MNH18 forms 
 for (x in site_vec) {
@@ -2355,6 +2394,7 @@ if (exists("m18") == TRUE) {
 
 
 #******M19
+### MNH19 ----
 
 # get list of all the MNH19 forms 
 for (x in site_vec) {
@@ -2454,6 +2494,7 @@ if (exists("m19") == TRUE) {
 }
 
 #******M20
+### MNH20 ----
 #* INFANT FORM - INFANTID
 
 # get list of all the MNH20 forms
@@ -2561,6 +2602,8 @@ if (exists("m20") == TRUE) {
 
 
 #******M21
+### MNH21 ----
+
 # get list of all the MNH21 forms 
 for (x in site_vec) {
   if (exists(paste("mnh21_", x, sep = ""))==TRUE){
@@ -2660,6 +2703,8 @@ if (exists("m21") == TRUE) {
 }
 
 #******M22
+### MNH22 ----
+
 #* INFANT FORM - INFANTID
 
 # get list of all the MNH22 forms
@@ -2763,6 +2808,8 @@ if (exists("m22") == TRUE) {
 }
 
 #******M23
+### MNH23 ----
+
 # get list of all the MNH23 forms 
 for (x in site_vec) {
   if (exists(paste("mnh23_", x, sep = ""))==TRUE){
@@ -2860,6 +2907,8 @@ if (exists("m23") == TRUE) {
 }
 
 #******M24
+### MNH24 ----
+
 # #* INFANT FORM - INFANTID
 # get list of all the MNH24 forms
 for (x in site_vec) {
@@ -2962,6 +3011,8 @@ if (exists("m24") == TRUE) {
 }
 
 #******M25
+### MNH25 ----
+
 # get list of all the MNH25 forms 
 for (x in site_vec) {
   if (exists(paste("mnh25_", x, sep = ""))==TRUE){
@@ -3063,6 +3114,8 @@ if (exists("m25") == TRUE) {
 
 
 #******M26
+### MNH26 ----
+
 # get list of all the MNH26 forms 
 for (x in site_vec) {
   if (exists(paste("mnh26_", x, sep = ""))==TRUE){
@@ -3143,56 +3196,6 @@ if (exists("m26") == TRUE) {
   
 }
 
-#******M28
-# # get list of all the MNH26 forms 
-# for (x in site_vec) {
-#   if (exists(paste("mnh28_", x, sep = ""))==TRUE){
-#     
-#     m28 <- mget(ls(pattern = "mnh28_.*"))
-#     
-#   }
-# }
-# if (exists("m28") == TRUE) {
-#   # create a list of data frame names as string
-#   m28_names = as.vector(names(m28))
-#   
-#   # remove duplicates and add prefix  
-#   m28_rbind <- lapply(m28, function(x) x %>% 
-#                         #add  "M##_"
-#                         ## only pull subset of data 
-#                         select(MOMID, PREGID,INFANTID, ID10104, ID10105,
-#                                ID10109, ID10110, ID10114, ID10115, ID10116) %>% 
-#                         select(MOMID, PREGID, INFANTID, everything()) %>% 
-#                         rename_with( ~ paste0("M28_", .), -c(1:3)) %>% 
-#                         distinct()
-#   )
-#   
-#   # add in site variable 
-#   for(i in names(m28_rbind)){
-#     m28_rbind[[i]]$SITE <- paste(gsub("mnh28_","",i))
-#   }
-#   
-#   # get all variable names
-#   allNms <- unique(unlist(lapply(m28_rbind, names)))
-#   
-#   # merge all MNH26 forms together 
-#   m28_merged <- do.call(rbind,c(lapply(m28_rbind,function(x) 
-#     data.frame(c(x, sapply(setdiff(allNms, names(x)),
-#                            function(y) NA)))), make.row.names=FALSE))
-#   
-#   # make site the first variable 
-#   m28_merged <- m28_merged %>% relocate(SITE)
-#   
-#   ## get the variables that are missing from sites
-#   m28_missing <- lapply(m28_rbind, function(x) setdiff(allNms, colnames(x)))
-#   
-#   ## export data 
-#   save(m28_merged, file= paste0(path_to_save, "m28_merged",".RData",sep = ""))
-#   
-# }
-
-
-
 ## get table by form - this will show which sites have imported each form 
 form_site <- mget(ls(pattern = "_names*"))
 
@@ -3200,10 +3203,6 @@ form_site <- mget(ls(pattern = "_names*"))
 varname_missing <- mget(ls(pattern = "._missing*"))
 
 varname_duplicates <- mget(ls(pattern = "_duplicates*"))
-
-# get list of all merged data 
-#mat_data_merged <- mget(ls(pattern = "._merged*")) 
-#inf_data_merged <- mget(ls(pattern = "._infantmerged*")) 
 
 ## look at all ANC visits by site 
 table(m04_merged$SITE, m04_merged$M04_TYPE_VISIT)
@@ -3227,12 +3226,13 @@ m15_merged = m15_infantmerged
 m20_merged = m20_infantmerged
 m24_merged = m24_infantmerged
 
+# Export ----
 # ## export as .CSV into network drive
 # 1. place all merged datasets into list
 files_list <- mget(ls(pattern = "_merged"))
 
 # 2. rename
-names(files_list) = str_replace(names(files_list),  "m", "mnh")
+names(files_list) = str_replace(names(files_list), "m", "mnh")
 
 # 3. set working directory
 # first need to make subfolder with upload date
@@ -3246,4 +3246,3 @@ setwd(paste0("~/Monitoring Report/data/merged/" ,UploadDate))
 lapply(1:length(files_list), function(i) write.csv(files_list[[i]],
                                                    file = paste0(names(files_list[i]), ".csv"),
                                                    row.names = FALSE))
-
