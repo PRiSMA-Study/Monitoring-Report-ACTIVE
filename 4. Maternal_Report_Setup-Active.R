@@ -1,8 +1,8 @@
 #*****************************************************************************
-#### MONITORING REPORT SETUP -- MATERNAL ####
+#### MONITORING REPORT SETUP -- MATERNAL 
 #* Function: Merge all forms together in wide format to create a dataset with one row for each woman for each visit 
 #* Input: .RData files for each form (generated from 1. data import code)
-#* Last updated: 25 November 2025
+#* Last updated: 30 March 2026 (cleaning up code)
 
 
 #*Output:   
@@ -31,7 +31,7 @@
 # input: MatData_Anc_Visits
 # Includes relevant constructed variables for ReMAPP healthy criteria 
 #*****************************************************************************
-
+# 1. Data Import ----
 ## load in data 
 rm(list = ls())
 
@@ -40,7 +40,7 @@ library(lubridate)
 library(readxl)
 library(dplyr)
 
-UploadDate = "2025-12-12"
+UploadDate = "2026-03-20"
 
 load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "MatData_Wide_", UploadDate, ".RData"))
 load(paste0("~/Monitoring Report/data/cleaned/", UploadDate, "/", "InfData_Wide_", UploadDate, ".RData"))
@@ -53,6 +53,8 @@ setwd(paste0("D:/Users/stacie.loisate/Box/Monitoring-Report-Active/data/"))
 #*****************************************************************************
 #* Extract variables for monitoring report 
 #*****************************************************************************
+# 2. Extract variables required ----
+
 #update/add/delete variable names in the varNames_sheet.xlsx (check if the var is multiple or singe when add)
 MatNames_sheet <- read_excel("~/Monitoring Report/code/varNames_sheet.xlsx", sheet = "MaternalVars")
 InfNames_sheet <- read_excel("~/Monitoring Report/code/varNames_sheet.xlsx", sheet = "InfantVars")
@@ -99,6 +101,11 @@ mat_enroll <- read_excel(paste0("Z:/Outcome Data/", UploadDate, "/MAT_ENROLL.xls
   select(SITE, SCRNID, MOMID, PREGID, ENROLL, PREG_START_DATE,GA_DIFF_DAYS,
          EDD_BOE,BOE_METHOD, BOE_GA_WKS_ENROLL, BOE_GA_DAYS_ENROLL, REMAPP_ENROLL, ENROLL_SCRN_DATE)
 
+
+mat_enroll <- mat_enroll %>% 
+  select(SITE, SCRNID, MOMID, PREGID, ENROLL, PREG_START_DATE,GA_DIFF_DAYS,
+         EDD_BOE,BOE_METHOD, BOE_GA_WKS_ENROLL, BOE_GA_DAYS_ENROLL, REMAPP_ENROLL, ENROLL_SCRN_DATE)
+
 table(mat_enroll$SITE)
 dim(mat_enroll)
 
@@ -106,17 +113,20 @@ mnh04  <- read.csv(paste0("D:/Users/stacie.loisate/Documents/import/", UploadDat
   select(SITE, MOMID, PREGID, M04_TYPE_VISIT, contains("FETAL_LOSS")) # %>% filter(M04_TYPE_VISIT %in% c(13,14))
 #**************************************************************************************
 #* PRISMA Tables 1-4
-#* Table 1: Pre-screening and enrollment numbers for PRISMA MNH Study for the most recent one week 
-#* Table 2: Cumulative pre-screening numbers for PRISMA MNH Study 
-#* Table 3: Cumulative enrollment numbers for PRISMA MNH Study 
-#* Table 4: Study Status for PRISMA MNH Study 
+#* Table #: (not currently in use) Pre-screening and enrollment numbers for PRISMA MNH Study for the most recent one week
+#* Table #: Cumulative pre-screening numbers for PRISMA MNH Study
+#* Table #: Cumulative enrollment numbers for PRISMA MNH Study 
+#* Table #: Study Status for PRISMA MNH Study 
 
 #* Pre-screening, screen and enrollment info
-#* Output = MatData_Screen_Enroll 
+#* Output = MatData_Screen_Enroll (tables mentioned above will use MatData_Screen_Enroll as the input)
 #**************************************************************************************
-# stacked data import code did not accuratley transform enrollment screening dates -- pull in for zambia and ghana to fix 
-mnh02_gha <- read.csv("~/import/2025-12-12_gha/mnh02.csv") 
-mnh02_zam <- read.csv("~/import/2025-12-12_zam/mnh02.csv")
+# 3. Generate screen/enroll data (MatData_Screen_Enroll) ----
+
+## 3.1. import ghana and zambia raw data to adjust screening dates ----
+mnh02_gha <- read.csv(paste0("~/import/", UploadDate, "_gha/mnh02.csv")) 
+mnh02_zam <- read.csv(paste0("~/import/", UploadDate, "_zam/mnh02.csv")) 
+
 
 colnames(mnh02_gha) = toupper(colnames(mnh02_gha))
 mnh02_gha_out <- mnh02_gha %>% 
@@ -149,12 +159,18 @@ MatData_Screened_NoDup <- MatData_Screened %>%
     ungroup() %>%
     select(-n)
 
-#study start date and cut date
+dup_test <- MatData_Screened %>% select(SITE, SCRNID, MOMID, PREGID, M00_SCRN_OBSSTDAT) %>%  group_by(SITE, SCRNID) %>% mutate(n=n()) %>% filter(n>1)
+table(MatData_Screened$SITE)
+table(MatData_Screened_NoDup$SITE)
+length(unique(dup_test$SCRNID))                           ## how many unique scrnids in the original dataset
+dim(MatData_Screened)[1] - dim(MatData_Screened_NoDup)[1] ## how many datapoints were remove 
+
+## 3.2 generate study start date and cut date ----
 MatData_Screen_Enroll <-  MatData_Screened_NoDup %>% # MatData_Report
   mutate(MOMID = ifelse(SITE == "Zambia" & !str_detect(MOMID, "Z"), NA, MOMID),
          PREGID = ifelse(SITE == "Zambia" & !str_detect(PREGID, "Z"), NA, PREGID)
   ) %>% 
-  ## 12/12 updates for ghana
+  ## 4/25 updates for ghana
   full_join(mnh02_gha_out, by = c("SITE", "SCRNID")) %>%
   mutate(M02_SCRN_OBSSTDAT = case_when(SITE == "Ghana" ~ NEW_M02_SCRN_OBSSTDAT, TRUE ~ M02_SCRN_OBSSTDAT),
          M02_FORMCOMPLDAT_MNH02 = case_when(SITE == "Ghana" ~ NEW_M02_FORMCOMPLDAT_MNH02, TRUE ~ M02_FORMCOMPLDAT_MNH02),
@@ -169,7 +185,7 @@ MatData_Screen_Enroll <-  MatData_Screened_NoDup %>% # MatData_Report
   select(-NEW_M02_SCRN_OBSSTDAT, -NEW_M02_FORMCOMPLDAT_MNH02,
          -AGE_IEORRES, -PC_IEORRES, -CATCHMENT_IEORRES,
          -CATCH_REMAIN_IEORRES, -CONSENT_IEORRES, -SCRN_RETURN) %>%
-  ## 12/12 updates for zambia
+  # 4/25 updates for Zambia
   full_join(mnh02_zam_out, by = c("SITE", "SCRNID")) %>%
   mutate(M02_SCRN_OBSSTDAT = case_when(SITE == "Zambia" ~ NEW_M02_SCRN_OBSSTDAT, TRUE ~ M02_SCRN_OBSSTDAT),
          M02_FORMCOMPLDAT_MNH02 = case_when(SITE == "Zambia" ~ NEW_M02_FORMCOMPLDAT_MNH02, TRUE ~ M02_FORMCOMPLDAT_MNH02),
@@ -198,10 +214,9 @@ MatData_Screen_Enroll <-  MatData_Screened_NoDup %>% # MatData_Report
          -AGE_IEORRES, -PC_IEORRES, -CATCHMENT_IEORRES, 
          -CATCH_REMAIN_IEORRES, -CONSENT_IEORRES, -SCRN_RETURN) 
 
-# rm(MatData_Report)
 gc()
 
-# enrollment criteria
+## 3.3 code in enrollment criteria ----
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
   full_join(mat_enroll[c("SITE","SCRNID", "MOMID", "PREGID", "ENROLL")],
             by = c("SITE","SCRNID", "MOMID", "PREGID")) %>% 
@@ -255,7 +270,7 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
 table(MatData_Screen_Enroll$ENROLL, MatData_Screen_Enroll$SITE)
 table(MatData_Screen_Enroll$ENROLL_DENOM, MatData_Screen_Enroll$SITE)
 
-## Merge in fetal loss date to calculate pregnancy end date
+## 3.4 merge in fetal loss date to calculate pregnancy end date ----
 fetal_loss <- mnh04 %>% 
   # mutate(M04_FETAL_LOSS_DSSTDAT = parse_date_time(M04_FETAL_LOSS_DSSTDAT, order = c("%m/%d/%Y"))) %>% 
   mutate(M04_FETAL_LOSS_DSSTDAT = ymd(M04_FETAL_LOSS_DSSTDAT)) %>% 
@@ -275,7 +290,8 @@ fetal_loss <- mnh04 %>%
 length(unique(fetal_loss$PREGID))
 dim(fetal_loss)[1]
 
-## extract Reasons for exclusion (check if cases match within mnh00 and 02)
+## 3.5 extract Reasons for exclusion ---- 
+  # note: (check if cases match within mnh00 and 02)
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
   #reason for exclusion in pre-screen
   mutate(
@@ -370,6 +386,7 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
 
 gc()
 
+## 3.6 merge in closeout form ----
 ## Has woman closed out? 
 MatData_Screen_Enroll <- MatData_Screen_Enroll %>% 
   left_join(MatData_Wide %>% select(SITE, MOMID, PREGID, M23_CLOSE_DSDECOD), by = c("SITE", "MOMID", "PREGID")) %>% 
@@ -384,7 +401,8 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>% distinct(SITE,SCRNID, MOMID, 
 
 length(unique(MatData_Screen_Enroll$SCRNID)) 
 dim(MatData_Screen_Enroll[1])
-# test for duplicates:
+
+## 3.7 check for duplicates ----
 duplicates <- MatData_Screen_Enroll %>%
   select(SITE, SCRNID, MOMID, PREGID, ENROLL) %>%
   group_by(SITE, SCRNID) %>%
@@ -397,7 +415,8 @@ MatData_Screen_Enroll <- MatData_Screen_Enroll %>%
   filter(KEEP == 1) %>% 
   select(-KEEP)
 
-## export 
+## check PNC data wide 
+## 3.8 export MatData_Screen_Enroll ----
 save(MatData_Screen_Enroll, file= paste0(path_to_save, "MatData_Screen_Enroll",".RData",sep = ""))
 gc()
 
@@ -405,14 +424,20 @@ gc()
 ### MatData_Anc_Visits
 # input: MatData_Screen_Enroll
 # Includes all women who are enrolled. Includes constructed variables relevant to ANC 
+
+# Table #: ANC and PNC visit completion for PRISMA
+# Table #: ANC protocol compliance for PRISMA (only for the first summary row. Prot_Compliance_Anc used for the rest of the table)
+# output: MatData_Anc_Visits (tables mentioned above will use MatData_Anc_Visits as the input [for the ANC portion only])
 #**************************************************************************************
+# 4. ANC visit data (MatData_Anc_Visits) ----
+
 MatData_Report_out <- MatData_Report %>%
   left_join(MatData_Screen_Enroll %>% select(SITE, MOMID, PREGID,ENDPREG_DAYS,MISCARRIAGE,SCREEN, ENROLL, ENROLL_DENOM), by = c("SITE", "MOMID", "PREGID")) %>% 
   mutate(PREG_START_DATE  = ymd(PREG_START_DATE)) 
 
+## 4.1 calculate visit windows ----
 MatData_Anc_Visits <- MatData_Report_out %>% 
   filter(ENROLL == 1) %>% 
-  # filter(M01_US_OHOSTDAT_1 != ymd("1907-07-07")) %>%   
   ## CALCULATE ON TIME AND LATE ANC WINDOWS
   mutate(ENROLL_ONTIME = (EDD_US - as.difftime(280, unit="days")) + as.difftime(139, unit="days"),
          ENROLL_LATE = (EDD_US - as.difftime(280, unit="days")) + as.difftime(139, unit="days"),
@@ -445,6 +470,7 @@ MatData_Anc_Visits <- MatData_Report_out %>%
          ANC32_OVERDUE = ifelse(UploadDate>ANC32_LATE & is.na(M04_VISIT_COMPLETE_4), 1, 0),
          ANC36_OVERDUE = ifelse(UploadDate>ANC36_LATE & is.na(M04_VISIT_COMPLETE_5), 1, 0)) %>%
   ## CALCULATE INDICATOR VARIALBE FOR ANY VISIT TYPE = i
+     ## 4.2 calculate visit complete windows ----
   mutate(ANY_TYPE_VISIT_COMPLETE_1 = ifelse((M01_TYPE_VISIT_1 == 1 & M01_VISIT_COMPLETE_1 == 1) | 
                                               (M04_TYPE_VISIT_1 == 1 & M04_VISIT_COMPLETE_1 == 1) |
                                               (M05_TYPE_VISIT_1 == 1 & M05_VISIT_COMPLETE_1 == 1) |
@@ -476,7 +502,7 @@ MatData_Anc_Visits <- MatData_Report_out %>%
                                               (M06_TYPE_VISIT_5 == 5 & M06_VISIT_COMPLETE_5 == 1) |
                                               (M07_TYPE_VISIT_5 == 5 & M07_VISIT_COMPLETE_5 == 1) |
                                               (M08_TYPE_VISIT_5 == 5 & M08_VISIT_COMPLETE_5 == 1), 1, 0)) %>% 
-  ## GENERATE INDICATOR VARIALBE FOR CENSORING 
+  ## 4.3 generate indicator variable for censoring ----
   ## 1. generate indicator variable if closeout was during ANC or PNC period 
   mutate(M23_CLOSEOUT_PERIOD = ifelse(!(is.na(DOB)), "PNC", "ANC")) %>% 
   ## 2. calculate GA window at closeout
@@ -493,34 +519,11 @@ MatData_Anc_Visits <- MatData_Report_out %>%
   mutate(CLOSEOUT = case_when(!is.na(M23_AGE_VISIT_WKS) ~ 1, TRUE ~ 0))
 
 
-# test <- MatData_Anc_Visits %>% select(SITE, MOMID, PREGID, M01_VISIT_COMPLETE_4, contains("ANC32"), M01_TYPE_VISIT_4)
 
-## export 
+## 4.4 export MatData_Anc_Visits ----
 save(MatData_Anc_Visits, file= paste0(path_to_save, "MatData_Anc_Visits",".RData",sep = ""))
 
-## data check: WOMAN WITH BIRTH AT 35 WEEKS SHOULD NOT HAVE AN ANC36 (ANC36_PASS_LATE == 0)
-# test <- MatData_Anc_Visits %>% filter(ENDPREG_DAYS==270 ) %>% select(SITE, MOMID,ENDPREG_DAYS,
-#                                                                     ENROLL_ONTIME, ENROLL_PASS,
-#                                                                     ANC20_ONTIME, ANC20_PASS,
-#                                                                     ANC28_ONTIME, ANC28_PASS,
-#                                                                     ANC32_ONTIME, ANC32_PASS,
-#                                                                     ANC36_ONTIME, ANC36_PASS)
-
-## generate window subset dataset
-# window_subset <- MatData_Anc_Visits %>% select(SITE, MOMID,DOB,ENDPREG_DAYS, ENROLL_LATE, ENROLL_PASS_LATE,
-#                                       ANC20_LATE, ANC20_PASS_LATE, ANC28_LATE, ANC28_PASS_LATE,
-#                                       ANC32_LATE, ANC32_PASS_LATE, ANC36_LATE, ANC36_PASS_LATE,
-#                                       CLOSEOUT, M23_AGE_VISIT_DAYS, M23_AGE_VISIT_WKS)
-# 
-# library(openxlsx)
-# write.xlsx(window_subset,
-#            na="",
-#            file = paste0("Z:/Stacie_working_files/window_subset", ".xlsx"),
-#            row.names = FALSE)
-
-## export 
-# save(MatData_Anc_Visits, file= paste0(path_to_save, "MatData_Anc_Visits",".RData",sep = ""))
-
+## examples below: 
 # if someone delievered at 213 days (30wks); NO anc28/ anc32/  anc36
 # if someone delievered at 54 days (7wks); NO ANC20 / anc28/ anc32/  anc36
 # if someone delievered at 310 days (44wks);  ANC20 / anc28/ anc32/  anc36
@@ -528,14 +531,31 @@ save(MatData_Anc_Visits, file= paste0(path_to_save, "MatData_Anc_Visits",".RData
 #**************************************************************************************
 ### MatData_Ipc_Visits
 # input: MatData_Screen_Enroll
-# Includes all women who are enrolled 
+# Includes all women who are enrolled
+
+## this table is a bit different because 3 different datasets are used to define each sub-section
+# Table #: IPC visit completion and PRISMA protocol compliance for IPC
+  # "IPC Visit Completion" section: 
+    # output: MatData_Ipc_Visits_Mat (tables mentioned above will use MatData_Ipc_Visits_Mat as the input)
+  
+  # "Maternal IPC Protocol Compliance" section: 
+    # output: MatData_Ipc_Visits_Compliance_Mat (tables mentioned above will use MatData_Ipc_Visits_Compliance_Mat as the input)
+  
+  # "Infant IPC Protocol Compliance" section: 
+    # output: MatData_Ipc_Visits_Compliance_Inf (tables mentioned above will use MatData_Ipc_Visits_Compliance_Inf as the input)
+
+# Figure #: Distribution of gestational ages of participants who passed the IPC window and do not yet have a pregnancy outcome reported
+    # output: MatData_Ipc_Visits_Mat (figure mentioned above will use MatData_Ipc_Visits_Mat as the input)
+
 #**************************************************************************************
+# 5. IPC visit data (MatData_Ipc_Visits) ----
 # extract unique MOM/INFANT pair from infant wide data  - one row for each MOM/INFANT pair
 InfData_Report_Mat <- InfData_Report %>% distinct(SITE, MOMID, PREGID, .keep_all = TRUE )
 
+## 5.1 calculating windows ----
 MatData_Ipc_Visits_Mat <- MatData_Report_out %>% 
   select(SITE, MOMID, PREGID, ENROLL, DOB, EDD_US,PREG_START_DATE, ENDPREG_DAYS,M09_TYPE_VISIT_6, M23_CLOSE_DSSTDAT,
-         M10_TYPE_VISIT_6, M09_VISIT_COMPLETE_6, M10_VISIT_COMPLETE_6,M23_CLOSE_DSDECOD,
+         M10_TYPE_VISIT_6, M09_VISIT_COMPLETE_6, M10_VISIT_COMPLETE_6,M23_CLOSE_DSDECOD, # M09_INFANTS_FAORRES_6
          contains("GESTAGE_AT_VISIT_DAYS")) %>% 
   filter(ENROLL == 1,
          (is.na(ENDPREG_DAYS) | ENDPREG_DAYS > 139)) %>% ## filter for anyone who is enrolled and has delivered (DOB is not NA) 
@@ -552,6 +572,7 @@ MatData_Ipc_Visits_Mat <- MatData_Report_out %>%
   ## GENERATE INDICATOR VARIABLE FOR PARTICPANTS WHO HAVE CLOSED OUT EITHER DUE TO LTFU (M23_CLOSE_DSDECOD==4), 
       # WITHDREW (M23_CLOSE_DSDECOD==5), OR INVESTIGATOR CLOSED (M23_CLOSE_DSDECOD==6)
   # if a woman any closeout selected 
+  ## 5.2 generate closeout indicator ----
   mutate(CLOSED_OUT =  ifelse(is.na(M23_CLOSE_DSDECOD), 0, 
                               ifelse(M23_CLOSE_DSDECOD %in% c(1, 2, 3, 4, 5, 6), 1, 0)))  %>% 
   ## CALCULATE INDICATOR VARIALBE FOR DENOMINATOR
@@ -563,62 +584,10 @@ MatData_Ipc_Visits_Mat <- MatData_Report_out %>%
   
 table(MatData_Ipc_Visits_Mat$GA42_MISSING_IPC, MatData_Ipc_Visits_Mat$SITE)
 
-## export 
+## 5.3 export MatData_Ipc_Visits_Mat ----
 save(MatData_Ipc_Visits_Mat, file= paste0(path_to_save, "MatData_Ipc_Visits_Mat",".RData",sep = ""))
 
-## data check: extract any momids that are missing ipc forms and have passed window 
-# MISSING_IPC_MOMIDS <- MatData_Ipc_Visits_Mat %>% filter(GA42_MISSING_IPC==1) %>% pull(MOMID)
-# MISSING_IPC_MOMIDS_EXTRACT <- MatData_Screen_Enroll %>%  select(SITE, MOMID, PREGID, PREG_START_DATE,M23_CLOSE_DSDECOD, M23_CLOSE_DSSTDAT,EDD_US, contains("_VISIT_DATE_"), ) %>% 
-#   mutate(IPC_LATE = (EDD_US - as.difftime(280, unit="days")) + as.difftime(300, unit="days")) %>% 
-#   mutate(CLOSED_OUT =  ifelse(is.na(M23_CLOSE_DSDECOD), 0, 
-#                               ifelse(M23_CLOSE_DSDECOD %in% c(2, 3, 4, 5, 6), 1, 0))) %>% 
-#   select(-EDD_US, -M23_CLOSE_DSDECOD) %>% 
-#   relocate(IPC_LATE, .after=4) %>%
-#   relocate(CLOSED_OUT, .after = 5) %>% 
-#   pivot_longer(cols = -c(1:7), 
-#                values_to = "VISIT_DATE", 
-#                names_to = "FORM") %>% 
-#   filter(MOMID %in% MISSING_IPC_MOMIDS, CLOSED_OUT!=1) %>% 
-#   group_by(SITE, MOMID, PREGID, PREG_START_DATE,IPC_LATE,CLOSED_OUT, M23_CLOSE_DSSTDAT) %>% 
-#   # generate variable with date last seen
-#   summarise(DATE_LAST_SEEN = max(VISIT_DATE, na.rm= TRUE)) %>% 
-#   ungroup() %>% 
-#   # generate variable with age last seen
-#   mutate(AGE_LAST_SEEN_DAYS = as.numeric(DATE_LAST_SEEN - PREG_START_DATE)) %>% 
-#   filter(!is.na(AGE_LAST_SEEN_DAYS)) %>% 
-#   # generate variable for upload date
-#   mutate(UPLOADDATE = ymd(UploadDate)) %>% 
-#   # calculate the age of particpant TODAY (at date of upload)
-#   mutate(AGE_AT_UPLOAD_DAYS = as.numeric(UPLOADDATE - PREG_START_DATE)) %>% 
-# ## generate new weeks variable that includes 1 decimal point for gestational ages that represent the days 
-#   mutate(AGE_LAST_SEEN_WKS_FLOOR = AGE_LAST_SEEN_DAYS %/% 7, 
-#          AGE_LAST_SEEN_WKS = as.numeric(paste0(AGE_LAST_SEEN_WKS_FLOOR, ".", (AGE_LAST_SEEN_DAYS-(AGE_LAST_SEEN_WKS_FLOOR*7))))) %>% 
-#   mutate(AGE_AT_UPLOAD_WKS_FLOOR = AGE_AT_UPLOAD_DAYS %/% 7, 
-#          AGE_AT_UPLOAD_WKS = as.numeric(paste0(AGE_AT_UPLOAD_WKS_FLOOR, ".", (AGE_AT_UPLOAD_DAYS-(AGE_AT_UPLOAD_WKS_FLOOR*7))))) %>% 
-#   select(SITE, MOMID, PREGID, DATE_LAST_SEEN,AGE_LAST_SEEN_WKS,  AGE_AT_UPLOAD_WKS, IPC_LATE, M23_CLOSE_DSSTDAT)
-
-# # generate table of contents for excel sheet to send to sites 
-# tab_contents <- data.frame("varname" = names(MISSING_IPC_MOMIDS_EXTRACT),
-#                               "definition" = c("site", 
-#                                                "momid",
-#                                                "pregnancy id",
-#                                                "date the last participant was seen. generated by extracting the latest visit date reported for the particpant.",
-#                                                "gestational age at the last visit particpant was seen with the decimal representing the number of days. For example, 16.6 represents 16 weeks and 6 days.",
-#                                                "calculated gestational age at the time of data upload with the decimal representing the number of days. For example, 16.6 represents 16 weeks and 6 days.",
-#                                                "date IPC late window closed for a particpant. ",
-#                                                "closeout date for the partipant. if a particpant does not have a closeout form, this cell will be empty."))
-# 
-# 
-# # export
-# site_vec = as.vector(unique(MISSING_IPC_MOMIDS_EXTRACT$SITE))
-# for (i in site_vec) {
-#   df_out <- MISSING_IPC_MOMIDS_EXTRACT %>% filter(SITE == i)
-#   list_of_datasets <- list("Table of Contents" = tab_contents, "Report" = df_out)
-#   
-#   write.xlsx(list_of_datasets, file = paste0("D:/Users/stacie.loisate/Documents/Monitoring Report/","PRISMA_", i, "_IDs_missing_IPC_", UploadDate, ".xlsx"),
-#              headerStyle = createStyle(textDecoration = "Bold"))
-# }
-# 
+### 5.4 generate ipc protocol compliance (MOM ONLY) ----
 
 # maternal protocol compliance -- only maternal for mnh09/10 - one row for each mom 
 MatData_Ipc_Visits_Compliance_Mat <- MatData_Report_out %>% 
@@ -633,6 +602,7 @@ MatData_Ipc_Visits_Compliance_Mat <- MatData_Report_out %>%
 ## export 
 save(MatData_Ipc_Visits_Compliance_Mat, file= paste0(path_to_save, "MatData_Ipc_Visits_Compliance_Mat",".RData",sep = ""))
 
+### 5.5 generate ipc protocol compliance (INFANT ONLY) ----
 
 # infant protocol compliance -- only infant for mnh11 - one row for each infant 
 MatData_Ipc_Visits_Compliance_Inf <- InfData_Report %>% 
@@ -664,14 +634,17 @@ save(MatData_Ipc_Visits_Compliance_Inf, file= paste0(path_to_save, "MatData_Ipc_
 # input: MatData_Screen_Enroll
 # Includes all women who are enrolled. Includes constructed variables relevant to PNC 
 
+# Table #: ANC and PNC visit completion for PRISMA
+# output: MatData_Pnc_Visits (tables mentioned above will use MatData_Pnc_Visits as the input [for the PNC portion only])
 #**************************************************************************************
+# 6. PNC data set (MatData_Pnc_Visits) ----
+
 ## MatData_Pnc_Visits
+## 6.1 calculate visit windows ----
 MatData_Pnc_Visits <- MatData_Report_out %>% 
   select(SITE,SCRNID, MOMID, PREGID, ENROLL,US_GA_WKS_ENROLL, DOB, PREG_START_DATE,ENDPREG_DAYS,MISCARRIAGE,
          ends_with("_7"),  ends_with("_8"),  ends_with("_9"), 
          ends_with("_10"), ends_with("_11"), ends_with("_12"),starts_with("M09_BIRTH_DSTERM_INF"), contains("M23_")) %>% 
-  ## filter participants with a delivery outcome (exclude NA age at pregnancy end)
-  #filter(!is.na(ENDPREG_DAYS)) %>% 
   ## CALCULATE ON TIME AND LATE PNC WINDOWS 
   mutate(PNC0_ONTIME = DOB + as.difftime(5, unit="days"),
          PNC0_LATE = DOB + as.difftime(5, unit="days"),
@@ -712,6 +685,7 @@ MatData_Pnc_Visits <- MatData_Report_out %>%
          PNC26_OVERDUE = ifelse(UploadDate>PNC26_LATE & is.na(M12_VISIT_COMPLETE_11), 1, 0),
          PNC52_OVERDUE = ifelse(UploadDate>PNC52_LATE & is.na(M12_VISIT_COMPLETE_12), 1, 0)) %>% 
   ## CALCULATE INDICATOR VARIALBE FOR ANY VISIT TYPE = i
+  ## 6.2 generate visit completion indicators ----
   mutate(ANY_TYPE_VISIT_COMPLETE_7 = ifelse((M06_TYPE_VISIT_7 == 7 & M06_VISIT_COMPLETE_7 == 1) |
                                               (M12_TYPE_VISIT_7 == 7 & M12_VISIT_COMPLETE_7 == 1), 1, 0),
          ANY_TYPE_VISIT_COMPLETE_8 = ifelse((M06_TYPE_VISIT_8 == 8 & M06_VISIT_COMPLETE_8 == 1) |
@@ -739,21 +713,27 @@ MatData_Pnc_Visits <- MatData_Report_out %>%
                                    M09_BIRTH_DSTERM_INF3_6 == 1 | M09_BIRTH_DSTERM_INF3_6 == 2 |
                                    M09_BIRTH_DSTERM_INF4_6 == 1 | M09_BIRTH_DSTERM_INF4_6 == 2,1,  0))  %>%
   ## GENERATE INDICATOR VARIALBE FOR CENSORING 
+  ## 6.3 generate censoring indicators ----
   ## 1. generate indicator variable if closeout was during ANC or PNC period 
   mutate(M23_CLOSEOUT_PERIOD = ifelse(!is.na(DOB), "PNC", "ANC"))
 
-## export 
+## 6.4 export MatData_Pnc_Visits ----
 save(MatData_Pnc_Visits, file= paste0(path_to_save, "MatData_Pnc_Visits",".RData",sep = ""))
 #**************************************************************************************
-#### VISIT COMPLETION #### 
+#### VISIT COMPLETION 
 #* Are forms completed with visit status = 1 or 2? 
 #* Table 5
+
+# Table #: ANC and PNC visit completion for PRISMA
+  # output: Visit_Complete_Anc (tables mentioned above will use Visit_Complete_Anc as the input)
+  # output: Visit_Complete_Pnc (tables mentioned above will use Visit_Complete_Pnc as the input)
 
 #* Num: Any form with visit type = i AND visit status = 1 or 2 
 #* Denom: Passed window for visit type = i
 #**************************************************************************************
 ## ANC
 
+# 7. ANC visit completion ----
 Visit_Complete_Anc <- MatData_Anc_Visits %>% 
   select(SITE, MOMID, PREGID,US_GA_WKS_ENROLL, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"),
          contains("_ONTIME"),contains("_LATE"),ENDPREG_DAYS, M23_CLOSE_DSSTDAT) %>% 
@@ -828,19 +808,11 @@ Visit_Complete_Anc <- MatData_Anc_Visits %>%
                                         ((M23_CLOSE_DSSTDAT > ANC36_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0)
   )
 
-## testing: 
-# out <- Prot_Compliance_Anc %>% select(SITE, MOMID, PREGID, PC_ANC28_DENOM, ANY_TYPE_VISIT_COMPLETE_3, ANC28_PASS_LATE) %>% 
-#   full_join(Visit_Complete_Anc[c("SITE", "MOMID", "PREGID", "VC_ANC28_NUM_LATE", "ENDPREG_DAYS", "M23_CLOSE_DSSTDAT")], by = c("SITE", "MOMID", "PREGID")) %>% 
-#   select(SITE, MOMID, PREGID, VC_ANC28_NUM_LATE, PC_ANC28_DENOM, ANC28_PASS_LATE, ANY_TYPE_VISIT_COMPLETE_3, ENDPREG_DAYS, M23_CLOSE_DSSTDAT) %>% 
-#   mutate(discrep = case_when(VC_ANC28_NUM_LATE != PC_ANC28_DENOM ~ 1, TRUE ~ 0)) %>% 
-#   filter(discrep == 1) %>% 
-#   mutate(under_window_preg = case_when(ENDPREG_DAYS < 216 ~ 1, TRUE ~ 0))
-
-
 ## export 
 save(Visit_Complete_Anc, file= paste0(path_to_save, "Visit_Complete_Anc",".RData",sep = ""))
 
 # PNC
+# 8. PNC visit completion ----
 ## i filtered out anyone who has an endpreg and then
 # for pnc visits where we do not expect those with miscarriages, i filter 
 Visit_Complete_Pnc <- MatData_Pnc_Visits %>%
@@ -912,16 +884,27 @@ Visit_Complete_Pnc <- MatData_Pnc_Visits %>%
 ## export 
 save(Visit_Complete_Pnc, file= paste0(path_to_save, "Visit_Complete_Pnc",".RData",sep = ""))
 #**************************************************************************************
-#### PROTOCOL COMPLIANCE #### 
-#* Are all expected forms for the visit complete? 
-# Table 6 (ANC) [dataframe: Prot_Compliance_Anc]
-# Table 8 (PNC) [dataframe: Prot_Compliance_Pnc]
-# ReMAPP Table 1 (MNH23/MNH26) [dataframe: Prot_Compliance_MNH25]
+#### PROTOCOL COMPLIANCE  
+#* Definition: Are all expected forms for the visit complete? 
+
+# Table #: ANC protocol compliance for PRISMA
+  # output: Prot_Compliance_Anc (tables mentioned above will use Prot_Compliance_Anc as the input)
+
+# Table #: PNC protocol compliance for PRISMA
+  # output: Prot_Compliance_Pnc (tables mentioned above will use Prot_Compliance_Pnc as the input)
+
+# Table #: Protocol compliance for PRISMA depression assessment
+# output: Prot_Compliance_MNH25 (tables mentioned above will use Prot_Compliance_MNH25 as the input)
+
+# Table #: Protocol compliance for ReMAPP fatigue assessment
+# output: Prot_Compliance_MNH26 (tables mentioned above will use Prot_Compliance_MNH26 as the input)
 
 #* Num (hard code in monitoring report rmd): For each form: visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
 #* Denom: Any form with visit type = i AND visit status = 1 or 2 AND passed window for visit type = i 
 #**************************************************************************************
 ## ANC
+# 9. ANC protocol compliance (Prot_Compliance_Anc) ----
+
 ## CALCULATE DENOMINATORS FOR PROTOCOL COMPLIANCE  
 Prot_Compliance_Anc <- MatData_Anc_Visits %>% 
   select(SITE, MOMID, PREGID, ENROLL, M02_SCRN_OBSSTDAT,SCREEN,US_GA_WKS_ENROLL, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
@@ -936,6 +919,7 @@ Prot_Compliance_Anc <- MatData_Anc_Visits %>%
 ## export 
 save(Prot_Compliance_Anc, file= paste0(path_to_save, "Prot_Compliance_Anc",".RData",sep = ""))
 
+# 10. PNC protocol compliance (Prot_Compliance_Pnc) ----
 ## PNC 
 ## CALCULATE DENOMINATORS FOR PROTOCOL COMPLIANCE  
 Prot_Compliance_Pnc <- MatData_Pnc_Visits %>% 
@@ -989,9 +973,10 @@ Prot_Compliance_MNH25 <- MatData_Anc_Visits %>%
   mutate(PC_PNC6_DENOM = ifelse(PNC6_PASS_LATE == 1 & 
                                   ((M23_CLOSE_DSSTDAT > PNC6_LATE) | is.na(M23_CLOSE_DSSTDAT)), 1, 0))
 
-
 save(Prot_Compliance_MNH25, file= paste0(path_to_save, "Prot_Compliance_MNH25",".RData",sep = ""))
 
+
+# 11. MNH26 protocol compliance (Prot_Compliance_MNH26) ----
 ## MNH26 protocol compliance 
 MNH26_Pnc <- MatData_Pnc_Visits %>% select(SITE, MOMID, PREGID, DOB, M26_VISIT_COMPLETE_10, ANY_TYPE_VISIT_COMPLETE_10,PNC6_LATE, PNC6_PASS_LATE)
 
@@ -1017,7 +1002,7 @@ Prot_Compliance_MNH26 <- MatData_Anc_Visits %>%
          M26_ANCOVER31_NUM =ifelse(((M26_VISIT_COMPLETE_4 == 1 | M26_VISIT_COMPLETE_5) & ANC32_PASS_LATE == 1) &
                                      (ENDPREG_DAYS>237 | is.na(ENDPREG_DAYS)) &
                                      ((M23_CLOSE_DSSTDAT > ANC32_LATE) | is.na(M23_CLOSE_DSSTDAT)),1,0)
-  ) %>%      
+  ) %>%
   # DENOMINATOR for protocol compliance
   mutate(PC_ANCLESS20_DENOM = ifelse((ANC20_LATE < UploadDate) &
                                        (ENDPREG_DAYS>181 | is.na(ENDPREG_DAYS)) & 
@@ -1032,14 +1017,21 @@ Prot_Compliance_MNH26 <- MatData_Anc_Visits %>%
 # Export
 save(Prot_Compliance_MNH26, file= paste0(path_to_save, "Prot_Compliance_MNH26",".RData",sep = ""))
 #**************************************************************************************
-####  FORM COMPLETION #### 
+####  FORM COMPLETION
 #* Are forms completed regardless of visit status? 
-# Table 7 (ANC) [dataframe: Form_Completion_Anc]
-# Table 9 (PNC) [dataframe: Form_Completion_Pnc]
+
+# Table #: ANC form completion for PRISMA
+    # output: Form_Completion_Anc (tables mentioned above will use Form_Completion_Anc as the input)
+    # note: MatData_Anc_Visits is used for the first summary row only 
+
+# Table #: PNC visit maternal form completion for PRISMA
+  # output: Form_Completion_Pnc (tables mentioned above will use Form_Completion_Pnc as the input)
+  # note: MatData_Pnc_Visits is used for the first summary row only 
 
 #* Num (hard code in monitoring report rmd): for each form: visit type = i AND have any visit status AND passed window for visit type = i 
 #* Denom: Any form with visit type = i AND have any visit status AND passed window for visit type = i
 #**************************************************************************************
+# 12. ANC form completion (Form_Completion_Anc) ----
 ## ANC
 Form_Completion_Anc <- MatData_Anc_Visits %>% 
   select(SITE, MOMID, PREGID,M02_SCRN_OBSSTDAT,US_GA_WKS_ENROLL, ENROLL, contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
@@ -1088,12 +1080,12 @@ Form_Completion_Anc <- MatData_Anc_Visits %>%
 ## export 
 save(Form_Completion_Anc, file= paste0(path_to_save, "Form_Completion_Anc",".RData",sep = ""))
 
+# 13. ANC form completion (Form_Completion_Pnc) ----
 ## PNC 
 Form_Completion_Pnc <- MatData_Pnc_Visits %>% 
   select(SITE, MOMID, PREGID, ENDPREG_DAYS,contains("ANY_TYPE_VISIT_COMPLETE_"), contains("_PASS"), 
          contains("_VISIT_COMPLETE_"),contains("_TYPE_VISIT_"),PNC52_LATE,PNC52_ONTIME, BIRTH_OUTCOME_YN,
          M23_CLOSE_DSDECOD) %>%
-  #filter(BIRTH_OUTCOME_YN == 1) %>% 
   filter(!is.na(ENDPREG_DAYS)) %>% ## exclude anyone without a birth outcome (missing ENDPREG_DAYS)
   # DENOMINATOR for form completion
   # step 1. indicator for any type visit = i with any visit status 
@@ -1135,13 +1127,21 @@ Form_Completion_Pnc <- MatData_Pnc_Visits %>%
 ## export 
 save(Form_Completion_Pnc, file= paste0(path_to_save, "Form_Completion_Pnc",".RData",sep = ""))
 #**************************************************************************************
-#### HEAT MAPS #### 
+#### HEAT MAPS
 #* Are forms completed with visit status = 1 or 2 for EACH visit? 
-#* PRISMA figure 3a/3b
+
+# Figure #: Heat map of form completion for maternal ANC visits in PRISMA
+  # output: Figure mentioned above will use Heat_Maps_Pnc
+
+# Figure #: Heat maps of form completion for maternal PNC visits in PRISMA
+  # output: Figure mentioned above will use Heat_Maps_Pnc
+
 
 #* Num: By form: visit type = i AND visit status = 1 or 2 AND passed late window 
 #* Denom: Passed window for visit type = i AND didn't closeout AND has not yet delivered
 #**************************************************************************************
+# 14. ANC heat map (Heat_Maps_Anc) ----
+
 ## ANC
 Heat_Maps_Anc <- MatData_Anc_Visits %>% 
   select(SITE, MOMID, ENROLL, PREGID, US_GA_WKS_ENROLL, contains("TYPE_VISIT_"), contains("_VISIT_COMPLETE_"),
@@ -1165,6 +1165,7 @@ Heat_Maps_Anc <- MatData_Anc_Visits %>%
 ## export 
 save(Heat_Maps_Anc, file= paste0(path_to_save, "Heat_Maps_Anc",".RData",sep = ""))
 
+# 15. PNC heat map (Heat_Maps_Pnc) ----
 # PNC
 ## i filtered out anyone who has an endpreg and then
 # for pnc visits where we do not expect those with miscarriages, i filter 
@@ -1195,11 +1196,17 @@ Heat_Maps_Pnc <- MatData_Pnc_Visits %>%
 save(Heat_Maps_Pnc, file= paste0(path_to_save, "Heat_Maps_Pnc",".RData",sep = ""))
 
 #**************************************************************************************
-#* ReMAPP Table 4: Hemoglobin measurements for participants in ReMAPP per visit 
+#* Hemoglobin measurements for participants in ReMAPP per visit 
 #* Only looking at those who are enrolled 
+
+# Table #: Protocol compliance for ReMAPP hemoglobin measurements by CBC
+  # output: MatData_Hb_Visit (tables mentioned above will use MatData_Hb_Visit as the input)
+
 #* Output = MatData_Hb_VISIT
 #* Input = MatData_Anc_Visits, MatData_Pnc_Visits
 #**************************************************************************************
+# 16. ReMAPP Hb (by visit) (MatData_Hb_Visit) ----
+
 MatData_Hb_Visit <- MatData_Anc_Visits %>% 
   left_join(MatData_Pnc_Visits[c("SITE", "MOMID", "PREGID","PNC6_OVERDUE","PNC6_PASS_LATE", "PNC6_LATE")], 
             by = c("SITE", "MOMID", "PREGID")) %>% 
@@ -1217,7 +1224,7 @@ MatData_Hb_Visit <- MatData_Anc_Visits %>%
          HB_COMPLETED_10 = ifelse(M08_CBC_LBPERF_1_10 == 1, 1, 
                                  ifelse(M08_CBC_LBPERF_1_10 == 0, 0, 99))
          ) %>% 
-  # # replace outliars with NA
+  ## replace outliars with NA
   mutate(M08_CBC_HB_LBORRES_1 = ifelse(M08_CBC_HB_LBORRES_1 < 1 | M08_CBC_HB_LBORRES_1 > 20, NA, M08_CBC_HB_LBORRES_1),
          M08_CBC_HB_LBORRES_2 = ifelse(M08_CBC_HB_LBORRES_2 < 1 | M08_CBC_HB_LBORRES_2 > 20, NA, M08_CBC_HB_LBORRES_2),
          M08_CBC_HB_LBORRES_3 = ifelse(M08_CBC_HB_LBORRES_3 < 1 | M08_CBC_HB_LBORRES_3 > 20, NA, M08_CBC_HB_LBORRES_3),
@@ -1250,7 +1257,6 @@ MatData_Hb_Visit <- MatData_Anc_Visits %>%
   filter(ENROLL == 1 & REMAPP_ENROLL ==1) %>% 
   select(SITE, MOMID, PREGID, ENROLL,ENROLL_DENOM, REMAPP_ENROLL, M02_SCRN_OBSSTDAT,contains("HB_COMPLETED_"), contains("DenHBV"), contains("PASS_LATE"), contains("_LATE"), M23_CLOSE_DSSTDAT, ENDPREG_DAYS)
 
-## for exclusion criteria: add back in withdraw & LTFU 
 MatData_Hb_Visit <- MatData_Anc_Visits %>% 
   left_join(MatData_Pnc_Visits[c("SITE", "MOMID", "PREGID","PNC6_OVERDUE","PNC6_PASS_LATE", "PNC6_LATE")], 
             by = c("SITE", "MOMID", "PREGID")) %>% 
@@ -1268,7 +1274,7 @@ MatData_Hb_Visit <- MatData_Anc_Visits %>%
          HB_COMPLETED_10 = ifelse(M08_CBC_LBPERF_1_10 == 1, 1, 
                                   ifelse(M08_CBC_LBPERF_1_10 == 0, 0, 99))
   ) %>% 
-  # # replace outliars with NA
+  # replace outliars with NA
   mutate(M08_CBC_HB_LBORRES_1 = ifelse(M08_CBC_HB_LBORRES_1 < 1 | M08_CBC_HB_LBORRES_1 > 20, NA, M08_CBC_HB_LBORRES_1),
          M08_CBC_HB_LBORRES_2 = ifelse(M08_CBC_HB_LBORRES_2 < 1 | M08_CBC_HB_LBORRES_2 > 20, NA, M08_CBC_HB_LBORRES_2),
          M08_CBC_HB_LBORRES_3 = ifelse(M08_CBC_HB_LBORRES_3 < 1 | M08_CBC_HB_LBORRES_3 > 20, NA, M08_CBC_HB_LBORRES_3),
@@ -1331,19 +1337,24 @@ MatData_Hb_Visit <- MatData_Anc_Visits %>%
 ## export 
 save(MatData_Hb_Visit, file= paste0(path_to_save, "MatData_Hb_Visit",".RData",sep = ""))
 #**************************************************************************************
-#* ReMAPP Figure 1: Hemoglobin measures by gestational age for participants enrolled in PRISMA MNH 
+#* Hemoglobin measures by gestational age for participants enrolled in PRISMA MNH 
 #* Only looking at those who are enrolled 
 #* Output = MatData_HB_GA_Visit
 #* Input = MatData_Anc_Visits
+
+## NOTE: the below code is not currently in use in the monitoring report. 
+
 #* We need: 
-#* GA at each visit 
-#* M08_CBC_HB_LBORRES_1
-#* M08_CBC_HB_LBORRES_1
-#* M06_SPHB_VSSTAT -- Was non-invasive total hemoglobin (SpHb) measured at this visit?
-#* M06_SPHB_LBORRES -- Record non-invasive total hemoglobin (SpHb): . g/dL
-#* M06_HB_POC_LBPERF -- Was point-of-care hemoglobin test performed at this visit?
-#* M06_HB_POC_LBORRES -- Record point-of-care hemoglobin : . g/dL
+  #* GA at each visit 
+  #* M08_CBC_HB_LBORRES_1
+  #* M08_CBC_HB_LBORRES_1
+  #* M06_SPHB_VSSTAT -- Was non-invasive total hemoglobin (SpHb) measured at this visit?
+  #* M06_SPHB_LBORRES -- Record non-invasive total hemoglobin (SpHb): . g/dL
+  #* M06_HB_POC_LBPERF -- Was point-of-care hemoglobin test performed at this visit?
+  #* M06_HB_POC_LBORRES -- Record point-of-care hemoglobin : . g/dL
 #**************************************************************************************
+# 17. ReMAPP Hb (by visit & GA) (MatData_Hb_GA_Visit) ----
+
 MatData_Anc_Remapp <- MatData_Anc_Visits %>% 
   left_join(mat_enroll %>% select(SITE, MOMID, PREGID, REMAPP_ENROLL, ENROLL_SCRN_DATE), by = c("SITE", "MOMID", "PREGID")) %>% 
   ## add remapp launch date for each site since these are remapp criteria 
@@ -1425,10 +1436,19 @@ MatData_Hb_GA_Visit <- MatData_Hb_GA_Visit %>%
 save(MatData_Hb_GA_Visit, file= paste0(path_to_save, "MatData_Hb_GA_Visit",".RData",sep = ""))
 #**************************************************************************************
 #*ReMAPP healthy cohort criteria 
-# Table 2 + 3
+
+# Table #: Participant eligibility for the ReMAPP healthy cohort
+  # output: healthyOutcome (tables mentioned above will use healthyOutcome as the input)
+
+# Figure #: Eligibility status and missingness by ReMAPP healthy cohort criteria
+  # output: df_eli_long (figure mentioned above will use df_eli_long as the input)
+
 #*Output: healthyOutcome.rda
  #*includes: CRIT_s, HEALTHY_ELIGIBLE
 #**************************************************************************************
+# 18. ReMAPP Healthy Cohort (healthyOutcome) ----
+
+## 18.1 import kenya g6pd data ----
 ## kenya g6pd variables 
 m08_g6pd_ke <- read.csv(paste0("~/import/", UploadDate, "_ke/mnh08.csv")) %>% select(MOMID, PREGID, TYPE_VISIT, RBC_G6PD_LBORRES_Interpret) %>% 
   rename(M08_TYPE_VISIT  = TYPE_VISIT) %>% 
@@ -1454,6 +1474,11 @@ mnh08_g6pd  <- read.csv(paste0("D:/Users/stacie.loisate/Documents/import/", Uplo
   rename(G6PD_TYPE_VISIT = M08_TYPE_VISIT)
 
 
+MatData_Report_out <- MatData_Report %>%
+  left_join(MatData_Screen_Enroll %>% select(SITE, MOMID, PREGID,ENDPREG_DAYS,MISCARRIAGE,SCREEN, ENROLL, ENROLL_DENOM), by = c("SITE", "MOMID", "PREGID")) %>% 
+  mutate(PREG_START_DATE  = ymd(PREG_START_DATE)) 
+
+
 df_maternal <- MatData_Report_out %>%
   filter(ENROLL == 1) %>% 
   left_join(mat_enroll %>% select(SITE, MOMID, PREGID, REMAPP_ENROLL, ENROLL_SCRN_DATE), by = c("SITE", "MOMID", "PREGID")) %>% 
@@ -1466,6 +1491,7 @@ df_maternal <- MatData_Report_out %>%
   filter(REMAPP_ENROLL == 1) %>% 
   mutate(FERRITIN_LBORRES  = M08_FERRITIN_LBORRES_1)
 
+## 18.2 merge in true missing data (site reported) ----
 ## pull df of IDs that are "true missing"
 pak_c9_smoke_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
                          sheet = "C9") %>% 
@@ -1482,13 +1508,17 @@ pak_c20_g6pd_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Out
   mutate(c20_g6pd_true_missing = case_when(c20_true_missing ==1 ~ 1, TRUE ~ 0)) %>% 
   select(MOMID, PREGID, c20_g6pd_true_missing)
 
+cmc_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2026-01-23-CMC_ALL-Pending-Healthy-Cohort_response.xlsx") %>% 
+  select(MOMID, PREGID, contains("true_missing"))
+
 true_missing_ids <- df_maternal %>%
   left_join(pak_c9_smoke_response, by = c("MOMID", "PREGID")) %>% 
   left_join(pak_c19_hemo_response, by = c("MOMID", "PREGID")) %>% 
   left_join(pak_c20_g6pd_response, by = c("MOMID", "PREGID")) %>% 
+  left_join(cmc_response, by = c("MOMID", "PREGID")) %>%
   select(SITE, MOMID, PREGID, contains("true_missing"))
 
-## adjusting ferritin units
+## 18.3 adjusting ferritin units ----
 p50_ferritin_gh  <- median(df_maternal$M08_FERRITIN_LBORRES_1[df_maternal$SITE == "Ghana"], na.rm = TRUE)
 p50_ferritin_cmc  <- median(df_maternal$M08_FERRITIN_LBORRES_1[df_maternal$SITE == "India-CMC"], na.rm = TRUE)
 p50_ferritin_sas  <- median(df_maternal$M08_FERRITIN_LBORRES_1[df_maternal$SITE == "India-SAS"], na.rm = TRUE)
@@ -1531,9 +1561,8 @@ if (p50_ferritin_zm < 10 ) {
 } else  { df_maternal$FERRITIN_LBORRES[df_maternal$SITE == "Zambia"] <- df_maternal$M08_FERRITIN_LBORRES_1[df_maternal$SITE == "Zambia"]
 }
 
-# save(df_maternal, file = "derived_data/df_maternal.rda")
 
-## 07/03 UPDATED CRITERIA 
+## 18.4 assign healthy cohort criteria ----
 #derive criteria
   #derive criteria
 df_criteria <- df_maternal %>%
@@ -1626,21 +1655,6 @@ df_criteria <- df_maternal %>%
   #     SITE %in% c("Ghana", "India-CMC", "Kenya") ~ 10*M08_FERRITIN_LBORRES_1, 
   #     TRUE ~ M08_FERRITIN_LBORRES_1 
   #   )) 
-
-# test <- test2 %>% select(SITE, MOMID, PREGID, contains("FERRITIN"), CRIT_INFLAM,CRIT_IRON, M08_CRP_LBORRES_1, M08_AGP_LBORRES_1, M08_MN_LBPERF_12_1,M08_MN_LBPERF_13_1 )
-# gen INFLAMMATION = 1 if CRP_LBORRES!=. | AGP_LBORRES!=.
-# replace INFLAMMATION = 2 if ///
-#   CRP_LBORRES>5 & CRP_LBORRES!=. | AGP_LBORRES>1 & AGP_LBORRES!=.
-# //INFLAMMATION IF EITHER CRP > 5 MG/L OR AGP > 1 G/L
-# label define normal_high 1"Normal" 2"High"
-# label val INFLAMMATION normal_high
-# 
-# gen FERRITIN_70 = 1 if FERRITIN_LBORRES!=.
-# replace FERRITIN_70 = 2 if ///
-#   (INFLAMMATION == 2 & FERRITIN_LBORRES<70) | ///
-#   (INFLAMMATION == 1 & FERRITIN_LBORRES<15)
-# //NOTE THAT <70 IS FOR UNADJUSTED, HIGH INFLAMMATION
-# label define low 2"low ferritin"
 
 df_criteria <- df_criteria %>% 
   mutate(
@@ -1764,10 +1778,12 @@ df_criteria <- df_criteria %>%
                              ifelse(M06_HCV_POC_LBORRES_1 == 0, 1, 55))
   ) 
 
-
+## 18.5 hemoglobinopathies coding ----
 ## RBC MORPHOLOGY
 mnh08_raw  <- read.csv(paste0("D:/Users/stacie.loisate/Documents/import/", UploadDate, "/mnh08_merged.csv")) %>%
   select(SITE, MOMID, PREGID, M08_TYPE_VISIT,M08_LBSTDAT, contains("RBC"))
+# mnh08_raw  <- m08_merged %>% 
+#   select(SITE, MOMID, PREGID, M08_TYPE_VISIT,M08_LBSTDAT, contains("RBC")) 
 
 #RBC Morphology 
 rbc_morph_raw  <- mnh08_raw  %>% 
@@ -1827,13 +1843,24 @@ df_criteria <- df_criteria %>%
 table(df_criteria$CRIT_HEMOGLOBINOPATHIES, useNA = "ifany")
 
 
-#After enrollment, participants will be excluded from the final analysis if any of the following occur: 
-#Multiple pregnancies not identified at recruitment
+## 18.6 confirm additional true missing (site reported) ----
+df_criteria <- df_criteria %>%
+  mutate(CRIT_HEPATITISB = case_when(c15_true_missing ==1 ~ 0, TRUE ~ CRIT_HEPATITISB),
+         CRIT_HEPATITISC = case_when(c16_true_missing ==1 ~ 0, TRUE ~ CRIT_HEPATITISC),
+         CRIT_IRON = case_when(c17_true_missing ==1 ~ 0, TRUE ~ CRIT_IRON),
+         CRIT_INFLAM = case_when(c18_true_missing ==1 ~ 0, TRUE ~ CRIT_INFLAM),
+         CRIT_HEMOGLOBINOPATHIES = case_when(c19_true_missing ==1 ~ 0, TRUE ~ CRIT_HEMOGLOBINOPATHIES),
+         CRIT_G6PD = case_when(c20_true_missing ==1 ~ 0, TRUE ~ CRIT_G6PD)
+         ) %>% 
+  # update the 1 kenya id 
+  mutate(across(.cols = starts_with("CRIT_"), 
+                .fns = ~ if_else(PREGID == "KEARC00300_P1" & .x == 55, 0, .x)))
 
 save(df_criteria, file= paste0(path_to_save, "df_criteria",".RData",sep = ""))
 #**************************************************************************************
 #*2. check eligibility and save df_healthy.rda
 #**************************************************************************************
+## 18.7 assign final eligibility indicator ----
 #code 666 for any not applicable by site
 healthyOutcome <- df_criteria %>% 
   rowwise() %>%
@@ -1854,7 +1881,6 @@ healthyOutcome <- df_criteria %>%
 
 df_healthy <- healthyOutcome %>% 
   filter(HEALTHY_ELIGIBLE == 1)
-
 
 save(healthyOutcome, file= paste0(path_to_save, "healthyOutcome",".RData",sep = ""))
 save(df_healthy, file= paste0(path_to_save, "df_healthy",".RData",sep = ""))
@@ -2018,3 +2044,88 @@ df_eli_long$Variable <- factor(
              "C12", "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20"))
 
 save(df_eli_long, file= paste0(path_to_save, "df_eli_long",".RData",sep = ""))
+
+## 18.8 Optional query for healthy cohort criteria missingness ----
+
+### Pull data query subsets of missing/pending criteria (and HAVE any ineligible)
+## look at responses 
+# pak_healthy_cohort <- df_eli %>% 
+#   # filter(SITE == "Pakistan") %>%
+#   select(SITE, MOMID, PREGID, C1:C20)
+# 
+# c8_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
+#                          sheet = "C8") 
+# c9_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
+#                          sheet = "C9")
+# c19_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
+#                           sheet = "C19")
+# c20_response <- read_xlsx("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/responses/2025-09-05-Pakistan_ALL-Pending-Healthy-Cohort_response.xlsx",
+#                           sheet = "C20")
+# 
+# pak_healthy_cohort_filter <- pak_healthy_cohort %>% 
+#   left_join(c8_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C8_comment = Comments), by = c("PREGID")) %>% 
+#   left_join(c9_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C9_comment = Comments), by = c("PREGID")) %>% 
+#   left_join(c19_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C19_comment = Comments), by = c("PREGID")) %>% 
+#   left_join(c20_response %>% select(PREGID, Comments, contains("true_missing")) %>% rename(C20_comment = Comments), by = c("PREGID")) %>% 
+#   mutate(C8 = case_when(c8_true_missing ==1 ~ "True Missing", TRUE ~ C8),
+#          C9 = case_when(c9_true_missing ==1 ~ "True Missing", TRUE ~ C9),
+#          C19 = case_when(c19_true_missing ==1 ~ "True Missing", TRUE ~ C19),
+#          C20 = case_when(c20_true_missing ==1 ~ "True Missing", TRUE ~ C20)
+#   ) %>% 
+#   select(SITE, MOMID, PREGID, C1:C20)
+# 
+# df_healthy_long <- pak_healthy_cohort_filter %>%
+#   pivot_longer(
+#     cols = C1:C20,
+#     names_to = "Variable",
+#     values_to = "Value"
+#   )
+# 
+# criteria_queries_ids <- df_healthy_long %>%
+#   group_by(SITE, MOMID, PREGID) %>%
+#   mutate(SUM_INELGIGIBLE = sum(Value == "Ineligible")) %>%
+#   mutate(SUM_PENDING = sum(Value == "Pending")) %>%
+#   filter(SUM_PENDING > 0) 
+# 
+# table(criteria_queries_ids$Value)
+# 
+# sum_pending <- criteria_queries_ids %>% distinct(SITE, PREGID, SUM_PENDING)
+# 
+# criteria_queries <- df_eli %>% filter(PREGID %in% as.vector(criteria_queries_ids$PREGID)) %>%
+#   arrange(across(C1:C20, desc)) %>%
+#   relocate(C1:C20, .after = PREGID) %>%
+#   relocate(SITE, .before = MOMID) %>%
+#   select(SITE, MOMID, PREGID, C1:C20) %>% 
+#   left_join(sum_pending, by = c("SITE", "PREGID", "MOMID")) %>% 
+#   relocate(SUM_PENDING, .after = "PREGID")
+# 
+# vec_names <- c("India-SAS", "Ghana","India-CMC", "Kenya", "Pakistan",  "Zambia")
+# 
+# criteria_queries_export <- list()
+# for (i in seq_along(vec_names)) {
+#   site_name <- vec_names[i]  # Get site name
+#   print(site_name)
+#   
+#   criteria_queries_export[[as.character(site_name)]] <- criteria_queries %>%
+#     filter(SITE == site_name)
+#   
+# }
+# 
+# library(writexl)
+# # Loop through each dataset in the list
+# for (site_name in names(criteria_queries_export)) {
+#   # Get the corresponding dataset
+#   dataset <- criteria_queries_export[[site_name]]
+#   
+#   # Define the file name based on the site name
+#   file_name <- paste0(UploadDate, "-", site_name, "_ALL-Pending-Healthy-Cohort", ".xlsx")
+#   
+#   # Write the dataset to the Excel file
+#   write_xlsx(dataset, path = paste0("D:/Users/stacie.loisate/Documents/Output/Outcomes-Queries/healthy cohort/", file_name))
+#   
+#   # Optional: Print message to confirm export
+#   print(paste0("Exported ", file_name))
+#   print(paste0(site_name, " missing = ", dim(criteria_queries_export[[site_name]])[1]))
+#   
+# }
+
