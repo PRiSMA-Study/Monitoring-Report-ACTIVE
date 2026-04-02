@@ -46,10 +46,9 @@ mat_enroll <- read_xlsx(paste0("Z:/Outcome Data/", UploadDate, "/MAT_ENROLL.xlsx
 
 MatData_Pnc_Visits_subset <- MatData_Pnc_Visits %>% select(SITE, MOMID, PREGID, ENDPREG_DAYS)
 
-inf_outcomes <- read_xlsx(paste0("Z:/Outcome Data/", UploadDate, "/INF_OUTCOMES.xlsx")) %>% 
-  select(SITE, MOMID, PREGID, INFANTID, ADJUD_NEEDED, LIVEBIRTH, DOB)
-
-inf_outcomes_full <- read_xlsx(paste0("Z:/Outcome Data/", UploadDate, "/INF_OUTCOMES.xlsx"))
+## The biliruler code calls in infant outcome data but since we are not using this anymore, this will need to be updated
+  # in the meantime, just read in the most recent infant data generated 
+inf_outcomes_full <- read_xlsx(paste0("Z:/Outcome Data/", "2026-03-20", "/INF_OUTCOMES.xlsx"))
 
 MatData_Report <- MatData_Wide %>% 
   select(matches(MatNames_sheet$varname), 
@@ -88,9 +87,38 @@ InfData_Report <- InfData_Wide %>%
   mutate(n=n()) %>%
   ungroup() %>%
   select(-n) %>%
+  ungroup() %>% 
+  mutate(LIVEBIRTH = case_when(M09_BIRTH_DSTERM ==1 ~ 1,
+                                 TRUE ~ 0))
+
+## generate adjudication cases (these are to be removed )
+mnh04  <- read.csv(paste0("~/import/", UploadDate, "/mnh04_merged.csv")) %>% 
+  select(SITE, MOMID, PREGID, M04_TYPE_VISIT, contains("FETAL_LOSS")) %>% 
+  mutate(FETAL_LOSS = case_when(!is.na(M04_FETAL_LOSS_DSSTDAT) | M09_BIRTH_DSTERM ==2 ~ 1, TRUE ~0)) 
+  
+fetal_loss <- mnh04 %>% 
+  # mutate(M04_FETAL_LOSS_DSSTDAT = parse_date_time(M04_FETAL_LOSS_DSSTDAT, order = c("%m/%d/%Y"))) %>% 
+  mutate(M04_FETAL_LOSS_DSSTDAT = ymd(M04_FETAL_LOSS_DSSTDAT)) %>% 
+  # filter(M04_TYPE_VISIT%in% c(13, 14)) %>% 
+  mutate(M04_FETAL_LOSS_DSSTDAT = replace(M04_FETAL_LOSS_DSSTDAT, M04_FETAL_LOSS_DSSTDAT %in% c(ymd("1907-07-07"), ymd("1905-05-05")), NA)) %>% 
+  select(SITE, MOMID, PREGID, M04_FETAL_LOSS_DSSTDAT, contains("M04_FETAL_LOSS_DSDECOD")) %>% 
+  filter(!is.na(M04_FETAL_LOSS_DSSTDAT)) %>% 
+  mutate(M04_FETAL_LOSS_DSSTDAT = ymd(M04_FETAL_LOSS_DSSTDAT)) %>% 
+  group_by(SITE, MOMID, PREGID) %>%
+  arrange(-desc(M04_FETAL_LOSS_DSSTDAT)) %>%
+  slice(1) %>%
+  mutate(n=n()) %>%
   ungroup() %>%
-  ## merge in infant outcomes to filter out adjudication cases and to make sure the monitoring report tables match the infant outcomes table 
-  full_join(inf_outcomes, by = c("SITE", "MOMID", "PREGID", "INFANTID"))
+  select(-n)
+
+adjud_cases <- InfData_Report %>% select(SITE, MOMID, PREGID, INFANTID, M09_BIRTH_DSTERM) %>% 
+  left_join(fetal_loss, by = c("SITE","MOMID", "PREGID")) %>% 
+  mutate(FETAL_LOSS = case_when(M09_BIRTH_DSTERM ==2 | !is.na(M04_FETAL_LOSS_DSSTDAT) ~ 1, TRUE ~ 0), 
+         ADJUD_NEEDED = case_when(M09_BIRTH_DSTERM ==1 & FETAL_LOSS==1 ~ 1, 
+                                  TRUE ~ 0)
+  ) %>% filter(ADJUD_NEEDED==1)
+
+InfData_Report <- InfData_Report %>% filter(!PREGID %in% adjud_cases$PREGID)
   
 #**************************************************************************************
 ### InfData_Pnc_Visits
@@ -396,6 +424,9 @@ table(Inf_Heat_Maps_Pnc$SITE)
 ## Alyssa will send any updates that are below
 #**************************************************************************************
 # 8. Biliruler dataset (InfData_BiliRuler) ----
+### For Alyssa to update because we no longer use infant outcomes data for th report so we will just call in the most recent 
+
+
 
 ###Set up dataset (infants_livebirths_combined)
 infants_livebirths <- inf_outcomes_full %>%
